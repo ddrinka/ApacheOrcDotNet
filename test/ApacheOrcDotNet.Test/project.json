@@ -1,0 +1,37 @@
+{
+	"version": "1.0.0-*",
+	"testRunner": "xunit",
+  "buildOptions": {
+    "warningsAsErrors": true,
+    "embed": [
+      "Data/demo-12-zlib.orc"
+    ]
+  },
+	"dependencies": {
+    "ApacheOrcDotNet": {
+      "target": "project",
+      "version": "1.0.0-*"
+    },
+		"xunit": "2.2.0-*",
+    "dotnet-test-xunit": "2.2.0-*",
+    "Microsoft.Extensions.FileProviders.Embedded": "1.0.0"
+	},
+  "frameworks": {
+    "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.0.0"
+        }
+      }
+    },
+    "net452": {
+      "frameworkAssemblies": {
+        "System.ComponentModel.DataAnnotations": "",
+        "System.Runtime": {
+          "type": "build"
+        }
+      }
+    }
+  }
+}

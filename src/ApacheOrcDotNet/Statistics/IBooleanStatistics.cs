@@ -7,7 +7,7 @@ namespace ApacheOrcDotNet.Statistics
 {
     public class IBooleanStatistics
     {
-		long FalseCount { get; }
-		long TrueCount { get; }
+		ulong FalseCount { get; }
+		ulong TrueCount { get; }
     }
 }

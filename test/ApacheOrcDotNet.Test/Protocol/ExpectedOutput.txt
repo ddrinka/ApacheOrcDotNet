@@ -1,0 +1,18 @@
+﻿{ "name": "/root/orc/examples/demo-12-zlib.orc",
+  "type": "struct<_col0:int,_col1:string,_col2:string,_col3:string,_col4:int,_col5:string,_col6:int,_col7:int,_col8:int>",
+  "rows": 1920800,
+  "stripe count": 1,
+  "format": "0.12", "writer version": "HIVE-8732",
+  "compression": "zlib", "compression block": 262144,
+  "file length": 45979,
+  "content": 45592, "stripe stats": 140, "footer": 221, "postscript": 25,
+  "row index stride": 10000,
+  "user metadata": {
+  },
+  "stripes": [
+    { "stripe": 0, "rows": 1920800,
+      "offset": 3, "length": 45589,
+      "index": 14035, "data": 31388, "footer": 166
+    }
+  ]
+}
