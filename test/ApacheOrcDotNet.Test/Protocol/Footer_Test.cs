@@ -21,12 +21,20 @@ namespace ApacheOrcDotNet.Test.Protocol
 			var postScript = Serializer.Deserialize<PostScript>(postscriptStream);
 			var footerLength = postScript.FooterLength;
 			var footerBytesCompressed = helper.GetFooterRawBytes(postscriptLength, footerLength);
-			var footerBytesDecompressed = new byte[postScript.CompressionBlockSize];    //Don't do this in production
-			helper.ZLibDecompress(footerBytesCompressed, footerBytesDecompressed);
-			var footerStream = new MemoryStream(footerBytesDecompressed);
+			var footerBytes = helper.DecompressBlock(footerBytesCompressed);
+			var footerStream = new MemoryStream(footerBytes);
 			var footer = Serializer.Deserialize<Footer>(footerStream);
 
+			Assert.Equal(1920800ul, footer.NumberOfRows);
+			Assert.Equal(1, footer.Stripes.Count);
+			Assert.Equal(45592ul, footer.ContentLength);
+			Assert.Equal(10000u, footer.RowIndexStride);
 
+			Assert.Equal(1920800ul, footer.Stripes[0].NumberOfRows);
+			Assert.Equal(3ul, footer.Stripes[0].Offset);
+			Assert.Equal(31388ul, footer.Stripes[0].DataLength);
+			Assert.Equal(14035ul, footer.Stripes[0].IndexLength);
+			Assert.Equal(166ul, footer.Stripes[0].FooterLength);
 		}
 	}
 }

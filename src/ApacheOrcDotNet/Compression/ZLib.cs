@@ -20,121 +20,25 @@ namespace ApacheOrcDotNet.Compression
 			}
 		}
 
-		public bool Compress(byte[] inputBuffer, byte[] outputBuffer, byte[] overflow)
+		public byte[] Compress(byte[] inputBuffer, int offset)
 		{
-			var output = new BufferStream(outputBuffer, overflow, 3);
-			using (var deflateStream = new DeflateStream(output, _compressionLevel))
+			var result = new MemoryStream();
+			using (var deflateStream = new DeflateStream(result, _compressionLevel))
 			{
-				deflateStream.Write(inputBuffer, 0, inputBuffer.Length);
+				deflateStream.Write(inputBuffer, offset, inputBuffer.Length - offset);
 			}
-			if(output.Length < inputBuffer.Length)
-			{
-				var headerBytes = BitConverter.GetBytes(output.Length << 1);
-				Buffer.BlockCopy(headerBytes, 0, outputBuffer, 0, 3);
-				return true;
-			}
-			else
-			{
-				//Use the original data rather than the compressed data
-				var headerBytes = BitConverter.GetBytes((inputBuffer.Length << 1 | 0x1));
-				Buffer.BlockCopy(headerBytes, 0, outputBuffer, 0, 3);
-				Buffer.BlockCopy(inputBuffer, 0, outputBuffer, 3, inputBuffer.Length);
-				return false;
-			}
+			return result.ToArray();
 		}
 
-		public void Decompress(byte[] inputBuffer, byte[] outputBuffer)
+		public byte[] Decompress(byte[] inputBuffer, int offset)
 		{
-			using (var inputStream = new MemoryStream(inputBuffer))
-			using (var outputStream = new MemoryStream(outputBuffer))
+			var result = new MemoryStream();
+			using (var inputStream = new MemoryStream(inputBuffer, offset, inputBuffer.Length - offset))
+			using (var inflateStream = new DeflateStream(inputStream, CompressionMode.Decompress))
 			{
-				var header = inputStream.ReadByte() << 16 | inputStream.ReadByte() << 8 | inputStream.ReadByte();
-				if ((header & 0x1) == 0x1)      //No compression, copy through the data as is
-					inputStream.CopyTo(outputStream);
-				else
-					using (var inflateStream = new DeflateStream(inputStream, CompressionMode.Decompress))
-					{
-						inflateStream.CopyTo(outputStream);
-					}
+				inflateStream.CopyTo(result);
 			}
+			return result.ToArray();
 		}
-	}
-
-	internal class BufferStream : Stream
-	{
-		readonly byte[] _outputBuffer;
-		readonly byte[] _overflowBuffer;
-		int _outputBufferPosition;
-		int _overflowBufferPosition = 0;
-
-		public BufferStream(byte[] outputBuffer, byte[] overflowBuffer, int skipBytes)
-		{
-			_outputBuffer = outputBuffer;
-			_overflowBuffer = overflowBuffer;
-			_outputBufferPosition = skipBytes;
-		}
-
-		public override void Write(byte[] buffer, int offset, int count)
-		{
-			int outputSize = count;
-			int overflowSize = 0;
-
-			var outputBufferRemaining = _outputBuffer.Length - _outputBufferPosition;
-			if (outputSize > outputBufferRemaining)
-			{
-				overflowSize = outputSize - outputBufferRemaining;
-				outputSize = outputBufferRemaining;
-
-				var overflowBufferRemaining = _overflowBuffer.Length - _overflowBufferPosition;
-				if(overflowSize > overflowBufferRemaining)
-					throw new OverflowException("Overflowed the overflow buffer");
-			}
-
-			if (outputSize != 0)
-			{
-				Buffer.BlockCopy(buffer, offset, _outputBuffer, _outputBufferPosition, outputSize);
-				_outputBufferPosition += outputSize;
-			}
-			if (overflowSize != 0)
-			{
-				Buffer.BlockCopy(buffer, offset + outputSize, _overflowBuffer, _overflowBufferPosition, overflowSize);
-				_overflowBufferPosition += overflowSize;
-			}
-		}
-
-		public override long Length => _outputBufferPosition + _overflowBufferPosition;
-
-		#region Unused Stream Overloads
-		public override bool CanRead => false;
-		public override bool CanSeek => false;
-		public override bool CanWrite => true;
-		public override long Position
-		{
-			get
-			{
-				throw new NotImplementedException();
-			}
-
-			set
-			{
-				throw new NotImplementedException();
-			}
-		}
-		public override void Flush()
-		{
-		}
-		public override long Seek(long offset, SeekOrigin origin)
-		{
-			throw new NotImplementedException();
-		}
-		public override void SetLength(long value)
-		{
-			throw new NotImplementedException();
-		}
-		public override int Read(byte[] buffer, int offset, int count)
-		{
-			throw new NotImplementedException();
-		}
-		#endregion
 	}
 }

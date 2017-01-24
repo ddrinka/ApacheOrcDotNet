@@ -38,9 +38,32 @@ namespace ApacheOrcDotNet.Test.Protocol
 			return bytes;
 		}
 
-		public void ZLibDecompress(byte[] compressedData, byte[] decompressedData)
+		public byte[] DecompressBlock(byte[] inputBytes)
 		{
-			_zlib.Decompress(compressedData, decompressedData);
+			int blockLength;
+			bool isCompressed;
+			ParseBlockHeader(inputBytes, out blockLength, out isCompressed);
+			if(!isCompressed)
+			{
+				var result = new byte[inputBytes.Length - 3];
+				Buffer.BlockCopy(inputBytes, 3, result, 0, result.Length);
+				return result;
+			}
+			else
+			{
+				//Handle other compression types
+				return _zlib.Decompress(inputBytes, 3);
+			}
+		}
+
+		public void ParseBlockHeader(byte[] block, out int blockLength, out bool isCompressed)
+		{
+			if (block.Length < 3)
+				throw new ArgumentOutOfRangeException(nameof(block));
+
+			var rawValue = block[0] | block[1] << 8 | block[2] << 16;
+			blockLength = rawValue >> 1;
+			isCompressed = (rawValue & 1) == 0;
 		}
     }
 }

@@ -10,8 +10,9 @@ namespace ApacheOrcDotNet.Compression
 		/// <summary>
 		/// Decompress a block of data
 		/// </summary>
-		/// <param name="inputBuffer">Compressed Data</param>
-		/// <param name="outputBuffer">Decompressed Data</param>
-		void Decompress(byte[] inputBuffer, byte[] outputBuffer);
+		/// <param name="compressedData">Compressed Data</param>
+		/// <param name="offset">Offset to begin decompressing at</param>
+		/// <returns>Decompressed data</returns>
+		byte[] Decompress(byte[] compressedData, int offset);
 	}
 }
