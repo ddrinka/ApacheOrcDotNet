@@ -22,21 +22,40 @@ namespace ApacheOrcDotNet.Compression
 
 		public bool Compress(byte[] inputBuffer, byte[] outputBuffer, byte[] overflow)
 		{
-			var output = new BufferStream(outputBuffer, overflow);
+			var output = new BufferStream(outputBuffer, overflow, 3);
 			using (var deflateStream = new DeflateStream(output, _compressionLevel))
 			{
 				deflateStream.Write(inputBuffer, 0, inputBuffer.Length);
 			}
-			return output.Length < inputBuffer.Length;
+			if(output.Length < inputBuffer.Length)
+			{
+				var headerBytes = BitConverter.GetBytes(output.Length << 1);
+				Buffer.BlockCopy(headerBytes, 0, outputBuffer, 0, 3);
+				return true;
+			}
+			else
+			{
+				//Use the original data rather than the compressed data
+				var headerBytes = BitConverter.GetBytes((inputBuffer.Length << 1 | 0x1));
+				Buffer.BlockCopy(headerBytes, 0, outputBuffer, 0, 3);
+				Buffer.BlockCopy(inputBuffer, 0, outputBuffer, 3, inputBuffer.Length);
+				return false;
+			}
 		}
 
 		public void Decompress(byte[] inputBuffer, byte[] outputBuffer)
 		{
 			using (var inputStream = new MemoryStream(inputBuffer))
 			using (var outputStream = new MemoryStream(outputBuffer))
-			using (var inflateStream = new DeflateStream(inputStream, CompressionMode.Decompress))
 			{
-				inflateStream.CopyTo(outputStream);
+				var header = inputStream.ReadByte() << 16 | inputStream.ReadByte() << 8 | inputStream.ReadByte();
+				if ((header & 0x1) == 0x1)      //No compression, copy through the data as is
+					inputStream.CopyTo(outputStream);
+				else
+					using (var inflateStream = new DeflateStream(inputStream, CompressionMode.Decompress))
+					{
+						inflateStream.CopyTo(outputStream);
+					}
 			}
 		}
 	}
@@ -45,13 +64,14 @@ namespace ApacheOrcDotNet.Compression
 	{
 		readonly byte[] _outputBuffer;
 		readonly byte[] _overflowBuffer;
-		int _outputBufferPosition = 0;
+		int _outputBufferPosition;
 		int _overflowBufferPosition = 0;
 
-		public BufferStream(byte[] outputBuffer, byte[] overflowBuffer)
+		public BufferStream(byte[] outputBuffer, byte[] overflowBuffer, int skipBytes)
 		{
 			_outputBuffer = outputBuffer;
 			_overflowBuffer = overflowBuffer;
+			_outputBufferPosition = skipBytes;
 		}
 
 		public override void Write(byte[] buffer, int offset, int count)
