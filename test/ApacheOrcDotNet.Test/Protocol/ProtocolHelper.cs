@@ -38,6 +38,26 @@ namespace ApacheOrcDotNet.Test.Protocol
 			return bytes;
 		}
 
+		public byte[] GetMetadataRawBytes(int postscriptLength, ulong footerLength, ulong metadataLength)
+		{
+			var offset = _dataFileHelper.Length - 1 - postscriptLength - (long)footerLength - (long)metadataLength;
+			var bytes = _dataFileHelper.Read(offset, (int)metadataLength);
+			return bytes;
+		}
+
+		public byte[] GetStripeFooterRawBytes(ulong stripeOffset, ulong indexLength, ulong dataLength, ulong footerLength)
+		{
+			var offset = stripeOffset + indexLength + dataLength;
+			var bytes = _dataFileHelper.Read((long)offset, (int)footerLength);
+			return bytes;
+		}
+
+		public byte[] GetRowIndexBytes(ulong offset, ulong length)
+		{
+			var bytes = _dataFileHelper.Read((long)offset, (int)length);
+			return bytes;
+		}
+
 		public byte[] DecompressBlock(byte[] inputBytes)
 		{
 			int blockLength;

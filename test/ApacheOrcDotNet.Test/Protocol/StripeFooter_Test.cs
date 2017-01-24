@@ -9,10 +9,10 @@ using Xunit;
 
 namespace ApacheOrcDotNet.Test.Protocol
 {
-    public class Footer_Test
+    public class StripeFooter_Test
     {
 		[Fact]
-		public void Footer_ShouldMatchExpected()
+		void StripeFooter_ShouldMatchExpected()
 		{
 			var helper = new ProtocolHelper("demo-12-zlib.orc");
 			var postscriptLength = helper.GetPostscriptLength();
@@ -25,16 +25,14 @@ namespace ApacheOrcDotNet.Test.Protocol
 			var footerStream = new MemoryStream(footerBytes);
 			var footer = Serializer.Deserialize<Footer>(footerStream);
 
-			Assert.Equal(1920800ul, footer.NumberOfRows);
-			Assert.Equal(1, footer.Stripes.Count);
-			Assert.Equal(45592ul, footer.ContentLength);
-			Assert.Equal(10000u, footer.RowIndexStride);
+			var stripeDetails = footer.Stripes[0];
+			var stripeFooterBytesCompressed = helper.GetStripeFooterRawBytes(stripeDetails.Offset, stripeDetails.IndexLength, stripeDetails.DataLength, stripeDetails.FooterLength);
+			var stripeFooterBytes = helper.DecompressBlock(stripeFooterBytesCompressed);
+			var stripeFooterStream = new MemoryStream(stripeFooterBytes);
+			var stripeFooter = Serializer.Deserialize<StripeFooter>(stripeFooterStream);
 
-			Assert.Equal(1920800ul, footer.Stripes[0].NumberOfRows);
-			Assert.Equal(3ul, footer.Stripes[0].Offset);
-			Assert.Equal(14035ul, footer.Stripes[0].IndexLength);
-			Assert.Equal(31388ul, footer.Stripes[0].DataLength);
-			Assert.Equal(166ul, footer.Stripes[0].FooterLength);
+			Assert.Equal(10, stripeFooter.Columns.Count);
+			Assert.Equal(27, stripeFooter.Streams.Count);
 		}
-	}
+    }
 }
