@@ -21,11 +21,6 @@ namespace ApacheOrcDotNet.Encodings
 
 		public IEnumerable<long> Read()
 		{
-			return ReadValues();
-		}
-
-		IEnumerable<long> ReadValues()
-		{
 			while (true)
 			{
 				int firstByte = _inputStream.ReadByte();
