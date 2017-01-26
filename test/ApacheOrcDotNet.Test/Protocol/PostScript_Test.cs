@@ -16,8 +16,7 @@ namespace ApacheOrcDotNet.Test.Protocol
 		{
 			var helper = new ProtocolHelper("demo-12-zlib.orc");
 			var postscriptLength = helper.GetPostscriptLength();
-			var postscriptBytes = helper.GetPostscriptBytes(postscriptLength);
-			var postscriptStream = new MemoryStream(postscriptBytes);
+			var postscriptStream = helper.GetPostscriptStream(postscriptLength);
 			var postScript = Serializer.Deserialize<PostScript>(postscriptStream);
 
 			Assert.Equal("ORC", postScript.Magic);

@@ -17,18 +17,16 @@ namespace ApacheOrcDotNet.Test.Protocol
 		{
 			var helper = new ProtocolHelper("demo-12-zlib.orc");
 			var postscriptLength = helper.GetPostscriptLength();
-			var postscriptBytes = helper.GetPostscriptBytes(postscriptLength);
-			var postscriptStream = new MemoryStream(postscriptBytes);
+			var postscriptStream = helper.GetPostscriptStream(postscriptLength);
 			var postScript = Serializer.Deserialize<PostScript>(postscriptStream);
 			var footerLength = postScript.FooterLength;
 			var metadataLength = postScript.MetadataLength;
-			var metadataBytesCompressed = helper.GetMetadataRawBytes(postscriptLength, footerLength, metadataLength);
-			var metadataBytes = helper.DecompressBlock(metadataBytesCompressed);
-			var metadataStream = new MemoryStream(metadataBytes);
-			var footer = Serializer.Deserialize<Metadata>(metadataStream);
+			var metadataStreamCompressed = helper.GetMetadataCompressedStream(postscriptLength, footerLength, metadataLength);
+			var metadataStream = helper.GetDecompressingStream(metadataStreamCompressed);
+			var metadata = Serializer.Deserialize<Metadata>(metadataStream);
 
-			Assert.Equal(1, footer.StripeStats.Count);
-			Assert.Equal(10, footer.StripeStats[0].ColStats.Count);
+			Assert.Equal(1, metadata.StripeStats.Count);
+			Assert.Equal(10, metadata.StripeStats[0].ColStats.Count);
 		}
 	}
 }

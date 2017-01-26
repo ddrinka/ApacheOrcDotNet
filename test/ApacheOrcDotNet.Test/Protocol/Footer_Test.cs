@@ -16,13 +16,11 @@ namespace ApacheOrcDotNet.Test.Protocol
 		{
 			var helper = new ProtocolHelper("demo-12-zlib.orc");
 			var postscriptLength = helper.GetPostscriptLength();
-			var postscriptBytes = helper.GetPostscriptBytes(postscriptLength);
-			var postscriptStream = new MemoryStream(postscriptBytes);
+			var postscriptStream = helper.GetPostscriptStream(postscriptLength);
 			var postScript = Serializer.Deserialize<PostScript>(postscriptStream);
 			var footerLength = postScript.FooterLength;
-			var footerBytesCompressed = helper.GetFooterRawBytes(postscriptLength, footerLength);
-			var footerBytes = helper.DecompressBlock(footerBytesCompressed);
-			var footerStream = new MemoryStream(footerBytes);
+			var footerStreamCompressed = helper.GetFooterCompressedStream(postscriptLength, footerLength);
+			var footerStream = helper.GetDecompressingStream(footerStreamCompressed);
 			var footer = Serializer.Deserialize<Footer>(footerStream);
 
 			Assert.Equal(1920800ul, footer.NumberOfRows);

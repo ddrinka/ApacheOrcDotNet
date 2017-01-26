@@ -16,19 +16,16 @@ namespace ApacheOrcDotNet.Test.Protocol
 		{
 			var helper = new ProtocolHelper("demo-12-zlib.orc");
 			var postscriptLength = helper.GetPostscriptLength();
-			var postscriptBytes = helper.GetPostscriptBytes(postscriptLength);
-			var postscriptStream = new MemoryStream(postscriptBytes);
+			var postscriptStream = helper.GetPostscriptStream(postscriptLength);
 			var postScript = Serializer.Deserialize<PostScript>(postscriptStream);
 			var footerLength = postScript.FooterLength;
-			var footerBytesCompressed = helper.GetFooterRawBytes(postscriptLength, footerLength);
-			var footerBytes = helper.DecompressBlock(footerBytesCompressed);
-			var footerStream = new MemoryStream(footerBytes);
+			var footerStreamCompressed = helper.GetFooterCompressedStream(postscriptLength, footerLength);
+			var footerStream = helper.GetDecompressingStream(footerStreamCompressed);
 			var footer = Serializer.Deserialize<Footer>(footerStream);
 
 			var stripeDetails = footer.Stripes[0];
-			var stripeFooterBytesCompressed = helper.GetStripeFooterRawBytes(stripeDetails.Offset, stripeDetails.IndexLength, stripeDetails.DataLength, stripeDetails.FooterLength);
-			var stripeFooterBytes = helper.DecompressBlock(stripeFooterBytesCompressed);
-			var stripeFooterStream = new MemoryStream(stripeFooterBytes);
+			var streamFooterStreamCompressed = helper.GetStripeFooterCompressedStream(stripeDetails.Offset, stripeDetails.IndexLength, stripeDetails.DataLength, stripeDetails.FooterLength);
+			var stripeFooterStream = helper.GetDecompressingStream(streamFooterStreamCompressed);
 			var stripeFooter = Serializer.Deserialize<StripeFooter>(stripeFooterStream);
 
 			var offset = stripeDetails.Offset;
@@ -36,9 +33,8 @@ namespace ApacheOrcDotNet.Test.Protocol
 			{
 				if(stream.Kind==StreamKind.RowIndex)
 				{
-					var rowIndexBytesCompressed = helper.GetRowIndexBytes(offset, stream.Length);
-					var rowIndexBytes = helper.DecompressBlock(rowIndexBytesCompressed);
-					var rowIndexStream = new MemoryStream(rowIndexBytes);
+					var rowIndexStreamCompressed = helper.GetRowIndexCompressedStream(offset, stream.Length);
+					var rowIndexStream = helper.GetDecompressingStream(rowIndexStreamCompressed);
 					var rowIndex = Serializer.Deserialize<RowIndex>(rowIndexStream);
 				}
 

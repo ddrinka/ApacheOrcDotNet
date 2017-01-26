@@ -10,13 +10,12 @@ namespace ApacheOrcDotNet
 	public class OrcWriter<T> : IOrcWriter<T>
 	{
 		readonly WriterConfiguration _configuration;
-		readonly ICompressor _compressor;
 //		readonly TreeWriter _treeWriter;
 
 		internal OrcWriter(Stream outputStream, WriterConfiguration configuration, ICompressionFactory compressionFactory)
 		{
 			_configuration = configuration;
-			_compressor = compressionFactory.CreateCompressor(configuration.Compress, configuration.CompressionStrategy);
+//			_compressor = compressionFactory.CreateCompressor(configuration.Compress, configuration.CompressionStrategy);
 //			_treeWriter = new TreeWriter(typeof(T), outputStream);  //Which stream???
 			configuration.BufferSize = Math.Min(configuration.BufferSize, GetMinimumBufferSize());
 

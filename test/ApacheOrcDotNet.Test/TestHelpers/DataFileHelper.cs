@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
+using ApacheOrcDotNet.Infrastructure;
 
 namespace ApacheOrcDotNet.Test.TestHelpers
 {
@@ -39,5 +40,11 @@ namespace ApacheOrcDotNet.Test.TestHelpers
 
 			return buffer;
 		}
-    }
+
+		public Stream GetStreamSegment(long fileOffset, ulong length)
+		{
+			_dataStream.Seek(fileOffset, SeekOrigin.Begin);
+			return new StreamSegment(_dataStream, (long)length, true);
+		}
+	}
 }

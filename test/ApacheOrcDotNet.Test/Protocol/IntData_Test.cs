@@ -1,4 +1,5 @@
-﻿using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.Encodings;
+using ApacheOrcDotNet.Protocol;
 using ProtoBuf;
 using System;
 using System.Collections.Generic;
@@ -9,10 +10,10 @@ using Xunit;
 
 namespace ApacheOrcDotNet.Test.Protocol
 {
-    public class StripeFooter_Test
+    public class IntData_Test
     {
 		[Fact]
-		void StripeFooter_ShouldMatchExpected()
+		public void ReadIntData()
 		{
 			var helper = new ProtocolHelper("demo-12-zlib.orc");
 			var postscriptLength = helper.GetPostscriptLength();
@@ -28,8 +29,26 @@ namespace ApacheOrcDotNet.Test.Protocol
 			var stripeFooterStream = helper.GetDecompressingStream(streamFooterStreamCompressed);
 			var stripeFooter = Serializer.Deserialize<StripeFooter>(stripeFooterStream);
 
-			Assert.Equal(10, stripeFooter.Columns.Count);
-			Assert.Equal(27, stripeFooter.Streams.Count);
+			var offset = stripeDetails.Offset;
+			foreach (var stream in stripeFooter.Streams)
+			{
+				var columnInFooter = footer.Types[(int)stream.Column];
+				var columnInStripe = stripeFooter.Columns[(int)stream.Column];
+				if (columnInFooter.Kind == ColumnTypeKind.Int)
+				{
+					if (stream.Kind == StreamKind.Data)
+					{
+						Assert.Equal(ColumnEncodingKind.DirectV2, columnInStripe.Kind);
+
+						var dataStreamCompressed = helper.GetDataCompressedStream(offset, stream.Length);
+						var dataStream = helper.GetDecompressingStream(dataStreamCompressed);
+						var reader = new IntegerRunLengthEncodingV2Reader(dataStream, true);
+						var result = reader.Read().ToArray();
+					}
+				}
+
+				offset += stream.Length;
+			}
 		}
     }
 }
