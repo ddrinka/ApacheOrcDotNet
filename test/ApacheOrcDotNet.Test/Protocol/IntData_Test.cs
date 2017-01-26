@@ -44,6 +44,37 @@ namespace ApacheOrcDotNet.Test.Protocol
 						var dataStream = helper.GetDecompressingStream(dataStreamCompressed);
 						var reader = new IntegerRunLengthEncodingV2Reader(dataStream, true);
 						var result = reader.Read().ToArray();
+
+						for(int i=0;i<result.Length;i++)
+						{
+							if (stream.Column == 1)
+							{
+								var expected = i + 1;
+								Assert.Equal(expected, result[i]);
+							}
+							else if (stream.Column == 5)
+							{
+								var expected = ((i / 70) * 500) % 10000 + 500;
+								Assert.Equal(expected, result[i]);
+							}
+							else if (stream.Column == 7)
+							{
+								var expected = (i / 5600) % 7;
+								Assert.Equal(expected, result[i]);
+							}
+							else if (stream.Column == 8)
+							{
+								var expected = (i / 39200) % 7;
+								Assert.Equal(expected, result[i]);
+							}
+							else if (stream.Column == 9)
+							{
+								var expected = (i / 274400);
+								Assert.Equal(expected, result[i]);
+							}
+							else
+								Assert.True(false, "Unexpected column");
+						}
 					}
 				}
 
