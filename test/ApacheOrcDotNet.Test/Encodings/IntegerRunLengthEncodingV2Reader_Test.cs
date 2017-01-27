@@ -42,6 +42,17 @@ namespace ApacheOrcDotNet.Test.Encodings
 			TestRead(expected, input, false);
 		}
 
+		[Fact]
+		public void Read_Delta2()
+		{
+			var expected = new long[0x120];
+			for (int i = 0; i < expected.Length; i++)
+				expected[i] = 0x6;
+
+			var input = new byte[] { 0xc1, 0x1f, 0x0c, 0x00 };
+			TestRead(expected, input, true);
+		}
+
 		void TestRead(long[] expected, byte[] input, bool isSigned)
 		{
 			var stream = new MemoryStream(input);
