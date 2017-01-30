@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.Encodings
@@ -127,6 +128,50 @@ namespace ApacheOrcDotNet.Encodings
 		{
 			var unsigned = ReadVarIntUnsigned(stream);
 			return unsigned.ZigzagDecode();
+		}
+
+		public static BigInteger? ReadBigVarInt(this Stream stream)
+		{
+			BigInteger result=BigInteger.Zero;
+			long currentLong = 0;
+			long currentByte;
+			int bitCount = 0;
+			do
+			{
+				currentByte = stream.ReadByte();
+				if (currentByte < 1)
+					return null;		//Reached the end of the stream
+
+				currentLong |= (currentByte & 0x7f) << (bitCount % 63);
+				bitCount += 7;
+
+				if (bitCount % 63 == 0)
+				{
+					if (bitCount == 63)
+						result = new BigInteger(currentLong);
+					else
+						result |= new BigInteger(currentLong) << (bitCount - 63);
+
+					currentLong = 0;
+				}
+			}
+			while (currentByte >= 0x80);        //Done when the high bit is not set
+
+			if (currentLong != 0)      //Some bits left to add to result
+			{
+				var shift = (bitCount / 63) * 63;
+				result |= new BigInteger(currentLong) << shift;
+			}
+
+			//Un zig-zag
+			if((result&0x1) == 1)       //Can this be optimized?
+			{
+				result++;
+				result = -result;
+			}
+			result >>= 1;
+
+			return result;
 		}
 	}
 }

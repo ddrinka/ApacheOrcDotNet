@@ -1,4 +1,5 @@
-﻿using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Protocol;
 using ProtoBuf;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,7 @@ namespace ApacheOrcDotNet.Test.Protocol
 			var postScript = Serializer.Deserialize<PostScript>(postscriptStream);
 			var footerLength = postScript.FooterLength;
 			var footerStreamCompressed = helper.GetFooterCompressedStream(postscriptLength, footerLength);
-			var footerStream = helper.GetDecompressingStream(footerStreamCompressed);
+			var footerStream = OrcCompressedStream.GetDecompressingStream(footerStreamCompressed, CompressionKind.Zlib);
 			var footer = Serializer.Deserialize<Footer>(footerStream);
 
 			Assert.Equal(1920800ul, footer.NumberOfRows);

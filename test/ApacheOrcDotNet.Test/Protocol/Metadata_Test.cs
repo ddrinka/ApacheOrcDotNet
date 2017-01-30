@@ -1,4 +1,5 @@
-﻿using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Protocol;
 using ApacheOrcDotNet.Test.Protocol;
 using ProtoBuf;
 using System;
@@ -22,7 +23,7 @@ namespace ApacheOrcDotNet.Test.Protocol
 			var footerLength = postScript.FooterLength;
 			var metadataLength = postScript.MetadataLength;
 			var metadataStreamCompressed = helper.GetMetadataCompressedStream(postscriptLength, footerLength, metadataLength);
-			var metadataStream = helper.GetDecompressingStream(metadataStreamCompressed);
+			var metadataStream = OrcCompressedStream.GetDecompressingStream(metadataStreamCompressed, CompressionKind.Zlib);
 			var metadata = Serializer.Deserialize<Metadata>(metadataStream);
 
 			Assert.Equal(1, metadata.StripeStats.Count);

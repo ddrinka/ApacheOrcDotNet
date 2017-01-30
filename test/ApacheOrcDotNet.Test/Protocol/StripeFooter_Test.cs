@@ -1,4 +1,5 @@
-﻿using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Protocol;
 using ProtoBuf;
 using System;
 using System.Collections.Generic;
@@ -20,12 +21,12 @@ namespace ApacheOrcDotNet.Test.Protocol
 			var postScript = Serializer.Deserialize<PostScript>(postscriptStream);
 			var footerLength = postScript.FooterLength;
 			var footerStreamCompressed = helper.GetFooterCompressedStream(postscriptLength, footerLength);
-			var footerStream = helper.GetDecompressingStream(footerStreamCompressed);
+			var footerStream = OrcCompressedStream.GetDecompressingStream(footerStreamCompressed, CompressionKind.Zlib);
 			var footer = Serializer.Deserialize<Footer>(footerStream);
 
 			var stripeDetails = footer.Stripes[0];
 			var streamFooterStreamCompressed = helper.GetStripeFooterCompressedStream(stripeDetails.Offset, stripeDetails.IndexLength, stripeDetails.DataLength, stripeDetails.FooterLength);
-			var stripeFooterStream = helper.GetDecompressingStream(streamFooterStreamCompressed);
+			var stripeFooterStream = OrcCompressedStream.GetDecompressingStream(streamFooterStreamCompressed, CompressionKind.Zlib);
 			var stripeFooter = Serializer.Deserialize<StripeFooter>(stripeFooterStream);
 
 			Assert.Equal(10, stripeFooter.Columns.Count);

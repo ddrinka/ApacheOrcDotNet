@@ -1,4 +1,5 @@
-﻿using ApacheOrcDotNet.Encodings;
+﻿using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.Protocol;
 using ProtoBuf;
 using System;
@@ -21,12 +22,12 @@ namespace ApacheOrcDotNet.Test.Protocol
 			var postScript = Serializer.Deserialize<PostScript>(postscriptStream);
 			var footerLength = postScript.FooterLength;
 			var footerStreamCompressed = helper.GetFooterCompressedStream(postscriptLength, footerLength);
-			var footerStream = helper.GetDecompressingStream(footerStreamCompressed);
+			var footerStream = OrcCompressedStream.GetDecompressingStream(footerStreamCompressed, CompressionKind.Zlib);
 			var footer = Serializer.Deserialize<Footer>(footerStream);
 
 			var stripeDetails = footer.Stripes[0];
 			var streamFooterStreamCompressed = helper.GetStripeFooterCompressedStream(stripeDetails.Offset, stripeDetails.IndexLength, stripeDetails.DataLength, stripeDetails.FooterLength);
-			var stripeFooterStream = helper.GetDecompressingStream(streamFooterStreamCompressed);
+			var stripeFooterStream = OrcCompressedStream.GetDecompressingStream(streamFooterStreamCompressed, CompressionKind.Zlib);
 			var stripeFooter = Serializer.Deserialize<StripeFooter>(stripeFooterStream);
 
 			var offset = stripeDetails.Offset;
@@ -41,7 +42,7 @@ namespace ApacheOrcDotNet.Test.Protocol
 						Assert.Equal(ColumnEncodingKind.DirectV2, columnInStripe.Kind);
 
 						var dataStreamCompressed = helper.GetDataCompressedStream(offset, stream.Length);
-						var dataStream = helper.GetDecompressingStream(dataStreamCompressed);
+						var dataStream = OrcCompressedStream.GetDecompressingStream(dataStreamCompressed, CompressionKind.Zlib);
 						var reader = new IntegerRunLengthEncodingV2Reader(dataStream, true);
 						var result = reader.Read().ToArray();
 

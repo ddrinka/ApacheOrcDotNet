@@ -58,49 +58,5 @@ namespace ApacheOrcDotNet.Test.Protocol
 		{
 			return _dataFileHelper.GetStreamSegment((long)offset, length);
 		}
-
-		/// <summary>
-		/// Provides a Stream that when read from, reads consecutive blocks of compressed data from an ORC Stream.
-		/// All data in the <paramref name="inputStream"/> will be consumed.
-		/// </summary>
-		public Stream GetDecompressingStream(Stream inputStream)
-		{
-			return new ConcatenatingStream(() =>
-			{
-				int blockLength;
-				bool isCompressed;
-				bool headerAvailable = ReadBlockHeader(inputStream, out blockLength, out isCompressed);
-				if (!headerAvailable)
-					return null;
-
-				var streamSegment = new StreamSegment(inputStream, blockLength, true);
-
-				if (!isCompressed)
-					return streamSegment;
-				else
-				{
-					//Handle other compression types
-					return new ZLibStream(streamSegment);
-				}
-			}, false);
-		}
-
-		bool ReadBlockHeader(Stream inputStream, out int blockLength, out bool isCompressed)
-		{
-			var firstByte = inputStream.ReadByte();
-			if (firstByte < 0)		//End of stream
-			{
-				blockLength = 0;
-				isCompressed = false;
-				return false;
-			}
-
-			//From here it's a data error if the stream ends
-			var rawValue = firstByte | inputStream.CheckedReadByte() << 8 | inputStream.CheckedReadByte() << 16;
-			blockLength = rawValue >> 1;
-			isCompressed = (rawValue & 1) == 0;
-
-			return true;
-		}
     }
 }

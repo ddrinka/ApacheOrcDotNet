@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet
 {
-	public enum CompressionType { ZLIB, Snappy, LZO, LZ4 }
+	public enum CompressionType { None, ZLIB, Snappy, LZO, LZ4 }
 	public enum Version { V0_12 }
 	public enum EncodingStrategy { Speed, Size }
 	public enum CompressionStrategy { Speed, Size }

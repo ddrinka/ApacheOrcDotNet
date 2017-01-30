@@ -12,7 +12,7 @@ namespace ApacheOrcDotNet
 		readonly WriterConfiguration _configuration;
 //		readonly TreeWriter _treeWriter;
 
-		internal OrcWriter(Stream outputStream, WriterConfiguration configuration, ICompressionFactory compressionFactory)
+		internal OrcWriter(Stream outputStream, WriterConfiguration configuration)//, ICompressionFactory compressionFactory)
 		{
 			_configuration = configuration;
 //			_compressor = compressionFactory.CreateCompressor(configuration.Compress, configuration.CompressionStrategy);
