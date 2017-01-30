@@ -46,5 +46,10 @@ namespace ApacheOrcDotNet.Test.TestHelpers
 			_dataStream.Seek(fileOffset, SeekOrigin.Begin);
 			return new StreamSegment(_dataStream, (long)length, true);
 		}
+
+		public Stream GetStream()
+		{
+			return _dataStream;
+		}
 	}
 }

@@ -5,15 +5,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using ApacheOrcDotNet.Protocol;
 
-namespace ApacheOrcDotNet.ColumnTypes
+namespace ApacheOrcDotNet
 {
 	using IOStream = System.IO.Stream;
 
 	public class StripeStreamCollection : IList<StripeStream>
     {
-		public List<StripeStream> _underlyingCollection = new List<StripeStream>();
+		readonly List<StripeStream> _underlyingCollection = new List<StripeStream>();
 
-		public StripeStreamCollection(IOStream inputStream, StripeFooter stripeFooter, long stripeOffset, CompressionKind compressionKind)
+		internal StripeStreamCollection(IOStream inputStream, StripeFooter stripeFooter, long stripeOffset, CompressionKind compressionKind)
 		{
 			long offset = stripeOffset;
 			foreach(var stream in stripeFooter.Streams)
@@ -32,6 +32,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 					stream.Length,
 					compressionKind
 					));
+
+				offset += (long)stream.Length;
 			}
 		}
 

@@ -7,7 +7,7 @@ using ApacheOrcDotNet.Infrastructure;
 using ApacheOrcDotNet.Protocol;
 
 
-namespace ApacheOrcDotNet.ColumnTypes
+namespace ApacheOrcDotNet
 {
 	using IOStream = System.IO.Stream;
 	using OrcStream = ApacheOrcDotNet.Protocol.Stream;
@@ -24,6 +24,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_inputStream = inputStream;
 			ColumnId = columnId;
 			StreamKind = streamKind;
+			ColumnEncodingKind = encodingKind;
 			_inputStreamOffset = inputStreamOffset;
 			_compressedLength = compressedLength;
 			_compressionKind = compressionKind;
