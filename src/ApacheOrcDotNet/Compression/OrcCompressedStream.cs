@@ -32,7 +32,7 @@ namespace ApacheOrcDotNet.Compression
 				if (!isCompressed)
 					return streamSegment;
 				else
-					return CompressionFactory.CreateDecompressorStream(compressionKind, inputStream);
+					return CompressionFactory.CreateDecompressorStream(compressionKind, streamSegment);
 			}, false);
 		}
 
