@@ -40,10 +40,7 @@ namespace ApacheOrcDotNet
 			//TODO move from using Streams to using MemoryMapped files or another data type that decouples the Stream Position from the Read call, allowing re-entrancy
 			_inputStream.Seek((long)offset, SeekOrigin.Begin);
 			var segment = new StreamSegment(_inputStream, (long)length, true);
-			if (_compressionKind == Protocol.CompressionKind.None)
-				return segment;
-			else
-				return OrcCompressedStream.GetDecompressingStream(segment, _compressionKind);
+			return OrcCompressedStream.GetDecompressingStream(segment, _compressionKind);
 		}
 
 		Protocol.StripeFooter GetStripeFooter()

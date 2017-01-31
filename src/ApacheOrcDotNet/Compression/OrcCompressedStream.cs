@@ -19,21 +19,24 @@ namespace ApacheOrcDotNet.Compression
 		/// </summary>
 		public static IOStream GetDecompressingStream(IOStream inputStream, CompressionKind compressionKind)
 		{
-			return new ConcatenatingStream(() =>
-			{
-				int blockLength;
-				bool isCompressed;
-				bool headerAvailable = ReadBlockHeader(inputStream, out blockLength, out isCompressed);
-				if (!headerAvailable)
-					return null;
+			if (compressionKind == CompressionKind.None)
+				return inputStream;
+			else
+				return new ConcatenatingStream(() =>
+				{
+					int blockLength;
+					bool isCompressed;
+					bool headerAvailable = ReadBlockHeader(inputStream, out blockLength, out isCompressed);
+					if (!headerAvailable)
+						return null;
 
-				var streamSegment = new StreamSegment(inputStream, blockLength, true);
+					var streamSegment = new StreamSegment(inputStream, blockLength, true);
 
-				if (!isCompressed)
-					return streamSegment;
-				else
-					return CompressionFactory.CreateDecompressorStream(compressionKind, streamSegment);
-			}, false);
+					if (!isCompressed)
+						return streamSegment;
+					else
+						return CompressionFactory.CreateDecompressorStream(compressionKind, streamSegment);
+				}, false);
 		}
 
 		static bool ReadBlockHeader(IOStream inputStream, out int blockLength, out bool isCompressed)
