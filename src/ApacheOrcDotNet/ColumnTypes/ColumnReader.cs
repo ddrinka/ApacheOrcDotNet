@@ -28,6 +28,14 @@ namespace ApacheOrcDotNet.ColumnTypes
 			return _stripeStreams.FirstOrDefault(s => s.ColumnId == _columnId && s.StreamKind == streamKind);
 		}
 
+		protected ColumnEncodingKind? GetColumnEncodingKind(StreamKind streamKind)
+		{
+			var stripeStream = GetStripeStream(streamKind);
+			if (stripeStream == null)
+				return null;
+			return stripeStream.ColumnEncodingKind;
+		}
+
 		protected long[] ReadNumericStream(StreamKind streamKind, bool isSigned)
 		{
 			var stripeStream = GetStripeStream(streamKind);

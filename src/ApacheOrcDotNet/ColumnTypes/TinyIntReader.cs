@@ -6,32 +6,32 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-	public class SmallIntReader : ColumnReader
-	{
-		public SmallIntReader(StripeStreamCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
+    public class TinyIntReader : ColumnReader
+    {
+		public TinyIntReader(StripeStreamCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{
 		}
 
-		public IEnumerable<short?> Read()
+		public IEnumerable<byte?> Read()
 		{
 			var present = ReadBooleanStream(Protocol.StreamKind.Present);
-			var data = ReadNumericStream(Protocol.StreamKind.Data, true);
+			var data = ReadByteStream(Protocol.StreamKind.Data);
 			if (present == null)
 			{
 				foreach (var value in data)
-					yield return (short)value;
+					yield return value;
 			}
 			else
 			{
-				var valueEnumerator = ((IEnumerable<long>)data).GetEnumerator();
-				foreach(var isPresent in present)
+				var valueEnumerator = ((IEnumerable<byte>)data).GetEnumerator();
+				foreach (var isPresent in present)
 				{
 					if (isPresent)
 					{
 						var success = valueEnumerator.MoveNext();
 						if (!success)
 							throw new InvalidDataException("The PRESENT data stream's length didn't match the DATA stream's length");
-						yield return (short)valueEnumerator.Current;
+						yield return valueEnumerator.Current;
 					}
 					else
 						yield return null;
