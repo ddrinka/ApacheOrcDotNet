@@ -4,7 +4,7 @@
   "buildOptions": {
     "warningsAsErrors": true,
     "embed": [
-      "Data/demo-12-zlib.orc"
+      "Data/*.orc"
     ]
   },
 	"dependencies": {

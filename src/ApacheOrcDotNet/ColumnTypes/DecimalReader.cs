@@ -17,7 +17,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			var present = ReadBooleanStream(Protocol.StreamKind.Present);
 			var data = ReadVarIntStream(Protocol.StreamKind.Data);
-			var secondary = ReadNumericStream(Protocol.StreamKind.Secondary, false);
+			var secondary = ReadNumericStream(Protocol.StreamKind.Secondary, true);
 			if(data==null||secondary==null)
 				throw new InvalidDataException("DATA and SECONDARY streams must be available");
 
@@ -52,11 +52,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		decimal FromBigInteger(BigInteger numerator, long scale)
 		{
-			var denominator = BigInteger.One;
-			while (scale-- != 0)
-				denominator *= 10;
-			var value = numerator / denominator;
-			return (decimal)value;
+			if (scale < 0 || scale > 255)
+				throw new OverflowException("Scale must be positive number");
+
+			var decNumerator = (decimal)numerator;      //This will throw for an overflow or underflow
+			var scaler = new decimal(1, 0, 0, false, (byte)scale);
+
+			return decNumerator * scaler;
 		}
 	}
 }
