@@ -56,6 +56,17 @@ namespace ApacheOrcDotNet.Encodings
 			throw new NotImplementedException($"Unimplemented {nameof(encodedWidth)} {encodedWidth}");
 		}
 
+		public static int NumBits(ulong value)
+		{
+			int result = 0;
+			while(value!=0)
+			{
+				result++;
+				value >>= 1;
+			}
+			return result;
+		}
+
 		public static int FindNearestDirectWidth(int approxBits)
 		{
 			if (approxBits == 0)
