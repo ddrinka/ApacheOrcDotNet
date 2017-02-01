@@ -8,7 +8,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class TinyIntReader : ColumnReader
     {
-		public TinyIntReader(StripeStreamCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
+		public TinyIntReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{
 		}
 

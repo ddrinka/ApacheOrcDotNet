@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 {
     public class SmallIntReader_Test
     {
-		StripeStreamCollection GetStripeStreamCollection()
+		StripeStreamReaderCollection GetStripeStreamCollection()
 		{
 			var dataFile = new DataFileHelper("demo-12-zlib.orc");
 			var stream = dataFile.GetStream();

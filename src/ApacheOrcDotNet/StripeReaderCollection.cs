@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet
 {
-	public class StripeCollection : IList<Stripe>
+	public class StripeReaderCollection : IList<StripeReader>
 	{
-		readonly List<Stripe> _innerCollection = new List<Stripe>();
-		internal StripeCollection(Stream inputStream, Protocol.Footer footer, Protocol.CompressionKind compressionKind)
+		readonly List<StripeReader> _innerCollection = new List<StripeReader>();
+		internal StripeReaderCollection(Stream inputStream, Protocol.Footer footer, Protocol.CompressionKind compressionKind)
 		{
 			foreach(var stripe in footer.Stripes)
 			{
-				_innerCollection.Add(new Stripe(
+				_innerCollection.Add(new StripeReader(
 					inputStream,
 					stripe.Offset,
 					stripe.IndexLength,
@@ -29,7 +29,7 @@ namespace ApacheOrcDotNet
 		}
 
 		#region IList Implementation
-		public Stripe this[int index]
+		public StripeReader this[int index]
 		{
 			get
 			{
@@ -54,11 +54,11 @@ namespace ApacheOrcDotNet
 		{
 			get
 			{
-				return ((IList<Stripe>)_innerCollection).IsReadOnly;
+				return ((IList<StripeReader>)_innerCollection).IsReadOnly;
 			}
 		}
 
-		public void Add(Stripe item)
+		public void Add(StripeReader item)
 		{
 			_innerCollection.Add(item);
 		}
@@ -68,32 +68,32 @@ namespace ApacheOrcDotNet
 			_innerCollection.Clear();
 		}
 
-		public bool Contains(Stripe item)
+		public bool Contains(StripeReader item)
 		{
 			return _innerCollection.Contains(item);
 		}
 
-		public void CopyTo(Stripe[] array, int arrayIndex)
+		public void CopyTo(StripeReader[] array, int arrayIndex)
 		{
 			_innerCollection.CopyTo(array, arrayIndex);
 		}
 
-		public IEnumerator<Stripe> GetEnumerator()
+		public IEnumerator<StripeReader> GetEnumerator()
 		{
-			return ((IList<Stripe>)_innerCollection).GetEnumerator();
+			return ((IList<StripeReader>)_innerCollection).GetEnumerator();
 		}
 
-		public int IndexOf(Stripe item)
+		public int IndexOf(StripeReader item)
 		{
 			return _innerCollection.IndexOf(item);
 		}
 
-		public void Insert(int index, Stripe item)
+		public void Insert(int index, StripeReader item)
 		{
 			_innerCollection.Insert(index, item);
 		}
 
-		public bool Remove(Stripe item)
+		public bool Remove(StripeReader item)
 		{
 			return _innerCollection.Remove(item);
 		}
@@ -105,7 +105,7 @@ namespace ApacheOrcDotNet
 
 		IEnumerator IEnumerable.GetEnumerator()
 		{
-			return ((IList<Stripe>)_innerCollection).GetEnumerator();
+			return ((IList<StripeReader>)_innerCollection).GetEnumerator();
 		}
 		#endregion
 	}

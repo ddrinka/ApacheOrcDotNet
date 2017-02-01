@@ -9,7 +9,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
 	public class DecimalReader : ColumnReader
 	{
-		public DecimalReader(StripeStreamCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
+		public DecimalReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{
 		}
 

@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 	{
 		readonly static DateTime _unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-		public DateReader(StripeStreamCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
+		public DateReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{
 		}
 

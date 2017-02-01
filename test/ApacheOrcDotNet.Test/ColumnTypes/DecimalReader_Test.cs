@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 {
     public class DecimalReader_Test
     {
-		StripeStreamCollection GetStripeStreamCollection()
+		StripeStreamReaderCollection GetStripeStreamCollection()
 		{
 			var dataFile = new DataFileHelper("decimal.orc");
 			var stream = dataFile.GetStream();

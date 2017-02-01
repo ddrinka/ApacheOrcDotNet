@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 	{
 		readonly static DateTime _orcEpoch = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-		public TimestampReader(StripeStreamCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
+		public TimestampReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{
 		}
 

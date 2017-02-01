@@ -44,13 +44,13 @@ namespace ApacheOrcDotNet
 			return Serializer.Deserialize<Protocol.Footer>(footerStream);
 		}
 
-		public StripeCollection GetStripeCollection()
+		public StripeReaderCollection GetStripeCollection()
 		{
 			byte postScriptLength;
 			var postScript = ReadPostScript(out postScriptLength);
 			var footer = ReadFooter(postScript, postScriptLength);
 
-			return new StripeCollection(_inputStream, footer, postScript.Compression);
+			return new StripeReaderCollection(_inputStream, footer, postScript.Compression);
 		}
     }
 }

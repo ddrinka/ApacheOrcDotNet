@@ -8,7 +8,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class BinaryReader : ColumnReader
     {
-		public BinaryReader(StripeStreamCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
+		public BinaryReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{
 		}
 

@@ -7,7 +7,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
 	public class FloatReader : ColumnReader
 	{
-		public FloatReader(StripeStreamCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
+		public FloatReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{
 		}
 

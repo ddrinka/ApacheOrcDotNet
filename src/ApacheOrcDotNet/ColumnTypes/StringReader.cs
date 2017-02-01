@@ -9,7 +9,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
 	public class StringReader : ColumnReader
 	{
-		public StringReader(StripeStreamCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
+		public StringReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{
 		}
 

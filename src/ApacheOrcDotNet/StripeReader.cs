@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet
 {
-    public class Stripe
+    public class StripeReader
     {
 		readonly Stream _inputStream;
 		readonly ulong _indexOffset;
@@ -20,7 +20,7 @@ namespace ApacheOrcDotNet
 		readonly ulong _footerLength;
 		readonly Protocol.CompressionKind _compressionKind;
 
-		internal Stripe(Stream inputStream, ulong indexOffset, ulong indexLength, ulong dataOffset, ulong dataLength, ulong footerOffset, ulong footerLength, ulong numRows, Protocol.CompressionKind compressionKind)
+		internal StripeReader(Stream inputStream, ulong indexOffset, ulong indexLength, ulong dataOffset, ulong dataLength, ulong footerOffset, ulong footerLength, ulong numRows, Protocol.CompressionKind compressionKind)
 		{
 			_inputStream = inputStream;
 			_indexOffset = indexOffset;
@@ -54,10 +54,10 @@ namespace ApacheOrcDotNet
 			return GetStream(_indexOffset, _indexLength);
 		}
 
-		public StripeStreamCollection GetStripeStreamCollection()
+		public StripeStreamReaderCollection GetStripeStreamCollection()
 		{
 			var footer = GetStripeFooter();
-			return new StripeStreamCollection(_inputStream, footer, (long)_indexOffset, _compressionKind);
+			return new StripeStreamReaderCollection(_inputStream, footer, (long)_indexOffset, _compressionKind);
 		}
 	}
 }

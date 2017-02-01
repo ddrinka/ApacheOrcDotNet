@@ -14,16 +14,16 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 	public class ColumnReader
 	{
-		readonly StripeStreamCollection _stripeStreams;
+		readonly StripeStreamReaderCollection _stripeStreams;
 		readonly uint _columnId;
 
-		public ColumnReader(StripeStreamCollection stripeStreams, uint columnId)
+		public ColumnReader(StripeStreamReaderCollection stripeStreams, uint columnId)
 		{
 			_stripeStreams = stripeStreams;
 			_columnId = columnId;
 		}
 
-		StripeStream GetStripeStream(StreamKind streamKind)
+		StripeStreamReader GetStripeStream(StreamKind streamKind)
 		{
 			return _stripeStreams.FirstOrDefault(s => s.ColumnId == _columnId && s.StreamKind == streamKind);
 		}
