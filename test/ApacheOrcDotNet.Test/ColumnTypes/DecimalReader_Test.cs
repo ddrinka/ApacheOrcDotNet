@@ -1,4 +1,5 @@
 ﻿using ApacheOrcDotNet.ColumnTypes;
+using ApacheOrcDotNet.Stripes;
 using ApacheOrcDotNet.Test.TestHelpers;
 using System;
 using System.Collections.Generic;

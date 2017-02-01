@@ -1,6 +1,7 @@
 ﻿using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.Infrastructure;
+using ApacheOrcDotNet.Stripes;
 using ProtoBuf;
 using System;
 using System.Collections.Generic;

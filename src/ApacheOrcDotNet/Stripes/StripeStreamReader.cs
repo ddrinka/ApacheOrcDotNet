@@ -6,7 +6,7 @@ using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Infrastructure;
 using System.IO;
 
-namespace ApacheOrcDotNet
+namespace ApacheOrcDotNet.Stripes
 {
 	public class StripeStreamReader
     {

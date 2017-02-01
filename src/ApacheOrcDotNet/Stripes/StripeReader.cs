@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet
+namespace ApacheOrcDotNet.Stripes
 {
     public class StripeReader
     {

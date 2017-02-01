@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
-namespace ApacheOrcDotNet
+namespace ApacheOrcDotNet.Stripes
 {
 	public class StripeStreamReaderCollection : IList<StripeStreamReader>
     {

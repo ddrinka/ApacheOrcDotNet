@@ -1,17 +1,15 @@
 ﻿using ApacheOrcDotNet.Infrastructure;
-using ApacheOrcDotNet.Protocol;
+using ApacheOrcDotNet.Stripes;
+using ApacheOrcDotNet.Encodings;
 using System;
+using System.IO;
+using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-	using Encodings;
-	using System.IO;
-	using System.Numerics;
-	using IOStream = System.IO.Stream;
-
 	public class ColumnReader
 	{
 		readonly StripeStreamReaderCollection _stripeStreams;
@@ -23,12 +21,12 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_columnId = columnId;
 		}
 
-		StripeStreamReader GetStripeStream(StreamKind streamKind)
+		StripeStreamReader GetStripeStream(Protocol.StreamKind streamKind)
 		{
 			return _stripeStreams.FirstOrDefault(s => s.ColumnId == _columnId && s.StreamKind == streamKind);
 		}
 
-		protected ColumnEncodingKind? GetColumnEncodingKind(StreamKind streamKind)
+		protected Protocol.ColumnEncodingKind? GetColumnEncodingKind(Protocol.StreamKind streamKind)
 		{
 			var stripeStream = GetStripeStream(streamKind);
 			if (stripeStream == null)
@@ -36,14 +34,14 @@ namespace ApacheOrcDotNet.ColumnTypes
 			return stripeStream.ColumnEncodingKind;
 		}
 
-		protected long[] ReadNumericStream(StreamKind streamKind, bool isSigned)
+		protected long[] ReadNumericStream(Protocol.StreamKind streamKind, bool isSigned)
 		{
 			var stripeStream = GetStripeStream(streamKind);
 			if (stripeStream == null)
 				return null;
 
-			if (stripeStream.ColumnEncodingKind != ColumnEncodingKind.DirectV2)
-				throw new NotImplementedException($"Unimplemented Numeric {nameof(ColumnEncodingKind)} {stripeStream.ColumnEncodingKind}");
+			if (stripeStream.ColumnEncodingKind != Protocol.ColumnEncodingKind.DirectV2)
+				throw new NotImplementedException($"Unimplemented Numeric {nameof(Protocol.ColumnEncodingKind)} {stripeStream.ColumnEncodingKind}");
 
 			var stream = stripeStream.GetDecompressedStream();
 			var reader = new IntegerRunLengthEncodingV2Reader(stream, isSigned);
@@ -51,7 +49,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			return reader.Read().ToArray();
 		}
 
-		protected bool[] ReadBooleanStream(StreamKind streamKind)
+		protected bool[] ReadBooleanStream(Protocol.StreamKind streamKind)
 		{
 			var stripeStream = GetStripeStream(streamKind);
 			if (stripeStream == null)
@@ -63,7 +61,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			return reader.Read().ToArray();
 		}
 
-		protected byte[] ReadBinaryStream(StreamKind streamKind)
+		protected byte[] ReadBinaryStream(Protocol.StreamKind streamKind)
 		{
 			var stripeStream = GetStripeStream(streamKind);
 			if (stripeStream == null)
@@ -76,7 +74,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			return memStream.ToArray();
 		}
 
-		protected byte[] ReadByteStream(StreamKind streamKind)
+		protected byte[] ReadByteStream(Protocol.StreamKind streamKind)
 		{
 			var stripeStream = GetStripeStream(streamKind);
 			if (stripeStream == null)
@@ -88,7 +86,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			return reader.Read().ToArray();
 		}
 
-		protected BigInteger[] ReadVarIntStream(StreamKind streamKind)
+		protected BigInteger[] ReadVarIntStream(Protocol.StreamKind streamKind)
 		{
 			var stripeStream = GetStripeStream(streamKind);
 			if (stripeStream == null)
