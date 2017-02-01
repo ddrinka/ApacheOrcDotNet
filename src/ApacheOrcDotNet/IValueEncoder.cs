@@ -8,6 +8,6 @@ namespace ApacheOrcDotNet
 {
     public interface IValueEncoder<T>
     {
-		void EncodeValues(IEnumerable<T> values, Stream outputStream);
+		void EncodeValues(ArraySegment<T> values, Stream outputStream);
     }
 }

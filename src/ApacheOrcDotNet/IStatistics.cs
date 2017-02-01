@@ -7,6 +7,7 @@ namespace ApacheOrcDotNet
 {
     public interface IStatistics<T>
     {
-		void AddValue(T value);
+		void ProcessValues(ArraySegment<T> value);
+		void AnnotatePosition(long compressedBlockOffset, long decompressedOffset, long rleValuesToConsume);
     }
 }
