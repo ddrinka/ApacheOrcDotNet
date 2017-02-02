@@ -164,12 +164,19 @@ namespace ApacheOrcDotNet.Test.Encodings
 
 		void CheckBitpackedIntegersFromString(long[] expected, string bits, int bitWidth)
 		{
-			var bytes = BitStringToByteArray(bits);
-			var stream = new MemoryStream(bytes);
-			var actual=stream.ReadBitpackedIntegers(bitWidth, expected.Length).ToArray();
-			Assert.Equal(expected.Length, actual.Length);
+			var bytesExpected = BitStringToByteArray(bits);
+			var readStream = new MemoryStream(bytesExpected);
+			var readActual=readStream.ReadBitpackedIntegers(bitWidth, expected.Length).ToArray();
+			Assert.Equal(expected.Length, readActual.Length);
 			for (int i = 0; i < expected.Length; i++)
-				Assert.Equal(expected[i], actual[i]);
+				Assert.Equal(expected[i], readActual[i]);
+
+			var writeStream = new MemoryStream();
+			writeStream.WriteBitpackedIntegers(expected, bitWidth);
+			var writeBytesActual = writeStream.ToArray();
+			Assert.Equal(bytesExpected.Length, writeBytesActual.Length);
+			for (int i = 0; i < bytesExpected.Length; i++)
+				Assert.Equal(bytesExpected[i], writeBytesActual[i]);
 		}
 
 		byte[] BitStringToByteArray(string bits)
