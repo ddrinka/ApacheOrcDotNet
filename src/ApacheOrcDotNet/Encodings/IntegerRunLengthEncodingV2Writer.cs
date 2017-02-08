@@ -195,7 +195,7 @@ namespace ApacheOrcDotNet.Encodings
 		{
 			var zigZagValuesHistogram = zigZagValues.GenerateHistogramOfBitWidths();
 			var zigZagHundredthBits = BitManipulation.GetBitsRequiredForPercentile(zigZagValuesHistogram, zigZagValues.Count, 1.0);
-			fixedBitWidth = zigZagHundredthBits;			//We'll use this later if if end up DIRECT encoding
+			fixedBitWidth = zigZagHundredthBits;            //We'll use this later if if end up DIRECT encoding
 			var zigZagNinetiethBits = BitManipulation.GetBitsRequiredForPercentile(zigZagValuesHistogram, zigZagValues.Count, 0.9);
 			if (zigZagHundredthBits - zigZagNinetiethBits == 0)
 			{
@@ -212,7 +212,7 @@ namespace ApacheOrcDotNet.Encodings
 			var baseReducedValuesHistogram = baseReducedValues.GenerateHistogramOfBitWidths();
 			var baseReducedHundredthBits = BitManipulation.GetBitsRequiredForPercentile(baseReducedValuesHistogram, values.Count, 1.0);
 			var baseReducedNinetyfifthBits = BitManipulation.GetBitsRequiredForPercentile(baseReducedValuesHistogram, values.Count, 0.95);
-			if(baseReducedHundredthBits-baseReducedNinetyfifthBits==0)
+			if (baseReducedHundredthBits - baseReducedNinetyfifthBits == 0)
 			{
 				//In the end, no benefit could be realized from patching
 				length = 0;
@@ -266,7 +266,7 @@ namespace ApacheOrcDotNet.Encodings
 		{
 			var bits = BitManipulation.NumBits((ulong)value);
 			var width = bits / 8;
-			if (width * 8 != bits)
+			if (bits % 8 != 0)
 				width++;      //Some remainder
 
 			int byte1 = 0;
@@ -311,8 +311,110 @@ namespace ApacheOrcDotNet.Encodings
 				_outputStream.WriteBitpackedIntegers(deltas.Skip(1), deltaBitWidth);    //Delta Values
 		}
 
-		private void PatchEncode(long baseValue, long[] baseReducedValues, int baseReducedHundredthBits, int baseReducedNinetyfifthBits)
+		void PatchEncode(long baseValue, long[] baseReducedValues, int originalBitWidth, int reducedBitWidth)
 		{
+			var valueBitWidth = BitManipulation.FindNearestDirectWidth(reducedBitWidth);
+			var encodedValueBitWidth = valueBitWidth.EncodeDirectWidth();
+
+			var baseIsNegative = baseValue < 0;
+			if (baseIsNegative)
+				baseValue = -baseValue;
+			var numBitsBaseValue = BitManipulation.NumBits((ulong)baseValue) + 1;   //Need one additional bit for the sign
+			var numBytesBaseValue = numBitsBaseValue / 8;
+			if (numBitsBaseValue % 8 != 0)
+				numBytesBaseValue++;      //Some remainder
+			if (baseIsNegative)
+				baseValue |= 1L << ((numBytesBaseValue * 8) - 1);   //Set the MSB to 1 to mark the sign
+
+			var patchBitWidth = BitManipulation.FindNearestDirectWidth(originalBitWidth - reducedBitWidth);
+			if(patchBitWidth==64)
+			{
+				patchBitWidth = 56;
+				reducedBitWidth = 8;
+			}
+			var encodedPatchBitWidth = patchBitWidth.EncodeDirectWidth();
+
+			int gapBitWidth;
+			var patchGapList = GeneratePatchList(baseReducedValues, patchBitWidth, reducedBitWidth, out gapBitWidth);
+			var patchListBitWidth = BitManipulation.FindNearestDirectWidth(gapBitWidth + patchBitWidth);
+
+
+			int byte1 = 0, byte2 = 0, byte3 = 0, byte4 = 0;
+			byte1 |= 0x2 << 6;                                  //7..6 Encoding Type
+			byte1 |= (encodedValueBitWidth & 0x1f) << 1;        //5..1 Value Bit Width
+			byte1 |= (baseReducedValues.Length - 1) >> 8;       //0    MSB of length
+			byte2 |= (baseReducedValues.Length - 1) & 0xff;		//7..0 LSBs of length
+			byte3 |= (numBytesBaseValue - 1) << 5;              //7..5 Base Value Byte Width
+			byte3 |= encodedPatchBitWidth & 0x1f;               //4..0 Encoded Patch Bit Width
+			byte4 |= (gapBitWidth - 1) << 5;                    //7..5 Gap Bit Width
+			byte4 |= patchGapList.Length & 0x1f;                //4..0 Patch/Gap List Length
+
+			_outputStream.WriteByte((byte)byte1);
+			_outputStream.WriteByte((byte)byte2);
+			_outputStream.WriteByte((byte)byte3);
+			_outputStream.WriteByte((byte)byte4);
+			_outputStream.WriteLongBE(numBytesBaseValue, baseValue);
+			_outputStream.WriteBitpackedIntegers(baseReducedValues, valueBitWidth);
+			_outputStream.WriteBitpackedIntegers(patchGapList, patchListBitWidth);
+		}
+
+		long[] GeneratePatchList(long[] baseReducedValues, int patchBitWidth, int reducedBitWidth, out int gapBitWidth)
+		{
+			int prevIndex = 0;
+			int maxGap = 0;
+
+			long mask = (1L << reducedBitWidth) - 1;
+
+			var estimatedPatchCount = (int)(baseReducedValues.Length * 0.05 + .5);      //We're patching 5% of the values (round up)
+			var patchGapList = new List<Tuple<int, long>>(estimatedPatchCount);
+
+			for(int i=0;i<baseReducedValues.Length;i++)
+			{
+				if(baseReducedValues[i]>mask)
+				{
+					var gap = i - prevIndex;
+					if (gap > maxGap)
+						maxGap = gap;
+
+					var patch = (long)((ulong)baseReducedValues[i] >> reducedBitWidth);
+					patchGapList.Add(Tuple.Create(gap, patch));
+
+					baseReducedValues[i] &= mask;
+					prevIndex = i;
+				}
+			}
+
+			var actualLength = patchGapList.Count;
+
+			if (maxGap == 0 && patchGapList.Count != 0)
+				gapBitWidth = 1;
+			else
+				gapBitWidth = BitManipulation.FindNearestDirectWidth(BitManipulation.NumBits((ulong)maxGap));
+			if (gapBitWidth > 8)
+			{
+				//Prepare for the special case of 511 and 256
+				gapBitWidth = 8;
+				if (maxGap == 511)
+					actualLength += 2;
+				else
+					actualLength += 1;
+			}
+
+			int resultIndex = 0;
+			var result = new long[actualLength];
+			foreach(var patchGap in patchGapList)
+			{
+				long gap = patchGap.Item1;
+				long patch = patchGap.Item2;
+				while(gap>255)
+				{
+					result[resultIndex++] = 255L << patchBitWidth;
+					gap -= 255;
+				}
+				result[resultIndex++] = gap << patchBitWidth | patch;
+			}
+
+			return result;
 		}
 	}
 }
