@@ -206,6 +206,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			return result.ToArray();
 		}
 
+		[Fact]
 		public void ReadVarIntSigned_ShouldMatchExpected()
 		{
 			var data = new Dictionary<long, byte[]>
@@ -228,5 +229,66 @@ namespace ApacheOrcDotNet.Test.Encodings
 				Assert.Equal(expected, actual);
 			}
 		}
-    }
+
+		[Fact]
+		public void RoundTrip_VarInt_Signed()
+		{
+			var longs = new long[] { 0, 1000, -1000, 10000, -10000, 100000, -100000, Int32.MaxValue, Int32.MinValue };
+			foreach(var expected in longs)
+			{
+				using (var stream = new MemoryStream())
+				{
+					stream.WriteVarIntSigned(expected);
+					stream.Seek(0, SeekOrigin.Begin);
+					var actual = stream.ReadVarIntSigned();
+					Assert.Equal(expected, actual);
+				}
+			}
+		}
+
+		[Fact]
+		public void RoundTrip_VarInt_SignedExtents()
+		{
+			var longs = new long[] { Int64.MaxValue, Int64.MinValue };
+			foreach (var expected in longs)
+			{
+				using (var stream = new MemoryStream())
+				{
+					stream.WriteVarIntSigned(expected);
+					stream.Seek(0, SeekOrigin.Begin);
+					var actual = stream.ReadVarIntSigned();
+					Assert.Equal(expected, actual);
+				}
+			}
+		}
+
+		[Fact]
+		public void RoundTrip_VarInt_Unsigned()
+		{
+			var longs = new long[] { 0, 1000, 10000, 100000, UInt32.MaxValue };
+			foreach (var expected in longs)
+			{
+				using (var stream = new MemoryStream())
+				{
+					stream.WriteVarIntUnsigned(expected);
+					stream.Seek(0, SeekOrigin.Begin);
+					var actual = stream.ReadVarIntUnsigned();
+					Assert.Equal(expected, actual);
+				}
+			}
+		}
+
+		[Fact]
+		public void RoundTrip_VarInt_UnsignedExtents()
+		{
+			using (var stream = new MemoryStream())
+			{
+				ulong expected = 0xffffffffffffffff;
+				stream.WriteVarIntUnsigned((long)expected);
+				stream.Seek(0, SeekOrigin.Begin);
+				var actual = stream.ReadVarIntUnsigned();
+				Assert.Equal(expected, (ulong)actual);
+			}
+		}
+	}
 }

@@ -73,10 +73,9 @@ namespace ApacheOrcDotNet.Encodings
 
 		public static int EncodeDirectWidth(this int approxBits)
 		{
-			var actualWidth = FindNearestDirectWidth(approxBits);
-			if (actualWidth <= 24)
-				return actualWidth - 1;
-			switch (actualWidth)
+			if (approxBits <= 24)
+				return approxBits - 1;
+			switch (approxBits)
 			{
 				case 26: return 24;
 				case 28: return 25;
@@ -96,7 +95,8 @@ namespace ApacheOrcDotNet.Encodings
 			foreach (var value in values)
 			{
 				var numBits = NumBits((ulong)value);
-				var encodedNumBits = EncodeDirectWidth(numBits);
+				var nearestWidth = FindNearestDirectWidth(numBits);
+				var encodedNumBits = nearestWidth.EncodeDirectWidth();
 				histogram[encodedNumBits]++;
 			}
 
@@ -251,10 +251,35 @@ namespace ApacheOrcDotNet.Encodings
 			return result;
 		}
 
+		public static void WriteVarIntUnsigned(this Stream stream, long value)
+		{
+			while (true)
+			{
+				if ((value & ~0x7fL) == 0)
+				{
+					stream.WriteByte((byte)value);
+					break;
+				}
+				else
+				{
+					var curByte = (value & 0x7f) | 0x80;        //Set the high bit--we have more bytes coming
+					stream.WriteByte((byte)curByte);
+
+					value = (long)((ulong)value >> 7);
+				}
+			}
+		}
+
 		public static long ReadVarIntSigned(this Stream stream)
 		{
 			var unsigned = ReadVarIntUnsigned(stream);
 			return unsigned.ZigzagDecode();
+		}
+
+		public static void WriteVarIntSigned(this Stream stream, long value)
+		{
+			var encodedValue = value.ZigzagEncode();
+			stream.WriteVarIntUnsigned(encodedValue);
 		}
 
 		public static BigInteger? ReadBigVarInt(this Stream stream)

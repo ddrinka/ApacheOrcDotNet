@@ -16,7 +16,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var longs = new long[] { 10000, 10000, 10000, 10000, 10000 };
 			var bytes = new byte[] { 0x0a, 0x27, 0x10 };
 			TestRead(longs, bytes, false);
-			TestWrite(bytes, longs, false);
+			TestWrite(bytes, longs, false, false);
 		}
 
 		[Fact]
@@ -40,7 +40,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var longs = new long[] { 23713, 43806, 57005, 48879 };
 			var bytes = new byte[] { 0x5e, 0x03, 0x5c, 0xa1, 0xab, 0x1e, 0xde, 0xad, 0xbe, 0xef };
 			TestRead(longs, bytes, false);
-			TestWrite(bytes, longs, false);
+			TestWrite(bytes, longs, false, false);
 		}
 
 		[Fact]
@@ -57,7 +57,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var longs = new long[] { 2030, 2000, 2020, 1000000, 2040, 2050, 2060, 2070, 2080, 2090 };
 			var bytes = new byte[] { 0x8e, 0x09, 0x2b, 0x21, 0x07, 0xd0, 0x1e, 0x00, 0x14, 0x70, 0x28, 0x32, 0x3c, 0x46, 0x50, 0x5a, 0xfc, 0xe8 };
 			TestRead(longs, bytes, false);
-			TestWrite(bytes, longs, false);
+			TestWrite(bytes, longs, false, false);
 		}
 
 		[Fact]
@@ -66,7 +66,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var longs = new long[] { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29 };
 			var bytes = new byte[] { 0xc6, 0x09, 0x02, 0x02, 0x22, 0x42, 0x42, 0x46 };
 			TestRead(longs, bytes, false);
-			TestWrite(bytes, longs, false);
+			TestWrite(bytes, longs, false, true);
 		}
 
 		[Fact]
@@ -78,7 +78,79 @@ namespace ApacheOrcDotNet.Test.Encodings
 
 			var bytes = new byte[] { 0xc1, 0x1f, 0x0c, 0x00 };
 			TestRead(longs, bytes, true);
-			TestWrite(bytes, longs, true);
+			TestWrite(bytes, longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaRepeatingUnsigned()
+		{
+			var longs = new long[] { 10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000 };
+			TestRoundTrip(longs, false, true);
+			TestRoundTrip(longs, false, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaRepeatingSignedPositive()
+		{
+			var longs = new long[] { 10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaRepeatingSignedNegative()
+		{
+			var longs = new long[] { -10000, -10000, -10000, -10000, -10000, -10000, -10000, -10000, -10000, -10000, -10000, -10000 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaFixedOffsetPositive()
+		{
+			var longs = new long[] { 10000, 30000, 50000, 70000, 90000, 110000 };
+			TestRoundTrip(longs, false, true);
+			TestRoundTrip(longs, false, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaFixedOffsetNegativeBasePositiveDelta()
+		{
+			var longs = new long[] { -10000, 10000, 30000, 50000, 70000, 90000 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaFixedOffsetNegativeBaseNegativeDelta()
+		{
+			var longs = new long[] { -10000, -30000, -50000, -70000, -90000, -110000 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaFixedOffsetPositiveBaseNegativeDelta()
+		{
+			var longs = new long[] { 10000, -10000, -30000, -50000, -70000, -90000 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaVariedOffsetPositive()
+		{
+			var longs = new long[] { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096 };
+			TestRoundTrip(longs, false, true);
+			TestRoundTrip(longs, false, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaVariedOffsetNegative()
+		{
+			var longs = new long[] { -1, -2, -4, -8, -16, -32, -64, -128, -256, -512, -1024, -2048, -4096 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
 		}
 
 		void TestRead(long[] expected, byte[] input, bool isSigned)
@@ -91,12 +163,12 @@ namespace ApacheOrcDotNet.Test.Encodings
 				Assert.Equal(expected[i], actual[i]);
 		}
 
-		void TestWrite(byte[] expected, long[] input, bool isSigned)
+		void TestWrite(byte[] expected, long[] input, bool isSigned, bool aligned)
 		{
 			var stream = new MemoryStream();
 			var writer = new IntegerRunLengthEncodingV2Writer(stream);
 			var inputArraySegment = new ArraySegment<long>(input);
-			writer.Write(inputArraySegment, isSigned, false);
+			writer.Write(inputArraySegment, isSigned, aligned);
 			var actual = stream.ToArray();
 			Assert.Equal(expected.Length, actual.Length);
 			for (int i = 0; i < expected.Length; i++)
@@ -108,7 +180,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var stream = new MemoryStream();
 			var writer = new IntegerRunLengthEncodingV2Writer(stream);
 			var arraySegment = new ArraySegment<long>(test);
-			writer.Write(arraySegment, isSigned, false);
+			writer.Write(arraySegment, isSigned, aligned);
 
 			stream.Seek(0, SeekOrigin.Begin);
 

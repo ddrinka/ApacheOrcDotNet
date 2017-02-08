@@ -68,7 +68,7 @@ namespace ApacheOrcDotNet.Encodings
 			}
 
 			long minValue;
-			var result = TryDeltaEncoding(values, out length, out minValue);
+			var result = TryDeltaEncoding(values, areSigned, aligned, out length, out minValue);
 			if (result == DeltaEncodingResult.Success)
 			{
 				return length;
@@ -106,18 +106,19 @@ namespace ApacheOrcDotNet.Encodings
 		}
 
 		enum DeltaEncodingResult { Success, Overflow, NonMonotonic}
-		DeltaEncodingResult TryDeltaEncoding(ArraySegment<long> values, out int length, out long minValue)
+		DeltaEncodingResult TryDeltaEncoding(ArraySegment<long> values, bool areSigned, bool aligned, out int length, out long minValue)
 		{
 			var array = values.Array;
 			var offset = values.Offset;
 
-			var deltas = new long[values.Count];
+			var deltas = new long[values.Count - 1];
 			long initialValue = array[offset];
 			minValue = initialValue;						//This gets saved for the patch base if things don't work out here
 			long maxValue = initialValue;
 			long initialDelta = array[offset + 1] - initialValue;
 			long curDelta = initialDelta;
-			long deltaMax = Math.Abs(initialDelta);         //This is different from the java implementation.  I believe their implementation may be a bug.
+			long deltaMax = 0;      //This is different from the java implementation.  I believe their implementation may be a bug.
+									//The first delta value is not considered for the delta bit width, so don't include it in the max value calculation
 			bool isIncreasing = initialDelta > 0;
 			bool isDecreasing = initialDelta < 0;
 			bool isConstantDelta = true;
@@ -161,21 +162,27 @@ namespace ApacheOrcDotNet.Encodings
 
 			if (maxValue == minValue)   //All values were identical
 			{
-				DeltaEncode(minValue, values.Count);
+				DeltaEncode(minValue, areSigned, values.Count);
 				length = values.Count;
 				return DeltaEncodingResult.Success;
 			}
 
 			if(isConstantDelta) //All values changed by set amount
 			{
-				DeltaEncode(initialValue, curDelta, values.Count);
+				DeltaEncode(initialValue, areSigned, curDelta, values.Count);
 				length = values.Count;
 				return DeltaEncodingResult.Success;
 			}
 
 			if(isIncreasing || isDecreasing)
 			{
-				DeltaEncode(initialValue, deltas);
+				var deltaBits = BitManipulation.NumBits((ulong)deltaMax);
+				if (aligned)
+					deltaBits = BitManipulation.FindNearestAlignedDirectWidth(deltaBits);
+				else
+					deltaBits = BitManipulation.FindNearestDirectWidth(deltaBits);
+
+				DeltaEncode(initialValue, areSigned, values.Count, deltas, deltaBits);
 				length = values.Count;
 				return DeltaEncodingResult.Success;
 			}
@@ -225,7 +232,7 @@ namespace ApacheOrcDotNet.Encodings
 				return false;
 		}
 
-		void DirectEncode(ArraySegment<long> values, bool align, int? precalculatedFixedBitWidth)
+		void DirectEncode(ArraySegment<long> values, bool aligned, int? precalculatedFixedBitWidth)
 		{
 			int fixedBitWidth;
 			if (precalculatedFixedBitWidth.HasValue)
@@ -236,9 +243,11 @@ namespace ApacheOrcDotNet.Encodings
 				fixedBitWidth = BitManipulation.GetBitsRequiredForPercentile(histogram, values.Count, 1.0);
 			}
 
-			if (align)
+			if (aligned)
 				fixedBitWidth = BitManipulation.FindNearestAlignedDirectWidth(fixedBitWidth);
-			var encodedFixedBitWidth = BitManipulation.EncodeDirectWidth(fixedBitWidth);
+			else
+				fixedBitWidth = BitManipulation.FindNearestDirectWidth(fixedBitWidth);
+			var encodedFixedBitWidth = fixedBitWidth.EncodeDirectWidth();
 
 			var numValues = values.Count - 1;
 
@@ -269,18 +278,37 @@ namespace ApacheOrcDotNet.Encodings
 			_outputStream.WriteLongBE(width, value);
 		}
 
-		void DeltaEncode(long initialValue, int repeatCount)
+		void DeltaEncode(long initialValue, bool areSigned, int repeatCount)
 		{
-
+			DeltaEncode(initialValue, areSigned, 0, repeatCount);
 		}
 
-		void DeltaEncode(long initialValue, long constantOffset, int repeatCount)
+		void DeltaEncode(long initialValue, bool areSigned, long constantOffset, int repeatCount)
 		{
-
+			DeltaEncode(initialValue, areSigned, repeatCount, new[] { constantOffset }, 0);
 		}
 
-		void DeltaEncode(long initialValue, long[] deltas)
+		void DeltaEncode(long initialValue, bool areSigned, int numValues, long[] deltas, int deltaBitWidth)
 		{
+			int encodedBitWidth = 0;
+			if (deltaBitWidth > 0)
+				encodedBitWidth = deltaBitWidth.EncodeDirectWidth();
+
+			int byte1 = 0;
+			byte1 |= 0x3 << 6;                              //7..6 Encoding Type
+			byte1 |= (encodedBitWidth & 0x1f) << 1;         //5..1 Delta Bit Width
+			byte1 |= (numValues - 1) >> 8;                  //0    MSB of length
+			int byte2 = (numValues - 1) & 0xff;             //7..0 LSBs of length
+
+			_outputStream.WriteByte((byte)byte1);
+			_outputStream.WriteByte((byte)byte2);
+			if (areSigned)
+				_outputStream.WriteVarIntSigned(initialValue);                          //Base Value
+			else
+				_outputStream.WriteVarIntUnsigned(initialValue);
+			_outputStream.WriteVarIntSigned(deltas[0]);                                 //Delta Base
+			if (deltas.Length > 1)
+				_outputStream.WriteBitpackedIntegers(deltas.Skip(1), deltaBitWidth);    //Delta Values
 		}
 
 		private void PatchEncode(long baseValue, long[] baseReducedValues, int baseReducedHundredthBits, int baseReducedNinetyfifthBits)
