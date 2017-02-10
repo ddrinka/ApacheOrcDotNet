@@ -332,19 +332,19 @@ namespace ApacheOrcDotNet.Encodings
 			return !noOverflow;
 		}
 
-		public static ArraySegment<long> TakeValues(this ArraySegment<long> values, int numValuesToTake)
+		public static ArraySegment<T> TakeValues<T>(this ArraySegment<T> values, int numValuesToTake)
 		{
 			if (numValuesToTake > values.Count)
 				throw new OverflowException($"Couldn't take {numValuesToTake} from ArraySegment");
 
-			return new ArraySegment<long>(values.Array, values.Offset + numValuesToTake, values.Count - numValuesToTake);
+			return new ArraySegment<T>(values.Array, values.Offset + numValuesToTake, values.Count - numValuesToTake);
 		}
 
-		public static ArraySegment<long> CreateWindow(this ArraySegment<long> values, int windowLength)
+		public static ArraySegment<T> CreateWindow<T>(this ArraySegment<T> values, int windowLength)
 		{
 			if (values.Count < windowLength)
 				windowLength = values.Count;
-			return new ArraySegment<long>(values.Array, values.Offset, windowLength);
+			return new ArraySegment<T>(values.Array, values.Offset, windowLength);
 		}
 	}
 }
