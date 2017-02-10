@@ -135,14 +135,14 @@ namespace ApacheOrcDotNet.Encodings
 		{
 			var raw = patchListValues[patchIndex];
 			patchIndex++;
-			long curGap = raw >> patchWidth;
+			long curGap = (long)((ulong)raw >> patchWidth);
 			patch = raw & patchMask;
 			while (curGap == 255 && patch == 0)
 			{
 				gap += 255;
 				raw = patchListValues[patchIndex];
 				patchIndex++;
-				curGap = raw >> patchWidth;
+				curGap = (long)((ulong)raw >> patchWidth);
 				patch = raw & patchMask;
 			}
 			gap += curGap;

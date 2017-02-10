@@ -313,9 +313,6 @@ namespace ApacheOrcDotNet.Encodings
 
 		void PatchEncode(long baseValue, long[] baseReducedValues, int originalBitWidth, int reducedBitWidth)
 		{
-			var valueBitWidth = BitManipulation.FindNearestDirectWidth(reducedBitWidth);
-			var encodedValueBitWidth = valueBitWidth.EncodeDirectWidth();
-
 			var baseIsNegative = baseValue < 0;
 			if (baseIsNegative)
 				baseValue = -baseValue;
@@ -333,6 +330,8 @@ namespace ApacheOrcDotNet.Encodings
 				reducedBitWidth = 8;
 			}
 			var encodedPatchBitWidth = patchBitWidth.EncodeDirectWidth();
+			var valueBitWidth = BitManipulation.FindNearestDirectWidth(reducedBitWidth);
+			var encodedValueBitWidth = valueBitWidth.EncodeDirectWidth();
 
 			int gapBitWidth;
 			var patchGapList = GeneratePatchList(baseReducedValues, patchBitWidth, reducedBitWidth, out gapBitWidth);
