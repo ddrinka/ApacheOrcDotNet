@@ -160,7 +160,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var longs = new List<long>();
 			for (int i = 0; i < 5120; i++)
 				longs.Add(123);
-			TestRoundTrip(longs.ToArray(), false, false, 50);
+			TestRoundTrip(longs.ToArray(), true, false, 50);
 		}
 
 		[Fact]
@@ -169,7 +169,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var longs = new List<long>();
 			for (int i = 0; i < 5120; i++)
 				longs.Add(i % 512);
-			TestRoundTrip(longs.ToArray(), false, false, 40);
+			TestRoundTrip(longs.ToArray(), true, false, 40);
 		}
 
 		[Fact]
@@ -178,7 +178,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var longs = new List<long>();
 			for (int i = 0; i < 5120; i++)
 				longs.Add(512 - (i % 512));
-			TestRoundTrip(longs.ToArray(), false, false, 50);
+			TestRoundTrip(longs.ToArray(), true, false, 50);
 		}
 
 		[Fact]
@@ -187,7 +187,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var longs = new List<long>();
 			for (int i = 0; i < 5120; i++)
 				longs.Add(i % 512 + ((i % 512) * 100));
-			TestRoundTrip(longs.ToArray(), false, false, 50);
+			TestRoundTrip(longs.ToArray(), true, false, 50);
 		}
 
 		[Fact]
@@ -196,7 +196,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var longs = new List<long>();
 			for (int i = 0; i < 5120; i++)
 				longs.Add((512 - i % 512) + ((i % 512) * 100));
-			TestRoundTrip(longs.ToArray(), false, false, 60);
+			TestRoundTrip(longs.ToArray(), true, false, 60);
 		}
 
 		[Fact]
@@ -205,7 +205,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var longs = new List<long>();
 			for (int i = 0; i < 5; i++)
 				longs.Add(10);
-			TestRoundTrip(longs.ToArray(), false, false, 2);
+			TestRoundTrip(longs.ToArray(), true, false, 2);
 		}
 
 		[Fact]
@@ -215,7 +215,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			longs.Add(0);
 			for (int i = 0; i < 511; i++)
 				longs.Add(i);
-			TestRoundTrip(longs.ToArray(), false, false, 642);
+			TestRoundTrip(longs.ToArray(), true, false, 642);
 		}
 
 		[Fact]
@@ -226,7 +226,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			longs.Add(10000000);
 			for (int i = 0; i < 511; i++)
 				longs.Add(random.Next() % (i + 1));
-			TestRoundTrip(longs.ToArray(), false, false, 583);
+			TestRoundTrip(longs.ToArray(), true, false, 583);
 		}
 		#endregion
 
@@ -269,7 +269,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 			var result = reader.Read().ToArray();
 
 			//Make sure all bytes in the written stream were consumed
-			Assert.Equal(stream.Length, stream.Position - 1);
+			Assert.Equal(stream.Length, stream.Position);
 
 			//Check the actual values
 			Assert.Equal(test.Length, result.Length);
