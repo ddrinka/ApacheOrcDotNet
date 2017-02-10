@@ -153,6 +153,83 @@ namespace ApacheOrcDotNet.Test.Encodings
 			TestRoundTrip(longs, true, false);
 		}
 
+		#region From Java Source
+		[Fact]
+		public void RoundTrip_FixedDeltaZero()
+		{
+			var longs = new List<long>();
+			for (int i = 0; i < 5120; i++)
+				longs.Add(123);
+			TestRoundTrip(longs.ToArray(), false, false, 50);
+		}
+
+		[Fact]
+		public void RoundTrip_FixedDeltaOne()
+		{
+			var longs = new List<long>();
+			for (int i = 0; i < 5120; i++)
+				longs.Add(i % 512);
+			TestRoundTrip(longs.ToArray(), false, false, 40);
+		}
+
+		[Fact]
+		public void RoundTrip_FixedDeltaOneDescending()
+		{
+			var longs = new List<long>();
+			for (int i = 0; i < 5120; i++)
+				longs.Add(512 - (i % 512));
+			TestRoundTrip(longs.ToArray(), false, false, 50);
+		}
+
+		[Fact]
+		public void RoundTrip_FixedDeltaLarge()
+		{
+			var longs = new List<long>();
+			for (int i = 0; i < 5120; i++)
+				longs.Add(i % 512 + ((i % 512) * 100));
+			TestRoundTrip(longs.ToArray(), false, false, 50);
+		}
+
+		[Fact]
+		public void RoundTrip_FixedDeltaLargeDescending()
+		{
+			var longs = new List<long>();
+			for (int i = 0; i < 5120; i++)
+				longs.Add((512 - i % 512) + ((i % 512) * 100));
+			TestRoundTrip(longs.ToArray(), false, false, 60);
+		}
+
+		[Fact]
+		public void RoundTrip_ShortRepeatB()
+		{
+			var longs = new List<long>();
+			for (int i = 0; i < 5; i++)
+				longs.Add(10);
+			TestRoundTrip(longs.ToArray(), false, false, 2);
+		}
+
+		[Fact]
+		public void RoundTrip_UnknownSign()
+		{
+			var longs = new List<long>();
+			longs.Add(0);
+			for (int i = 0; i < 511; i++)
+				longs.Add(i);
+			TestRoundTrip(longs.ToArray(), false, false, 642);
+		}
+
+		[Fact]
+		public void RoundTrip_PatchedBase()
+		{
+			var longs = new List<long>();
+			var random = new Random(123);
+			longs.Add(10000000);
+			for (int i = 0; i < 511; i++)
+				longs.Add(random.Next() % (i + 1));
+			TestRoundTrip(longs.ToArray(), false, false, 583);
+		}
+		#endregion
+
 		void TestRead(long[] expected, byte[] input, bool isSigned)
 		{
 			var stream = new MemoryStream(input);
@@ -175,18 +252,26 @@ namespace ApacheOrcDotNet.Test.Encodings
 				Assert.Equal(expected[i], actual[i]);
 		}
 
-		void TestRoundTrip(long[] test, bool isSigned, bool aligned)
+		void TestRoundTrip(long[] test, bool isSigned, bool aligned, int? expectedEncodeLength = null)
 		{
 			var stream = new MemoryStream();
 			var writer = new IntegerRunLengthEncodingV2Writer(stream);
 			var arraySegment = new ArraySegment<long>(test);
 			writer.Write(arraySegment, isSigned, aligned);
 
+			//If we know the encode length, make sure it's correct
+			if (expectedEncodeLength.HasValue)
+				Assert.Equal(expectedEncodeLength.Value, stream.Length);
+
 			stream.Seek(0, SeekOrigin.Begin);
 
 			var reader = new IntegerRunLengthEncodingV2Reader(stream, isSigned);
 			var result = reader.Read().ToArray();
 
+			//Make sure all bytes in the written stream were consumed
+			Assert.Equal(stream.Length, stream.Position - 1);
+
+			//Check the actual values
 			Assert.Equal(test.Length, result.Length);
 			for (int i = 0; i < test.Length; i++)
 				Assert.Equal(test[i], result[i]);
