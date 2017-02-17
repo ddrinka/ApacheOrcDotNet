@@ -9,7 +9,7 @@ using Xunit;
 
 namespace ApacheOrcDotNet.Test.ColumnTypes
 {
-    public class SmallIntReader_Test
+    public class LongReader_Test
     {
 		StripeStreamReaderCollection GetStripeStreamCollection()
 		{
@@ -22,14 +22,46 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		}
 
 		[Fact]
+		public void ReadColumn1_ShouldProduceExpectedResults()
+		{
+			var stripeStreams = GetStripeStreamCollection();
+			var longReader = new LongReader(stripeStreams, 1);
+			var results = longReader.Read().ToArray();
+
+			Assert.Equal(1920800, results.Length);
+			for (int i = 0; i < results.Length; i++)
+			{
+				var expected = i + 1;
+				Assert.True(results[i].HasValue);
+				Assert.Equal(expected, results[i].Value);
+			}
+		}
+
+		[Fact]
+		public void ReadColumn5_ShouldProduceExpectedResults()
+		{
+			var stripeStreams = GetStripeStreamCollection();
+			var longReader = new LongReader(stripeStreams, 5);
+			var results = longReader.Read().ToArray();
+
+			Assert.Equal(1920800, results.Length);
+			for (int i = 0; i < results.Length; i++)
+			{
+				var expected = ((i / 70) * 500) % 10000 + 500;
+				Assert.True(results[i].HasValue);
+				Assert.Equal(expected, results[i].Value);
+			}
+		}
+
+		[Fact]
 		public void ReadColumn7_ShouldProduceExpectedResults()
 		{
 			var stripeStreams = GetStripeStreamCollection();
-			var smallIntReader = new SmallIntReader(stripeStreams, 7);
-			var results = smallIntReader.Read().ToArray();
+			var longReader = new LongReader(stripeStreams, 7);
+			var results = longReader.Read().ToArray();
 
 			Assert.Equal(1920800, results.Length);
-			for(int i=0;i<results.Length;i++)
+			for (int i = 0; i < results.Length; i++)
 			{
 				var expected = (i / 5600) % 7;
 				Assert.True(results[i].HasValue);
@@ -41,8 +73,8 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		public void ReadColumn8_ShouldProduceExpectedResults()
 		{
 			var stripeStreams = GetStripeStreamCollection();
-			var smallIntReader = new SmallIntReader(stripeStreams, 8);
-			var results = smallIntReader.Read().ToArray();
+			var longReader = new LongReader(stripeStreams, 8);
+			var results = longReader.Read().ToArray();
 
 			Assert.Equal(1920800, results.Length);
 			for (int i = 0; i < results.Length; i++)
@@ -57,8 +89,8 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		public void ReadColumn9_ShouldProduceExpectedResults()
 		{
 			var stripeStreams = GetStripeStreamCollection();
-			var smallIntReader = new SmallIntReader(stripeStreams, 9);
-			var results = smallIntReader.Read().ToArray();
+			var longReader = new LongReader(stripeStreams, 9);
+			var results = longReader.Read().ToArray();
 
 			Assert.Equal(1920800, results.Length);
 			for (int i = 0; i < results.Length; i++)

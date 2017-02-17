@@ -7,20 +7,20 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-	public class IntReader : ColumnReader
+	public class LongReader : ColumnReader
 	{
-		public IntReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
+		public LongReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{
 		}
 
-		public IEnumerable<int?> Read()
+		public IEnumerable<long?> Read()
 		{
 			var present = ReadBooleanStream(Protocol.StreamKind.Present);
 			var data = ReadNumericStream(Protocol.StreamKind.Data, true);
 			if (present == null)
 			{
 				foreach (var value in data)
-					yield return (int)value;
+					yield return value;
 			}
 			else
 			{
@@ -32,7 +32,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 						var success = valueEnumerator.MoveNext();
 						if (!success)
 							throw new InvalidDataException("The PRESENT data stream's length didn't match the DATA stream's length");
-						yield return (int)valueEnumerator.Current;
+						yield return valueEnumerator.Current;
 					}
 					else
 						yield return null;

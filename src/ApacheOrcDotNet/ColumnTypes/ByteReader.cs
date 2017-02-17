@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-    public class TinyIntReader : ColumnReader
+    public class ByteReader : ColumnReader
     {
-		public TinyIntReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
+		public ByteReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{
 		}
 

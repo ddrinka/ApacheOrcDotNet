@@ -1,4 +1,5 @@
 ﻿using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Statistics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Linq;
 namespace ApacheOrcDotNet.ColumnTypes
 {
 	public abstract class ColumnWriter<T>
-    {
+	{
 		readonly OrcCompressedBuffer[] _stripeStreamBuffers;
 
 		bool _blockAddingIsComplete = false;
@@ -16,11 +17,11 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_stripeStreamBuffers = new OrcCompressedBuffer[NumDataStreams];
 		}
 
-		public List<IStatistics<T>> Statistics { get; } = new List<IStatistics<T>>();
+		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
 		public long CompressedLength => _stripeStreamBuffers.Sum(b => b.CompressedBuffer.Length);
 
-		protected abstract IStatistics<T> CreateStatistics();
-		protected abstract void EncodeValues(ArraySegment<T> values, OrcCompressedBuffer[] buffers, IStatistics<T> statistics);
+		protected abstract IStatistics CreateStatistics();
+		protected abstract void EncodeValues(ArraySegment<T> values, OrcCompressedBuffer[] buffers, IStatistics statistics);
 		protected abstract int NumDataStreams { get; }
 
 		/// <summary>
