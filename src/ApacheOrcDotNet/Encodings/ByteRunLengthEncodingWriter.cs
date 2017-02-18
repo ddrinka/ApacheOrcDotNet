@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ApacheOrcDotNet.Infrastructure;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,25 +16,27 @@ namespace ApacheOrcDotNet.Encodings
 			_outputStream = outputStream;
 		}
 
-		public void Write(ArraySegment<byte> values)
+		public void Write(IList<byte> values)
 		{
-			while (values.Count > 0)
+			var position = 0;
+			while (position < values.Count)
 			{
+				var window = new ListSegment<byte>(values, position);
 				//Check for repeats
 				byte repeatingValue;
-				var repeatingValueCount = FindRepeatedValues(values, out repeatingValue);
+				var repeatingValueCount = FindRepeatedValues(window, out repeatingValue);
 				if (repeatingValueCount >= 3)
 				{
 					EncodeRepeat(repeatingValueCount, repeatingValue);
-					values = values.TakeValues(repeatingValueCount);
+					position += repeatingValueCount;
 					continue;   //Search again for new repeating values
 				}
 
 				//Check for future repeats
-				var repeatLocation = FindNonRepeatingValues(values);
-				var literalWindow = values.CreateWindow(repeatLocation);
+				var repeatLocation = FindNonRepeatingValues(window);
+				var literalWindow = new ListSegment<byte>(window, 0, repeatLocation);
 				EncodeLiterals(literalWindow);
-				values = values.TakeValues(repeatLocation);
+				position += repeatLocation;
 			}
 		}
 
@@ -45,15 +48,16 @@ namespace ApacheOrcDotNet.Encodings
 			_outputStream.WriteByte(repeatingValue);
 		}
 
-		void EncodeLiterals(ArraySegment<byte> values)
+		void EncodeLiterals(IList<byte> values)
 		{
 			var byte1 = (byte)-values.Count;
 
 			_outputStream.WriteByte(byte1);
-			_outputStream.Write(values.Array, values.Offset, values.Count);
+			foreach (var curByte in values)
+				_outputStream.WriteByte(curByte);
 		}
 
-		int FindNonRepeatingValues(ArraySegment<byte> values)
+		int FindNonRepeatingValues(IList<byte> values)
 		{
 			if (values.Count < 3)
 				return values.Count;
@@ -61,9 +65,9 @@ namespace ApacheOrcDotNet.Encodings
 			int result = 0;
 			while (result < values.Count - 2 && result < 128 - 2)
 			{
-				var val0 = values.Array[values.Offset + result + 0];
-				var val1 = values.Array[values.Offset + result + 1];
-				var val2 = values.Array[values.Offset + result + 2];
+				var val0 = values[result + 0];
+				var val1 = values[result + 1];
+				var val2 = values[result + 2];
 				if (val0 == val1 && val0 == val2)
 					return result;       //End of the non-repeating section
 				result++;
@@ -72,13 +76,13 @@ namespace ApacheOrcDotNet.Encodings
 			return result + 2;			//No repeats found including the last two values
 		}
 
-		int FindRepeatedValues(ArraySegment<byte> values, out byte repeatingValue)
+		int FindRepeatedValues(IList<byte> values, out byte repeatingValue)
 		{
 			int result = 0;
-			repeatingValue = values.Array[values.Offset];
+			repeatingValue = values[0];
 			while (result < values.Count && result < 127 + 3)
 			{
-				if (values.Array[values.Offset + result] != repeatingValue)
+				if (values[result] != repeatingValue)
 					break;
 				result++;
 			}

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ApacheOrcDotNet.Infrastructure;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,28 +16,18 @@ namespace ApacheOrcDotNet.Encodings
 			_outputStream = outputStream;
 		}
 
-		public void Write(ArraySegment<long> values, bool areSigned, bool aligned)
+		public void Write(IList<long> values, bool areSigned, bool aligned)
 		{
-			while (values.Count > 0)
+			var position = 0;
+			while (position < values.Count)
 			{
-				var window = values.CreateWindow(512);      //Encode a maximum of 512 values
+				var window = new ListSegment<long>(values, position, 512);      //Encode a maximum of 512 values
 				var numValuesEncoded = EncodeValues(window, areSigned, aligned);
-				values = values.TakeValues(numValuesEncoded);
+				position += numValuesEncoded;
 			}
 		}
 
-		ArraySegment<long> ZigZagEncodeValues(ArraySegment<long> values)
-		{
-			var result = new long[values.Count];
-			for (int i = 0; i < values.Count; i++)
-			{
-				var signedValue = values.Array[values.Offset + i];
-				result[i] = signedValue.ZigzagEncode();
-			}
-			return new ArraySegment<long>(result);
-		}
-
-		int EncodeValues(ArraySegment<long> values, bool areSigned, bool aligned)
+		int EncodeValues(IList<long> values, bool areSigned, bool aligned)
 		{
 			//Eventually:
 			//Find the longest monotonically increasing or decreasing (or constant) segment of data in the next 1024 samples
@@ -54,7 +45,7 @@ namespace ApacheOrcDotNet.Encodings
 			if (SequenceIsTooShort(values))
 			{
 				var directZigZaggedValues = areSigned ? values.ZigzagEncode() : values;
-				DirectEncode(directZigZaggedValues, aligned, fixedBitWidth);
+				DirectEncode(directZigZaggedValues, values.Count, aligned, fixedBitWidth);
 				return values.Count;
 			}
 
@@ -76,7 +67,7 @@ namespace ApacheOrcDotNet.Encodings
 			else if (result == DeltaEncodingResult.Overflow)
 			{
 				var directZigZaggedValues = areSigned ? values.ZigzagEncode() : values;
-				DirectEncode(directZigZaggedValues, aligned, fixedBitWidth);
+				DirectEncode(directZigZaggedValues, values.Count, aligned, fixedBitWidth);
 				return values.Count;
 			}
 
@@ -89,33 +80,38 @@ namespace ApacheOrcDotNet.Encodings
 			}
 
 			//If all else fails, DIRECT encode
-			DirectEncode(zigZaggedValues, aligned, fixedBitWidth);
+			DirectEncode(zigZaggedValues, values.Count, aligned, fixedBitWidth);
 			return values.Count;
 		}
 
-		void FindRepeatedValues(ArraySegment<long> values, out long repeatingValue, out int length)
+		void FindRepeatedValues(IEnumerable<long> values, out long repeatingValue, out int length)
 		{
 			length = 0;
-			repeatingValue = values.Array[values.Offset];
+			repeatingValue = 0;
+
+			bool isFirst = true;
 			foreach (var value in values)
 			{
-				if (repeatingValue != value)
+				if (isFirst)
+				{
+					repeatingValue = value;
+					isFirst = false;
+				}
+				else if (repeatingValue != value)
 					break;
+
 				length++;
 			}
 		}
 
 		enum DeltaEncodingResult { Success, Overflow, NonMonotonic}
-		DeltaEncodingResult TryDeltaEncoding(ArraySegment<long> values, bool areSigned, bool aligned, out int length, out long minValue)
+		DeltaEncodingResult TryDeltaEncoding(IList<long> values, bool areSigned, bool aligned, out int length, out long minValue)
 		{
-			var array = values.Array;
-			var offset = values.Offset;
-
 			var deltas = new long[values.Count - 1];
-			long initialValue = array[offset];
+			long initialValue = values[0];
 			minValue = initialValue;						//This gets saved for the patch base if things don't work out here
 			long maxValue = initialValue;
-			long initialDelta = array[offset + 1] - initialValue;
+			long initialDelta = values[1] - initialValue;
 			long curDelta = initialDelta;
 			long deltaMax = 0;      //This is different from the java implementation.  I believe their implementation may be a bug.
 									//The first delta value is not considered for the delta bit width, so don't include it in the max value calculation
@@ -191,12 +187,12 @@ namespace ApacheOrcDotNet.Encodings
 			return DeltaEncodingResult.NonMonotonic;
 		}
 
-		bool TryPatchEncoding(ArraySegment<long> zigZagValues, ArraySegment<long> values, long minValue, ref int? fixedBitWidth, out int length)
+		bool TryPatchEncoding(IEnumerable<long> zigZagValues, IList<long> values, long minValue, ref int? fixedBitWidth, out int length)
 		{
 			var zigZagValuesHistogram = zigZagValues.GenerateHistogramOfBitWidths();
-			var zigZagHundredthBits = BitManipulation.GetBitsRequiredForPercentile(zigZagValuesHistogram, zigZagValues.Count, 1.0);
+			var zigZagHundredthBits = BitManipulation.GetBitsRequiredForPercentile(zigZagValuesHistogram, 1.0);
 			fixedBitWidth = zigZagHundredthBits;            //We'll use this later if if end up DIRECT encoding
-			var zigZagNinetiethBits = BitManipulation.GetBitsRequiredForPercentile(zigZagValuesHistogram, zigZagValues.Count, 0.9);
+			var zigZagNinetiethBits = BitManipulation.GetBitsRequiredForPercentile(zigZagValuesHistogram, 0.9);
 			if (zigZagHundredthBits - zigZagNinetiethBits == 0)
 			{
 				//Requires as many bits even if we eliminate 10% of the most difficult values
@@ -210,8 +206,8 @@ namespace ApacheOrcDotNet.Encodings
 				baseReducedValues[i++] = value - minValue;
 
 			var baseReducedValuesHistogram = baseReducedValues.GenerateHistogramOfBitWidths();
-			var baseReducedHundredthBits = BitManipulation.GetBitsRequiredForPercentile(baseReducedValuesHistogram, values.Count, 1.0);
-			var baseReducedNinetyfifthBits = BitManipulation.GetBitsRequiredForPercentile(baseReducedValuesHistogram, values.Count, 0.95);
+			var baseReducedHundredthBits = BitManipulation.GetBitsRequiredForPercentile(baseReducedValuesHistogram, 1.0);
+			var baseReducedNinetyfifthBits = BitManipulation.GetBitsRequiredForPercentile(baseReducedValuesHistogram, 0.95);
 			if (baseReducedHundredthBits - baseReducedNinetyfifthBits == 0)
 			{
 				//In the end, no benefit could be realized from patching
@@ -224,7 +220,7 @@ namespace ApacheOrcDotNet.Encodings
 			return true;
 		}
 
-		bool SequenceIsTooShort(ArraySegment<long> values)
+		bool SequenceIsTooShort(IList<long> values)
 		{
 			if (values.Count <= 3)
 				return true;
@@ -232,7 +228,7 @@ namespace ApacheOrcDotNet.Encodings
 				return false;
 		}
 
-		void DirectEncode(ArraySegment<long> values, bool aligned, int? precalculatedFixedBitWidth)
+		void DirectEncode(IEnumerable<long> values, int numValues, bool aligned, int? precalculatedFixedBitWidth)
 		{
 			int fixedBitWidth;
 			if (precalculatedFixedBitWidth.HasValue)
@@ -240,7 +236,7 @@ namespace ApacheOrcDotNet.Encodings
 			else
 			{
 				var histogram = values.GenerateHistogramOfBitWidths();
-				fixedBitWidth = BitManipulation.GetBitsRequiredForPercentile(histogram, values.Count, 1.0);
+				fixedBitWidth = BitManipulation.GetBitsRequiredForPercentile(histogram, 1.0);
 			}
 
 			if (aligned)
@@ -249,13 +245,11 @@ namespace ApacheOrcDotNet.Encodings
 				fixedBitWidth = BitManipulation.FindNearestDirectWidth(fixedBitWidth);
 			var encodedFixedBitWidth = fixedBitWidth.EncodeDirectWidth();
 
-			var numValues = values.Count - 1;
-
 			int byte1 = 0;
 			byte1 |= 0x1 << 6;								//7..6 Encoding Type
 			byte1 |= (encodedFixedBitWidth & 0x1f) << 1;	//5..1 Fixed Width
-			byte1 |= numValues >> 8;						//0    MSB of length
-			int byte2 = numValues&0xff;						//7..0 LSBs of length
+			byte1 |= (numValues - 1) >> 8;					//0    MSB of length
+			int byte2 = (numValues - 1) & 0xff;				//7..0 LSBs of length
 
 			_outputStream.WriteByte((byte)byte1);
 			_outputStream.WriteByte((byte)byte2);

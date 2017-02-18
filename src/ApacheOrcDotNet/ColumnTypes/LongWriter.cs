@@ -22,7 +22,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		protected override int NumDataStreams => _isNullable ? 2 : 1;
 		protected override IStatistics CreateStatistics() => new LongWriterStatistics();
 
-		protected override void EncodeValues(ArraySegment<long?> values, OrcCompressedBuffer[] buffers, IStatistics statistics)
+		protected override void EncodeValues(IList<long?> values, OrcCompressedBuffer[] buffers, IStatistics statistics)
 		{
 			var stats = (LongWriterStatistics)statistics;
 

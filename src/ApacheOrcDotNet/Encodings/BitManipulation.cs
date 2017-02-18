@@ -47,10 +47,9 @@ namespace ApacheOrcDotNet.Encodings
 			return (value << 1) ^ (value >> 63);
 		}
 
-		public static ArraySegment<long> ZigzagEncode(this ArraySegment<long> values)
+		public static IEnumerable<long> ZigzagEncode(this IEnumerable<long> values)
 		{
-			var zigZaggedValues = values.Select(v => ZigzagEncode(v)).ToArray();
-			return new ArraySegment<long>(zigZaggedValues);
+			return values.Select(v => ZigzagEncode(v));
 		}
 
 		public static int DecodeDirectWidth(this int encodedWidth)
@@ -89,22 +88,27 @@ namespace ApacheOrcDotNet.Encodings
 			throw new NotImplementedException($"Unimplemented {nameof(approxBits)} {approxBits}");
 		}
 
-		public static int[] GenerateHistogramOfBitWidths(this IEnumerable<long> values)
+		public static Tuple<int,int[]> GenerateHistogramOfBitWidths(this IEnumerable<long> values)
 		{
 			var histogram = new int[32];
+			int totalNumValues = 0;
 			foreach (var value in values)
 			{
 				var numBits = NumBits((ulong)value);
 				var nearestWidth = FindNearestDirectWidth(numBits);
 				var encodedNumBits = nearestWidth.EncodeDirectWidth();
 				histogram[encodedNumBits]++;
+				totalNumValues++;
 			}
 
-			return histogram;
+			return Tuple.Create(totalNumValues, histogram);
 		}
 
-		public static int GetBitsRequiredForPercentile(int[] histogram, int totalNumValues, double percentile)
+		public static int GetBitsRequiredForPercentile(Tuple<int,int[]> histogramTuple, double percentile)
 		{
+			var totalNumValues = histogramTuple.Item1;
+			var histogram = histogramTuple.Item2;
+
 			int numValuesToDrop = (int)(totalNumValues * (1.0 - percentile));
 
 			for (int i = histogram.Length - 1; i >= 0; i--)
@@ -330,21 +334,6 @@ namespace ApacheOrcDotNet.Encodings
 		{
 			var noOverflow = (left ^ right) >= 0 || (left ^ (left - right)) >= 0;
 			return !noOverflow;
-		}
-
-		public static ArraySegment<T> TakeValues<T>(this ArraySegment<T> values, int numValuesToTake)
-		{
-			if (numValuesToTake > values.Count)
-				throw new OverflowException($"Couldn't take {numValuesToTake} from ArraySegment");
-
-			return new ArraySegment<T>(values.Array, values.Offset + numValuesToTake, values.Count - numValuesToTake);
-		}
-
-		public static ArraySegment<T> CreateWindow<T>(this ArraySegment<T> values, int windowLength)
-		{
-			if (values.Count < windowLength)
-				windowLength = values.Count;
-			return new ArraySegment<T>(values.Array, values.Offset, windowLength);
 		}
 	}
 }

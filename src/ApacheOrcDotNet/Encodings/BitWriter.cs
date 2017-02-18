@@ -15,7 +15,7 @@ namespace ApacheOrcDotNet.Encodings
 			_byteWriter = new ByteRunLengthEncodingWriter(outputStream);
 		}
 
-		public void Write(ArraySegment<bool> values)
+		public void Write(IList<bool> values)
 		{
 			var numBytes = values.Count / 8;
 			if (values.Count % 8 != 0)
@@ -24,9 +24,9 @@ namespace ApacheOrcDotNet.Encodings
 
 			int byteIndex = 0;
 			int bitIndex = 7;
-			for (int i = 0; i < values.Count; i++)
+			foreach(var value in values)
 			{
-				if (values.Array[values.Offset + i])
+				if (value)
 					bytes[byteIndex] |= (byte)(1 << bitIndex);
 				bitIndex--;
 
@@ -37,7 +37,7 @@ namespace ApacheOrcDotNet.Encodings
 				}
 			}
 
-			_byteWriter.Write(new ArraySegment<byte>(bytes));
+			_byteWriter.Write(bytes);
 		}
 	}
 }

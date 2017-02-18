@@ -70,7 +70,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 		{
 			var stream = new MemoryStream();
 			var writer = new BitWriter(stream);
-			writer.Write(new ArraySegment<bool>(input));
+			writer.Write(input);
 			var actual = stream.ToArray();
 			Assert.Equal(expected.Length, actual.Length);
 			for (int i = 0; i < expected.Length; i++)
@@ -81,8 +81,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 		{
 			var stream = new MemoryStream();
 			var writer = new BitWriter(stream);
-			var arraySegment = new ArraySegment<bool>(values);
-			writer.Write(arraySegment);
+			writer.Write(values);
 
 			//If we know the encode length, make sure it's correct
 			if (expectedEncodeLength.HasValue)

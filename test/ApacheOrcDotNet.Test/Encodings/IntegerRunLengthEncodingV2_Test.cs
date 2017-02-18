@@ -562,8 +562,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 		{
 			var stream = new MemoryStream();
 			var writer = new IntegerRunLengthEncodingV2Writer(stream);
-			var inputArraySegment = new ArraySegment<long>(input);
-			writer.Write(inputArraySegment, isSigned, aligned);
+			writer.Write(input, isSigned, aligned);
 			var actual = stream.ToArray();
 			Assert.Equal(expected.Length, actual.Length);
 			for (int i = 0; i < expected.Length; i++)
@@ -574,8 +573,7 @@ namespace ApacheOrcDotNet.Test.Encodings
 		{
 			var stream = new MemoryStream();
 			var writer = new IntegerRunLengthEncodingV2Writer(stream);
-			var arraySegment = new ArraySegment<long>(test);
-			writer.Write(arraySegment, isSigned, aligned);
+			writer.Write(test, isSigned, aligned);
 
 			//If we know the encode length, make sure it's correct
 			if (expectedEncodeLength.HasValue)
