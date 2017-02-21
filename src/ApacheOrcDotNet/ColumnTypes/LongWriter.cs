@@ -13,7 +13,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;
 
-		public LongWriter(bool isNullable, bool shouldAlignEncodedValues)
+		public LongWriter(bool isNullable, bool shouldAlignEncodedValues, OrcCompressedBufferFactory bufferFactory)
+			: base(bufferFactory)
 		{
 			_isNullable = isNullable;
 			_shouldAlignEncodedValues = shouldAlignEncodedValues;
@@ -26,11 +27,29 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			var stats = (LongWriterStatistics)statistics;
 
-			foreach (var value in values)		//TODO benchmark this to see if LINQ Sum/Min/Max is faster than a function call per value
-				stats.AddValue(value);
+			var valList = new List<long>(values.Count);
+			var presentList = new List<bool>(values.Count);
 
-			var encoder = new IntegerRunLengthEncodingV2Writer(buffers[0]);
-			//encoder.Write(values, true, _shouldAlignEncodedValues);
+			foreach (var value in values)
+			{
+				stats.AddValue(value);
+				if (value.HasValue)
+					valList.Add(value.Value);
+				presentList.Add(value.HasValue);
+			}
+
+			int bufferIndex = 0;
+			if (presentList.Count != 0)
+			{
+				if (!_isNullable)
+					throw new InvalidOperationException($"Null values were present in a non-nullable {nameof(LongWriter)} column");
+
+				var presentEncoder = new BitWriter(buffers[bufferIndex++]);
+				presentEncoder.Write(presentList);
+			}
+
+			var valEncoder = new IntegerRunLengthEncodingV2Writer(buffers[bufferIndex]);
+			valEncoder.Write(valList, true, _shouldAlignEncodedValues);
 		}
 	}
 }

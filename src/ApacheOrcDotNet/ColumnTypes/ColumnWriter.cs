@@ -12,9 +12,11 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		bool _blockAddingIsComplete = false;
 
-		public ColumnWriter()
+		public ColumnWriter(OrcCompressedBufferFactory bufferFactory)
 		{
 			_stripeStreamBuffers = new OrcCompressedBuffer[NumDataStreams];
+			for (int i = 0; i < NumDataStreams; i++)
+				_stripeStreamBuffers[i] = bufferFactory.CreateBuffer();
 		}
 
 		public List<IStatistics> Statistics { get; } = new List<IStatistics>();

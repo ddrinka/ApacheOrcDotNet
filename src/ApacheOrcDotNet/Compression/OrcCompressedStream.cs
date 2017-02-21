@@ -104,5 +104,19 @@ namespace ApacheOrcDotNet.Compression
 			outputStream.WriteByte(bytes[2]);
 			outputStream.WriteByte(bytes[1]);
 		}
+
+		public static CompressionKind ToCompressionKind(this CompressionType configurationCompressionType)
+		{
+			switch(configurationCompressionType)
+			{
+				case CompressionType.None:return CompressionKind.None;
+				case CompressionType.ZLIB:return CompressionKind.Zlib;
+				case CompressionType.LZO:return CompressionKind.Lzo;
+				case CompressionType.LZ4:return CompressionKind.Lz4;
+				case CompressionType.Snappy:return CompressionKind.Snappy;
+				default:
+					throw new ArgumentException($"Unhandled {nameof(CompressionType)} {configurationCompressionType}");
+			}
+		}
 	}
 }
