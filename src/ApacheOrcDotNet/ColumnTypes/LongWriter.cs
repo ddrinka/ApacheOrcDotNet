@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Statistics;
 using ApacheOrcDotNet.Encodings;
+using ApacheOrcDotNet.Protocol;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
@@ -12,15 +13,40 @@ namespace ApacheOrcDotNet.ColumnTypes
 	{
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;
+		readonly OrcCompressedBufferFactory _bufferFactory;
 
 		public LongWriter(bool isNullable, bool shouldAlignEncodedValues, OrcCompressedBufferFactory bufferFactory)
-			: base(bufferFactory)
 		{
 			_isNullable = isNullable;
 			_shouldAlignEncodedValues = shouldAlignEncodedValues;
+			_bufferFactory = bufferFactory;
 		}
 
-		protected override int NumDataStreams => _isNullable ? 2 : 1;
+		protected override ColumnEncodingKind DetectEncodingKind(IList<long?> values)
+		{
+			return ColumnEncodingKind.DirectV2;
+		}
+
+		protected override OrcCompressedBuffer[] CreateDataStreamBuffers(ColumnEncodingKind encodingKind)
+		{
+			if (encodingKind != ColumnEncodingKind.DirectV2)
+				throw new NotSupportedException($"Only DirectV2 encoding is supported for {nameof(LongWriter)}");
+
+			if (_isNullable)
+			{
+				var buffers = new OrcCompressedBuffer[2];
+				buffers[0] = _bufferFactory.CreateBuffer(StreamKind.Present);
+				buffers[1] = _bufferFactory.CreateBuffer(StreamKind.Data);
+				return buffers;
+			}
+			else
+			{
+				var buffers = new OrcCompressedBuffer[1];
+				buffers[0] = _bufferFactory.CreateBuffer(StreamKind.Data);
+				return buffers;
+			}
+		}
+
 		protected override IStatistics CreateStatistics() => new LongWriterStatistics();
 
 		protected override void EncodeValues(IList<long?> values, OrcCompressedBuffer[] buffers, IStatistics statistics)

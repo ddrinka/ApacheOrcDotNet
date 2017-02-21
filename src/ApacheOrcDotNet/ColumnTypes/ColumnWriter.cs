@@ -2,29 +2,24 @@
 using ApacheOrcDotNet.Statistics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
 	public abstract class ColumnWriter<T>
 	{
-		readonly OrcCompressedBuffer[] _stripeStreamBuffers;
-
 		bool _blockAddingIsComplete = false;
-
-		public ColumnWriter(OrcCompressedBufferFactory bufferFactory)
-		{
-			_stripeStreamBuffers = new OrcCompressedBuffer[NumDataStreams];
-			for (int i = 0; i < NumDataStreams; i++)
-				_stripeStreamBuffers[i] = bufferFactory.CreateBuffer();
-		}
+		OrcCompressedBuffer[] _stripeStreamBuffers = null;
 
 		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
-		public long CompressedLength => _stripeStreamBuffers.Sum(b => b.CompressedBuffer.Length);
+		public IList<long> CompressedLengths => _stripeStreamBuffers?.Select(s => s.Length).ToArray() ?? new long[] { 0 };
+		public Protocol.ColumnEncodingKind ColumnEncoding { get; private set; }
 
 		protected abstract IStatistics CreateStatistics();
+		protected abstract Protocol.ColumnEncodingKind DetectEncodingKind(IList<T> values);
+		protected abstract OrcCompressedBuffer[] CreateDataStreamBuffers(Protocol.ColumnEncodingKind encodingKind);
 		protected abstract void EncodeValues(IList<T> values, OrcCompressedBuffer[] buffers, IStatistics statistics);
-		protected abstract int NumDataStreams { get; }
 
 		/// <summary>
 		/// Write a full index stride's worth of data.  This should be called repeatedly until the sum of all buffers in all columns is greater than the stripe size
@@ -34,6 +29,12 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			if (_blockAddingIsComplete)
 				throw new InvalidOperationException("Attempted to add blocks after calling CompleteAddingBlocks");
+
+			if (_stripeStreamBuffers == null)
+			{
+				ColumnEncoding = DetectEncodingKind(values);
+				_stripeStreamBuffers = CreateDataStreamBuffers(ColumnEncoding);
+			}
 
 			var statistics = CreateStatistics();
 			foreach (var buffer in _stripeStreamBuffers)
@@ -52,6 +53,12 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_blockAddingIsComplete = true;
 			foreach (var buffer in _stripeStreamBuffers)
 				buffer.WritingCompleted();
+		}
+
+		public void CopyTo(Stream outputStream)
+		{
+			for (int i = 0; i < _stripeStreamBuffers.Length; i++)
+				_stripeStreamBuffers[i].CopyTo(outputStream);
 		}
 	}
 

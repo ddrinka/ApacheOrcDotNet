@@ -16,15 +16,17 @@ namespace ApacheOrcDotNet.Compression
 
 		bool _doneWriting = false;
 
-		public OrcCompressedBuffer(int compressionBlockSize, Protocol.CompressionKind compressionKind, CompressionStrategy compressionStrategy)
+		public OrcCompressedBuffer(int compressionBlockSize, Protocol.CompressionKind compressionKind, CompressionStrategy compressionStrategy, Protocol.StreamKind streamKind)
 		{
 			_compressionBlockSize = compressionBlockSize;
 			_compressionKind = compressionKind;
 			_compressionStrategy = compressionStrategy;
+			StreamKind = streamKind;
 		}
 
 		public MemoryStream CompressedBuffer { get; } = new MemoryStream();
 		public long CurrentBlockLength => _currentBlock.Length;
+		public Protocol.StreamKind StreamKind { get; }
 
 		public override void Write(byte[] buffer, int offset, int count)
 		{

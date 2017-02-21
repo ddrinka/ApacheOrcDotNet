@@ -26,9 +26,9 @@ namespace ApacheOrcDotNet.Compression
 			_compressionStrategy = compressionStrategy;
 		}
 
-		public OrcCompressedBuffer CreateBuffer()
+		public OrcCompressedBuffer CreateBuffer(Protocol.StreamKind streamKind)
 		{
-			return new OrcCompressedBuffer(_compressionBlockSize, _compressionKind, _compressionStrategy);
+			return new OrcCompressedBuffer(_compressionBlockSize, _compressionKind, _compressionStrategy, streamKind);
 		}
     }
 }
