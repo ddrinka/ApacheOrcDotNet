@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-	public abstract class ColumnWriter<T>
+	public abstract class ColumnWriter<T> : IColumnWriter
 	{
 		bool _blockAddingIsComplete = false;
 		OrcCompressedBuffer[] _stripeStreamBuffers = null;
