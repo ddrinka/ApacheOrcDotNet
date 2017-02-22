@@ -9,6 +9,8 @@ namespace ApacheOrcDotNet
     public interface IStatistics
     {
 		void AnnotatePosition(long compressedBufferOffset, long decompressedOffset, long rleValuesToConsume);
-		void SetColumnStatistics(ColumnStatistics columnStatistics);
-    }
+		void AnnotatePosition(long uncompressedOffset, long rleValuesToConsume);
+		void FillColumnStatistics(ColumnStatistics columnStatistics);
+		void FillPositionList(List<ulong> positions);
+	}
 }

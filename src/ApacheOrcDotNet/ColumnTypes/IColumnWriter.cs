@@ -10,8 +10,10 @@ namespace ApacheOrcDotNet.ColumnTypes
     {
 		List<IStatistics> Statistics { get; }
 		IList<long> CompressedLengths { get; }
-		Protocol.ColumnEncodingKind ColumnEncoding { get; }
 		void CompleteAddingBlocks();
 		void CopyTo(Stream outputStream);
+		void CopyStatisticsTo(Stream outputStream);
+		void FillStripeFooter(Protocol.StripeFooter footer);
+		void Reset();
 	}
 }

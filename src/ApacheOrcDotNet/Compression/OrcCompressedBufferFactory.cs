@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ApacheOrcDotNet.Protocol;
+using System.IO;
 
 namespace ApacheOrcDotNet.Compression
 {
 	public class OrcCompressedBufferFactory
 	{
 		readonly int _compressionBlockSize;
-		readonly CompressionKind _compressionKind;
+		readonly Protocol.CompressionKind _compressionKind;
 		readonly CompressionStrategy _compressionStrategy;
 
 		public OrcCompressedBufferFactory(WriterConfiguration configuration)
@@ -19,7 +19,7 @@ namespace ApacheOrcDotNet.Compression
 			_compressionStrategy = configuration.CompressionStrategy;
 		}
 
-		public OrcCompressedBufferFactory(int compressionBlockSize, CompressionKind compressionKind, CompressionStrategy compressionStrategy)
+		public OrcCompressedBufferFactory(int compressionBlockSize, Protocol.CompressionKind compressionKind, CompressionStrategy compressionStrategy)
 		{
 			_compressionBlockSize = compressionBlockSize;
 			_compressionKind = compressionKind;

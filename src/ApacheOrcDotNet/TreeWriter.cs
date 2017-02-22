@@ -1,4 +1,6 @@
 ﻿using ApacheOrcDotNet.ColumnTypes;
+using ApacheOrcDotNet.Infrastructure;
+using ApacheOrcDotNet.Statistics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,18 +12,103 @@ namespace ApacheOrcDotNet
 {
     public class TreeWriter
     {
+		readonly Stream _outputStream;
 		readonly bool _shouldAlignNumericValues;
 		readonly Compression.OrcCompressedBufferFactory _bufferFactory;
 		readonly int _strideLength;
+		readonly long _stripeLength;
 		readonly List<ColumnWriterAndAction> _columnWriters = new List<ColumnWriterAndAction>();
 
-		public TreeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength)
+		int _rowsInStride = 0;
+		long _rowsInStripe = 0;
+		List<Protocol.StripeInformation> _stripeInformations = new List<Protocol.StripeInformation>();
+
+		public TreeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength, long stripeLength)
 		{
+			_outputStream = outputStream;
 			_shouldAlignNumericValues = shouldAlignNumericValues;
 			_bufferFactory = bufferFactory;
 			_strideLength = strideLength;
+			_stripeLength = stripeLength;
 
 			CreateColumnWriters(pocoType);
+		}
+
+		public void AddRows(IEnumerable<object> rows)
+		{
+			foreach(var row in rows)
+			{
+				foreach(var columnWriter in _columnWriters)
+				{
+					columnWriter.AddValueToState(row);
+				}
+
+				if(++_rowsInStride >= _strideLength)
+					CompleteStride();
+			}
+		}
+
+		void CompleteStride()
+		{
+			foreach(var columnWriter in _columnWriters)
+			{
+				columnWriter.WriteValuesFromState();
+			}
+
+			var totalStripeLength = _columnWriters.Sum(writer => writer.ColumnWriter.CompressedLengths.Sum());
+			if (totalStripeLength > _stripeLength)
+				CompleteStripe();
+
+			_rowsInStripe += _rowsInStride;
+			_rowsInStride = 0;
+		}
+
+		void CompleteStripe()
+		{
+			var stripeFooter = new Protocol.StripeFooter();
+			foreach (var writer in _columnWriters)
+			{
+				writer.ColumnWriter.CompleteAddingBlocks();
+				writer.ColumnWriter.FillStripeFooter(stripeFooter);
+			}
+
+			var stripeInformation = new Protocol.StripeInformation();
+			stripeInformation.Offset = (ulong)_outputStream.Position;
+			stripeInformation.NumberOfRows = (ulong)_rowsInStripe;
+
+			//Indexes
+			foreach (var writer in _columnWriters)
+			{
+				writer.ColumnWriter.CopyStatisticsTo(_outputStream);
+				foreach (var stats in writer.ColumnWriter.Statistics)
+				{
+					stats.FillColumnStatistics(writer.StripeStatistics);
+					stats.FillColumnStatistics(writer.FileStatistics);
+				}
+			}
+			stripeInformation.IndexLength = (ulong)_outputStream.Position - stripeInformation.Offset;
+
+			//Streams
+			foreach(var writer in _columnWriters)
+			{
+				writer.ColumnWriter.CopyTo(_outputStream);
+			}
+			stripeInformation.DataLength = (ulong)_outputStream.Position - stripeInformation.IndexLength - stripeInformation.Offset;
+
+			//Footer
+			var footerBuffer = _bufferFactory.CreateBuffer(Protocol.StreamKind.Data);
+			ProtoBuf.Serializer.Serialize(footerBuffer, stripeFooter);
+			footerBuffer.WritingCompleted();
+			footerBuffer.CompressedBuffer.CopyTo(_outputStream);
+			stripeInformation.FooterLength = (ulong)_outputStream.Position - stripeInformation.DataLength - stripeInformation.IndexLength - stripeInformation.Offset;
+
+			_stripeInformations.Add(stripeInformation);
+
+			_rowsInStripe = 0;
+			foreach(var writer in _columnWriters)
+			{
+				writer.ColumnWriter.Reset();
+			}
 		}
 
 		void CreateColumnWriters(Type type)
@@ -63,6 +150,28 @@ namespace ApacheOrcDotNet
 
 			if(propertyType==typeof(int))
 				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<int>(classInstance, propertyInfo));
+			if (propertyType == typeof(long))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<long>(classInstance, propertyInfo));
+			if (propertyType == typeof(short))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<short>(classInstance, propertyInfo));
+			if (propertyType == typeof(uint))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<uint>(classInstance, propertyInfo));
+			if (propertyType == typeof(ulong))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => (long)GetValue<ulong>(classInstance, propertyInfo));
+			if (propertyType == typeof(ushort))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<ushort>(classInstance, propertyInfo));
+			if (propertyType == typeof(int?))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<int?>(classInstance, propertyInfo));
+			if (propertyType == typeof(long?))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<long?>(classInstance, propertyInfo));
+			if (propertyType == typeof(short?))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<short?>(classInstance, propertyInfo));
+			if (propertyType == typeof(uint?))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<uint?>(classInstance, propertyInfo));
+			if (propertyType == typeof(ulong?))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => (long?)GetValue<ulong?>(classInstance, propertyInfo));
+			if (propertyType == typeof(ushort?))
+				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<ushort?>(classInstance, propertyInfo));
 
 			throw new NotImplementedException($"Only basic types are supported. Unable to handle type {propertyType}");
 		}
@@ -70,44 +179,29 @@ namespace ApacheOrcDotNet
 		ColumnWriterAndAction GetLongColumnWriterAndAction(PropertyInfo propertyInfo, Func<object, long?> valueGetter)
 		{
 			var columnWriter = new LongWriter(false, _shouldAlignNumericValues, _bufferFactory);
+			var state = new List<long?>();
 			return new ColumnWriterAndAction
 			{
 				ColumnWriter = columnWriter,
-				State = new List<long?>(),
-				AddValuesToState = (state, classInstances) =>
+				AddValueToState = classInstance =>
 				{
-					var list = (List<long?>)state;
-					foreach (var classInstance in classInstances)
-					{
-						var value = valueGetter(classInstance);
-						list.Add(value);
-					}
+					var value = valueGetter(classInstance);
+					state.Add(value);
 				},
-				WriteValuesFromState = (state) =>
+				WriteValuesFromState = () =>
 				{
-					var list = (List<long?>)state;
-					columnWriter.AddBlock(list);
+					columnWriter.AddBlock(state);
 				}
 			};
 		}
     }
 
-	public delegate void AddValuesToState(object state, IEnumerable<object> classInstances);
-	public delegate void WriteValuesFromState(object state);
 	class ColumnWriterAndAction
 	{
 		public IColumnWriter ColumnWriter { get; set; }
-		public AddValuesToState AddValuesToState { get; set; }
-		public WriteValuesFromState WriteValuesFromState { get; set; }
-		public object State { get; set; }
-
-/*		public ColumnWriterAndAction(IColumnWriter writer, object state, AddValuesToState addValuesToState, WriteValuesFromState writeValuesFromState)
-		{
-			ColumnWriter = writer;
-			AddValuesToState = addValuesToState;
-			WriteValuesFromState = writeValuesFromState;
-			State = state;
-		}
-*/
+		public Action<object> AddValueToState { get; set; }
+		public Action WriteValuesFromState { get; set; }
+		public ColumnStatistics StripeStatistics { get; } = new ColumnStatistics();
+		public ColumnStatistics FileStatistics { get; } = new ColumnStatistics();
 	}
 }

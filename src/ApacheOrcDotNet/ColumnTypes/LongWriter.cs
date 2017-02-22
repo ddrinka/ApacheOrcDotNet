@@ -16,6 +16,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		readonly OrcCompressedBufferFactory _bufferFactory;
 
 		public LongWriter(bool isNullable, bool shouldAlignEncodedValues, OrcCompressedBufferFactory bufferFactory)
+			: base(bufferFactory)
 		{
 			_isNullable = isNullable;
 			_shouldAlignEncodedValues = shouldAlignEncodedValues;

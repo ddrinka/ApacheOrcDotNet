@@ -27,6 +27,7 @@ namespace ApacheOrcDotNet.Compression
 		public MemoryStream CompressedBuffer { get; } = new MemoryStream();
 		public long CurrentBlockLength => _currentBlock.Length;
 		public Protocol.StreamKind StreamKind { get; }
+		public bool AreCompressing => _compressionKind != Protocol.CompressionKind.None;
 
 		public override void Write(byte[] buffer, int offset, int count)
 		{

@@ -29,7 +29,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			NumValues++;
 		}
 
-		public void SetColumnStatistics(ColumnStatistics columnStatistics)
+		public void FillColumnStatistics(ColumnStatistics columnStatistics)
 		{
 			if (columnStatistics.IntStatistics == null)
 			{

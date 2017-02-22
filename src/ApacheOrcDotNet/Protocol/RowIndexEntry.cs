@@ -11,7 +11,8 @@ namespace ApacheOrcDotNet.Protocol
     public class RowIndexEntry
     {
 		[ProtoMember(1, IsPacked = true)]
-		List<ulong> Positions { get; } = new List<ulong>();
-		[ProtoMember(2)] ColumnStatistics Statistics { get; set; }
+		public List<ulong> Positions { get; } = new List<ulong>();
+		[ProtoMember(2)]
+		public ColumnStatistics Statistics { get; } = new ColumnStatistics();
     }
 }
