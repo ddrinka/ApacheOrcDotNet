@@ -223,6 +223,7 @@ namespace ApacheOrcDotNet.Stripes
 				WriteValuesFromState = () =>
 				{
 					columnWriter.AddBlock(state);
+					state.Clear();
 				}
 			};
 		}

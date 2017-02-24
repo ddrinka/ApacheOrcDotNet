@@ -17,11 +17,23 @@ namespace ApacheOrcDotNet.Test.Stripes
 	public class StripeWriter_Test
 	{
 		[Fact]
-		public void SingleStreamSingleBlock()
+		public void SingleStreamSingleStrideSingleBlock()
+		{
+			RoundTripSingleInt(100);
+		}
+
+		[Fact]
+		public void SingleStreamMultiStrideMultiBlock()
+		{
+			RoundTripSingleInt(70000);	//70,000*4 > 256*1024 and 70,000 > 10,000
+		}
+
+		void RoundTripSingleInt(int numValues)
 		{
 			var pocos = new List<SingleValuePoco>();
-			for (int i = 0; i < 100; i++)
-				pocos.Add(new SingleValuePoco { IntProperty1 = i });
+			var random = new Random(123);
+			for (int i = 0; i < numValues; i++)
+				pocos.Add(new SingleValuePoco { IntProperty1 = random.Next() });
 
 			var bufferFactory = new OrcCompressedBufferFactory(256 * 1024, CompressionKind.Zlib, CompressionStrategy.Size);
 			var stream = new MemoryStream();
@@ -35,13 +47,13 @@ namespace ApacheOrcDotNet.Test.Stripes
 			stream.Seek(0, SeekOrigin.Begin);
 			var stripes = new StripeReaderCollection(stream, footer, CompressionKind.Zlib);
 			Assert.Equal(1, stripes.Count);
-			Assert.Equal(100ul, stripes[0].NumRows);
+			Assert.Equal((ulong)numValues, stripes[0].NumRows);
 			var stripeStreams = stripes[0].GetStripeStreamCollection();
 			var longReader = new LongReader(stripeStreams, 0);
 			var results = longReader.Read().ToArray();
 
-			for (int i = 0; i < 100; i++)
-				Assert.Equal(i, results[i]);
+			for (int i = 0; i < numValues; i++)
+				Assert.Equal(pocos[i].IntProperty1, results[i]);
 		}
 	}
 
