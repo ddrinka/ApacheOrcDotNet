@@ -61,5 +61,12 @@ namespace ApacheOrcDotNet.Compression
 				throw new InvalidOperationException("Cannot write to a decompressing stream");
 			_deflateStream.Write(buffer, offset, count);
 		}
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing)
+				_deflateStream.Dispose();
+
+			base.Dispose(disposing);
+		}
 	}
 }
