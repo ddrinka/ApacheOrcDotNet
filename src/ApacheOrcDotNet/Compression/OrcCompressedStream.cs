@@ -48,12 +48,12 @@ namespace ApacheOrcDotNet.Compression
 		/// <param name="compressionStrategy">The balance of speed vs size for the compressor</param>
 		public static void CompressCopyTo(MemoryStream uncompressedSource, IOStream compressedDestination, CompressionKind compressionKind, CompressionStrategy compressionStrategy)
 		{
+			uncompressedSource.Seek(0, SeekOrigin.Begin);
+
 			if (compressionKind == CompressionKind.None)
 				uncompressedSource.CopyTo(compressedDestination);
 			else
 			{
-				uncompressedSource.Seek(0, SeekOrigin.Begin);
-
 				var temporaryStream = new MemoryStream();   //How can we avoid this?? We need to know the length of the compressed stream to write the header before we can write the stream itself...
 				using (var compressingStream = CompressionFactory.CreateCompressorStream(compressionKind, compressionStrategy, temporaryStream))
 					uncompressedSource.CopyTo(compressingStream);
@@ -100,9 +100,9 @@ namespace ApacheOrcDotNet.Compression
 				value |= 1;
 
 			var bytes = BitConverter.GetBytes(value);
-			outputStream.WriteByte(bytes[3]);
-			outputStream.WriteByte(bytes[2]);
+			outputStream.WriteByte(bytes[0]);
 			outputStream.WriteByte(bytes[1]);
+			outputStream.WriteByte(bytes[2]);
 		}
 
 		public static CompressionKind ToCompressionKind(this CompressionType configurationCompressionType)

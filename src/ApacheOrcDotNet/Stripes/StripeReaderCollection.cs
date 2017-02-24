@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.Stripes
 	public class StripeReaderCollection : IList<StripeReader>
 	{
 		readonly List<StripeReader> _innerCollection = new List<StripeReader>();
-		internal StripeReaderCollection(Stream inputStream, Protocol.Footer footer, Protocol.CompressionKind compressionKind)
+		public StripeReaderCollection(Stream inputStream, Protocol.Footer footer, Protocol.CompressionKind compressionKind)
 		{
 			foreach(var stripe in footer.Stripes)
 			{

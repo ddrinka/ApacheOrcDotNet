@@ -11,8 +11,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 		List<IStatistics> Statistics { get; }
 		IList<long> CompressedLengths { get; }
 		void CompleteAddingBlocks();
-		void CopyTo(Stream outputStream);
-		void CopyStatisticsTo(Stream outputStream);
+		void CopyDataBuffersTo(Stream outputStream);
+		void CopyIndexBufferTo(Stream outputStream);
 		void FillStripeFooter(Protocol.StripeFooter footer);
 		void Reset();
 	}

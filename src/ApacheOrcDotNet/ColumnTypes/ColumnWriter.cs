@@ -11,16 +11,16 @@ namespace ApacheOrcDotNet.ColumnTypes
 	{
 		readonly OrcCompressedBufferFactory _bufferFactory;     //Only used for indexes
 		bool _blockAddingIsComplete = false;
-		OrcCompressedBuffer[] _stripeStreamBuffers = null;
+		List<OrcCompressedBuffer> _stripeStreamBuffers = new List<OrcCompressedBuffer>();
 		Protocol.ColumnEncodingKind _columnEncoding = Protocol.ColumnEncodingKind.DirectV2;
 
 		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
-		public IList<long> CompressedLengths => _stripeStreamBuffers?.Select(s => s.Length).ToArray() ?? new long[] { 0 };
+		public IList<long> CompressedLengths => _stripeStreamBuffers.Select(s => s.CompressedBuffer.Length).ToArray();
 
 		protected abstract IStatistics CreateStatistics();
 		protected abstract Protocol.ColumnEncodingKind DetectEncodingKind(IList<T> values);
-		protected abstract OrcCompressedBuffer[] CreateDataStreamBuffers(Protocol.ColumnEncodingKind encodingKind);
-		protected abstract void EncodeValues(IList<T> values, OrcCompressedBuffer[] buffers, IStatistics statistics);
+		protected abstract void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, Protocol.ColumnEncodingKind encodingKind);
+		protected abstract void EncodeValues(IList<T> values, IList<OrcCompressedBuffer> buffers, IStatistics statistics);
 
 		public ColumnWriter(OrcCompressedBufferFactory bufferFactory)
 		{
@@ -36,10 +36,11 @@ namespace ApacheOrcDotNet.ColumnTypes
 			if (_blockAddingIsComplete)
 				throw new InvalidOperationException("Attempted to add blocks after calling CompleteAddingBlocks");
 
-			if (_stripeStreamBuffers == null)
+			if (_stripeStreamBuffers.Count == 0)
 			{
+				_stripeStreamBuffers.Add(_bufferFactory.CreateBuffer(Protocol.StreamKind.RowIndex));	//Add the index buffer
 				_columnEncoding = DetectEncodingKind(values);
-				_stripeStreamBuffers = CreateDataStreamBuffers(_columnEncoding);
+				AddDataStreamBuffers(_stripeStreamBuffers, _columnEncoding);							//Add the data buffers
 			}
 
 			var statistics = CreateStatistics();
@@ -62,37 +63,27 @@ namespace ApacheOrcDotNet.ColumnTypes
 		public void CompleteAddingBlocks()
 		{
 			_blockAddingIsComplete = true;
+
+			GenerateIndex();
 			foreach (var buffer in _stripeStreamBuffers)
 				buffer.WritingCompleted();
 		}
 
-		public void CopyTo(Stream outputStream)
+		public void CopyDataBuffersTo(Stream outputStream)
 		{
 			if (!_blockAddingIsComplete)
 				throw new InvalidOperationException("Blocking adding not marked as complete");
 
-			for (int i = 0; i < _stripeStreamBuffers.Length; i++)
-				_stripeStreamBuffers[i].CopyTo(outputStream);
+			for (int i = 1; i < _stripeStreamBuffers.Count; i++)
+				_stripeStreamBuffers[i].CompressedBuffer.CopyTo(outputStream);
 		}
 
-		public void CopyStatisticsTo(Stream outputStream)
+		public void CopyIndexBufferTo(Stream outputStream)
 		{
-			if (!_blockAddingIsComplete)
-				throw new InvalidOperationException("Blocking adding not marked as complete");
+			if (_stripeStreamBuffers.Count == 0)
+				throw new IndexOutOfRangeException("No index buffer was created");
 
-			var indexes = new Protocol.RowIndex();
-			foreach (var stats in Statistics)
-			{
-				var indexEntry = new Protocol.RowIndexEntry();
-				stats.FillPositionList(indexEntry.Positions);
-				stats.FillColumnStatistics(indexEntry.Statistics);
-				indexes.Entry.Add(indexEntry);
-			}
-
-			var buffer = _bufferFactory.CreateBuffer(Protocol.StreamKind.RowIndex);
-			ProtoBuf.Serializer.Serialize(buffer, indexes);
-			buffer.WritingCompleted();
-			buffer.CopyTo(outputStream);
+			_stripeStreamBuffers[0].CompressedBuffer.CopyTo(outputStream);
 		}
 
 		public void FillStripeFooter(Protocol.StripeFooter footer)
@@ -107,13 +98,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 			};
 			footer.Columns.Add(columnEncoding);
 
-			for (int i = 0; i < _stripeStreamBuffers.Length; i++)
+			foreach(var buffer in _stripeStreamBuffers)
 			{
 				var stream = new Protocol.Stream
 				{
 					Column = (uint)footer.Columns.Count - 1,
-					Kind = _stripeStreamBuffers[i].StreamKind,
-					Length = (ulong)_stripeStreamBuffers[i].CompressedBuffer.Length
+					Kind = buffer.StreamKind,
+					Length = (ulong)buffer.CompressedBuffer.Length
 				};
 				footer.Streams.Add(stream);
 			}
@@ -124,6 +115,20 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_blockAddingIsComplete = false;
 			_stripeStreamBuffers = null;
 			Statistics.Clear();
+		}
+
+		void GenerateIndex()
+		{
+			var indexes = new Protocol.RowIndex();
+			foreach (var stats in Statistics)
+			{
+				var indexEntry = new Protocol.RowIndexEntry();
+				stats.FillPositionList(indexEntry.Positions);
+				stats.FillColumnStatistics(indexEntry.Statistics);
+				indexes.Entry.Add(indexEntry);
+			}
+
+			ProtoBuf.Serializer.Serialize(_stripeStreamBuffers[0], indexes);
 		}
 	}
 

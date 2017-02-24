@@ -8,9 +8,9 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet
+namespace ApacheOrcDotNet.Stripes
 {
-    public class TreeWriter
+    public class StripeWriter
     {
 		readonly Stream _outputStream;
 		readonly bool _shouldAlignNumericValues;
@@ -19,11 +19,14 @@ namespace ApacheOrcDotNet
 		readonly long _stripeLength;
 		readonly List<ColumnWriterAndAction> _columnWriters = new List<ColumnWriterAndAction>();
 
+		bool _rowAddingCompleted = false;
 		int _rowsInStride = 0;
 		long _rowsInStripe = 0;
+		long _rowsInFile = 0;
+		long _contentLength = 0;
 		List<Protocol.StripeInformation> _stripeInformations = new List<Protocol.StripeInformation>();
 
-		public TreeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength, long stripeLength)
+		public StripeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength, long stripeLength)
 		{
 			_outputStream = outputStream;
 			_shouldAlignNumericValues = shouldAlignNumericValues;
@@ -36,6 +39,9 @@ namespace ApacheOrcDotNet
 
 		public void AddRows(IEnumerable<object> rows)
 		{
+			if (_rowAddingCompleted)
+				throw new InvalidOperationException("Row adding as been completed");
+
 			foreach(var row in rows)
 			{
 				foreach(var columnWriter in _columnWriters)
@@ -46,6 +52,30 @@ namespace ApacheOrcDotNet
 				if(++_rowsInStride >= _strideLength)
 					CompleteStride();
 			}
+		}
+
+		public void RowAddingCompleted()
+		{
+			if (_rowsInStride != 0)
+				CompleteStride();
+			if (_rowsInStripe != 0)
+				CompleteStripe();
+
+			_contentLength = _outputStream.Position;
+			_rowAddingCompleted = true;
+		}
+
+		public void FillFooter(Protocol.Footer footer)
+		{
+			if (!_rowAddingCompleted)
+				throw new InvalidOperationException("Row adding not completed");
+
+			footer.ContentLength = (ulong)_contentLength;
+			footer.NumberOfRows = (ulong)_rowsInFile;
+			footer.RowIndexStride = (uint)_strideLength;
+			footer.Stripes.AddRange(_stripeInformations);
+			foreach (var writer in _columnWriters)
+				footer.Statistics.Add(writer.FileStatistics);
 		}
 
 		void CompleteStride()
@@ -70,6 +100,12 @@ namespace ApacheOrcDotNet
 			{
 				writer.ColumnWriter.CompleteAddingBlocks();
 				writer.ColumnWriter.FillStripeFooter(stripeFooter);
+
+				foreach (var stats in writer.ColumnWriter.Statistics)
+				{
+					stats.FillColumnStatistics(writer.StripeStatistics);
+					stats.FillColumnStatistics(writer.FileStatistics);
+				}
 			}
 
 			var stripeInformation = new Protocol.StripeInformation();
@@ -79,31 +115,27 @@ namespace ApacheOrcDotNet
 			//Indexes
 			foreach (var writer in _columnWriters)
 			{
-				writer.ColumnWriter.CopyStatisticsTo(_outputStream);
-				foreach (var stats in writer.ColumnWriter.Statistics)
-				{
-					stats.FillColumnStatistics(writer.StripeStatistics);
-					stats.FillColumnStatistics(writer.FileStatistics);
-				}
+				writer.ColumnWriter.CopyIndexBufferTo(_outputStream);
 			}
 			stripeInformation.IndexLength = (ulong)_outputStream.Position - stripeInformation.Offset;
 
 			//Streams
 			foreach(var writer in _columnWriters)
 			{
-				writer.ColumnWriter.CopyTo(_outputStream);
+				writer.ColumnWriter.CopyDataBuffersTo(_outputStream);
 			}
 			stripeInformation.DataLength = (ulong)_outputStream.Position - stripeInformation.IndexLength - stripeInformation.Offset;
 
 			//Footer
-			var footerBuffer = _bufferFactory.CreateBuffer(Protocol.StreamKind.Data);
-			ProtoBuf.Serializer.Serialize(footerBuffer, stripeFooter);
-			footerBuffer.WritingCompleted();
-			footerBuffer.CompressedBuffer.CopyTo(_outputStream);
+			var stripeFooterBuffer = _bufferFactory.CreateBuffer(Protocol.StreamKind.Data);
+			ProtoBuf.Serializer.Serialize(stripeFooterBuffer, stripeFooter);
+			stripeFooterBuffer.WritingCompleted();
+			stripeFooterBuffer.CompressedBuffer.CopyTo(_outputStream);
 			stripeInformation.FooterLength = (ulong)_outputStream.Position - stripeInformation.DataLength - stripeInformation.IndexLength - stripeInformation.Offset;
 
 			_stripeInformations.Add(stripeInformation);
 
+			_rowsInFile += _rowsInStripe;
 			_rowsInStripe = 0;
 			foreach(var writer in _columnWriters)
 			{
@@ -120,7 +152,7 @@ namespace ApacheOrcDotNet
 			}
 		}
 
-		IEnumerable<PropertyInfo> GetPublicPropertiesFromPoco(TypeInfo pocoTypeInfo)
+		static IEnumerable<PropertyInfo> GetPublicPropertiesFromPoco(TypeInfo pocoTypeInfo)
 		{
 			if (pocoTypeInfo.BaseType != null)
 				foreach (var property in GetPublicPropertiesFromPoco(pocoTypeInfo.BaseType.GetTypeInfo()))
@@ -133,13 +165,13 @@ namespace ApacheOrcDotNet
 			}
 		}
 
-		bool IsNullable(TypeInfo propertyTypeInfo)
+		static bool IsNullable(TypeInfo propertyTypeInfo)
 		{
 			return propertyTypeInfo.IsGenericType 
 				&& propertyTypeInfo.GetGenericTypeDefinition() == typeof(Nullable<>);
 		}
 
-		T GetValue<T>(object classInstance, PropertyInfo property)
+		static T GetValue<T>(object classInstance, PropertyInfo property)
 		{
 			return (T)property.GetValue(classInstance);		//TODO make this emit IL to avoid the boxing of value-type T
 		}

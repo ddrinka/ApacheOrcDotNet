@@ -19,6 +19,11 @@ namespace ApacheOrcDotNet.Test.Protocol
 			_dataFileHelper = new DataFileHelper(dataFileName);
 		}
 
+		public ProtocolHelper(Stream inputStream)
+		{
+			_dataFileHelper = new DataFileHelper(inputStream);
+		}
+
 		public int GetPostscriptLength()
 		{
 			var lastByte = _dataFileHelper.Read(_dataFileHelper.Length - 1, 1)[0];

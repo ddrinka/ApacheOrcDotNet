@@ -28,6 +28,7 @@ namespace ApacheOrcDotNet.Compression
 		public long CurrentBlockLength => _currentBlock.Length;
 		public Protocol.StreamKind StreamKind { get; }
 		public bool AreCompressing => _compressionKind != Protocol.CompressionKind.None;
+		public bool MustBeIncluded { get; set; } = true;
 
 		public override void Write(byte[] buffer, int offset, int count)
 		{
@@ -52,6 +53,7 @@ namespace ApacheOrcDotNet.Compression
 		public void WritingCompleted()
 		{
 			CompressCurrentBlockAndReset();
+			CompressedBuffer.Seek(0, SeekOrigin.Begin);
 			_doneWriting = true;
 		}
 

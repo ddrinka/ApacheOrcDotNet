@@ -24,6 +24,11 @@ namespace ApacheOrcDotNet.Test.TestHelpers
 			_dataStream = fileInfo.CreateReadStream();
 		}
 
+		public DataFileHelper(Stream inputStream)
+		{
+			_dataStream = inputStream;
+		}
+
 		public void Dispose()
 		{
 			_dataStream.Dispose();
