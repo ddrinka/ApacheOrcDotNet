@@ -13,7 +13,6 @@ namespace ApacheOrcDotNet.ColumnTypes
 	{
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;
-		readonly OrcCompressedBufferFactory _bufferFactory;
 		readonly OrcCompressedBuffer _presentBuffer;
 		readonly OrcCompressedBuffer _dataBuffer;
 
@@ -22,14 +21,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			_isNullable = isNullable;
 			_shouldAlignEncodedValues = shouldAlignEncodedValues;
-			_bufferFactory = bufferFactory;
 
 			if (_isNullable)
 			{
-				_presentBuffer = _bufferFactory.CreateBuffer(StreamKind.Present);
+				_presentBuffer = bufferFactory.CreateBuffer(StreamKind.Present);
 				_presentBuffer.MustBeIncluded = false;           //If we never have nulls, we won't write this stream
 			}
-			_dataBuffer = _bufferFactory.CreateBuffer(StreamKind.Data);
+			_dataBuffer = bufferFactory.CreateBuffer(StreamKind.Data);
 		}
 
 		protected override ColumnEncodingKind DetectEncodingKind(IList<long?> values)

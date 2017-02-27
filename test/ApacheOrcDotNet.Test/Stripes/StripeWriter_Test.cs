@@ -49,7 +49,7 @@ namespace ApacheOrcDotNet.Test.Stripes
 			Assert.Equal(1, stripes.Count);
 			Assert.Equal((ulong)numValues, stripes[0].NumRows);
 			var stripeStreams = stripes[0].GetStripeStreamCollection();
-			var longReader = new LongReader(stripeStreams, 0);
+			var longReader = new LongReader(stripeStreams, 1);
 			var results = longReader.Read().ToArray();
 
 			for (int i = 0; i < numValues; i++)

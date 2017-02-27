@@ -12,12 +12,13 @@ namespace ApacheOrcDotNet.Stripes
 {
     public class StripeWriter
     {
+		readonly string _typeName;
 		readonly Stream _outputStream;
 		readonly bool _shouldAlignNumericValues;
 		readonly Compression.OrcCompressedBufferFactory _bufferFactory;
 		readonly int _strideLength;
 		readonly long _stripeLength;
-		readonly List<ColumnWriterAndAction> _columnWriters = new List<ColumnWriterAndAction>();
+		readonly List<ColumnWriterDetails> _columnWriters = new List<ColumnWriterDetails>();
 
 		bool _rowAddingCompleted = false;
 		int _rowsInStride = 0;
@@ -28,6 +29,7 @@ namespace ApacheOrcDotNet.Stripes
 
 		public StripeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength, long stripeLength)
 		{
+			_typeName = pocoType.Name;
 			_outputStream = outputStream;
 			_shouldAlignNumericValues = shouldAlignNumericValues;
 			_bufferFactory = bufferFactory;
@@ -76,6 +78,7 @@ namespace ApacheOrcDotNet.Stripes
 			footer.Stripes.AddRange(_stripeInformations);
 			foreach (var writer in _columnWriters)
 				footer.Statistics.Add(writer.FileStatistics);
+			footer.Types.AddRange(GetColumnTypes());
 		}
 
 		void CompleteStride()
@@ -147,8 +150,17 @@ namespace ApacheOrcDotNet.Stripes
 		{
 			foreach (var propertyInfo in GetPublicPropertiesFromPoco(type.GetTypeInfo()))
 			{
-				var columnWriterAndAction = GetColumnWriterAndAction(propertyInfo);
+				var columnWriterAndAction = GetColumnWriterDetails(propertyInfo);
 				_columnWriters.Add(columnWriterAndAction);
+			}
+			_columnWriters.Insert(0, GetStructColumnWriter());		//Add the struct column at the beginning
+		}
+
+		IEnumerable<Protocol.ColumnType> GetColumnTypes()
+		{
+			foreach(var column in _columnWriters)
+			{
+				yield return column.ColumnType;
 			}
 		}
 
@@ -176,44 +188,78 @@ namespace ApacheOrcDotNet.Stripes
 			return (T)property.GetValue(classInstance);		//TODO make this emit IL to avoid the boxing of value-type T
 		}
 
-		ColumnWriterAndAction GetColumnWriterAndAction(PropertyInfo propertyInfo)
+		ColumnWriterDetails GetColumnWriterDetails(PropertyInfo propertyInfo)
 		{
 			var propertyType = propertyInfo.PropertyType;
 
 			if(propertyType==typeof(int))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<int>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<int>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Int);
 			if (propertyType == typeof(long))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<long>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<long>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Long);
 			if (propertyType == typeof(short))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<short>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<short>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Short);
 			if (propertyType == typeof(uint))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<uint>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<uint>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Int);
 			if (propertyType == typeof(ulong))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => (long)GetValue<ulong>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => (long)GetValue<ulong>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Long);
 			if (propertyType == typeof(ushort))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<ushort>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<ushort>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Short);
 			if (propertyType == typeof(int?))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<int?>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<int?>(classInstance, propertyInfo), true, Protocol.ColumnTypeKind.Int);
 			if (propertyType == typeof(long?))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<long?>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<long?>(classInstance, propertyInfo), true, Protocol.ColumnTypeKind.Long);
 			if (propertyType == typeof(short?))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<short?>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<short?>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Short);
 			if (propertyType == typeof(uint?))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<uint?>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<uint?>(classInstance, propertyInfo), true, Protocol.ColumnTypeKind.Int);
 			if (propertyType == typeof(ulong?))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => (long?)GetValue<ulong?>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => (long?)GetValue<ulong?>(classInstance, propertyInfo), true, Protocol.ColumnTypeKind.Long);
 			if (propertyType == typeof(ushort?))
-				return GetLongColumnWriterAndAction(propertyInfo, classInstance => GetValue<ushort?>(classInstance, propertyInfo));
+				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<ushort?>(classInstance, propertyInfo), true, Protocol.ColumnTypeKind.Short);
 
 			throw new NotImplementedException($"Only basic types are supported. Unable to handle type {propertyType}");
 		}
 
-		ColumnWriterAndAction GetLongColumnWriterAndAction(PropertyInfo propertyInfo, Func<object, long?> valueGetter)
+		ColumnWriterDetails GetStructColumnWriter()
 		{
-			var columnWriter = new LongWriter(false, _shouldAlignNumericValues, _bufferFactory);
-			var state = new List<long?>();
-			return new ColumnWriterAndAction
+			var columnWriter = new StructWriter(_bufferFactory);
+			var state = new List<object>();
+
+			var structColumnType = new Protocol.ColumnType
 			{
+				Kind = Protocol.ColumnTypeKind.Struct
+			};
+			uint subColumnId = 1;
+			foreach (var column in _columnWriters)
+			{
+				structColumnType.FieldNames.Add(column.PropertyName);
+				structColumnType.SubTypes.Add(subColumnId++);
+			}
+
+			return new ColumnWriterDetails
+			{
+				PropertyName = _typeName,
+				ColumnWriter = columnWriter,
+				AddValueToState = classInstance =>
+				{
+					state.Add(classInstance);
+				},
+				WriteValuesFromState = () =>
+				{
+					columnWriter.AddBlock(state);
+					state.Clear();
+				},
+				ColumnType = structColumnType
+			};
+		}
+
+		ColumnWriterDetails GetLongColumnWriterDetails(PropertyInfo propertyInfo, Func<object, long?> valueGetter, bool isNullable, Protocol.ColumnTypeKind columnKind)
+		{
+			var columnWriter = new LongWriter(isNullable, _shouldAlignNumericValues, _bufferFactory);
+			var state = new List<long?>();
+			return new ColumnWriterDetails
+			{
+				PropertyName = propertyInfo.Name,
 				ColumnWriter = columnWriter,
 				AddValueToState = classInstance =>
 				{
@@ -224,17 +270,23 @@ namespace ApacheOrcDotNet.Stripes
 				{
 					columnWriter.AddBlock(state);
 					state.Clear();
+				},
+				ColumnType = new Protocol.ColumnType
+				{
+					Kind = columnKind
 				}
 			};
 		}
     }
 
-	class ColumnWriterAndAction
+	class ColumnWriterDetails
 	{
+		public string PropertyName { get; set; }
 		public IColumnWriter ColumnWriter { get; set; }
 		public Action<object> AddValueToState { get; set; }
 		public Action WriteValuesFromState { get; set; }
 		public ColumnStatistics StripeStatistics { get; } = new ColumnStatistics();
 		public ColumnStatistics FileStatistics { get; } = new ColumnStatistics();
+		public Protocol.ColumnType ColumnType { get; set; }
 	}
 }
