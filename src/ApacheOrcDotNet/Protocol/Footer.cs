@@ -13,14 +13,14 @@ namespace ApacheOrcDotNet.Protocol
 		[ProtoMember(1)] public ulong HeaderLength { get; set; }
 		[ProtoMember(2)] public ulong ContentLength { get; set; }
 		[ProtoMember(3)]
-		public List<StripeInformation> Stripes { get; } = new List<StripeInformation>();
+		public List<StripeInformation> Stripes { get; set; } = new List<StripeInformation>();
 		[ProtoMember(4)]
-		public List<ColumnType> Types { get; } = new List<ColumnType>();
+		public List<ColumnType> Types { get; set; } = new List<ColumnType>();
 		[ProtoMember(5)]
-		public List<UserMetadataItem> Metadata { get; } = new List<UserMetadataItem>();
+		public List<UserMetadataItem> Metadata { get; set; } = new List<UserMetadataItem>();
 		[ProtoMember(6)] public ulong NumberOfRows { get; set; }
 		[ProtoMember(7)]
-		public List<ColumnStatistics> Statistics { get; } = new List<ColumnStatistics>();
+		public List<ColumnStatistics> Statistics { get; set; } = new List<ColumnStatistics>();
 		[ProtoMember(8)] public uint RowIndexStride { get; set; }
     }
 }

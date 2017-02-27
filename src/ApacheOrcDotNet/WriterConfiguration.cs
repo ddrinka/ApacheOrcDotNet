@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet
 {
-	public enum CompressionType { None, ZLIB, Snappy, LZO, LZ4 }
+	public enum CompressionType { None, ZLIB }
 	public enum Version { V0_12 }
 	public enum EncodingStrategy { Speed, Size }
 	public enum CompressionStrategy { Speed, Size }
@@ -22,11 +22,6 @@ namespace ApacheOrcDotNet
 		/// Block size
 		/// </summary>
 		public long BlockSize { get; set; } = 256L * 1024 * 1024;
-
-		/// <summary>
-		/// Should indexes be created
-		/// </summary>
-		public bool EnableIndexes { get; set; } = true;
 
 		/// <summary>
 		/// Index stride, in rows
@@ -67,25 +62,5 @@ namespace ApacheOrcDotNet
 		/// If this fraction of keys in a dictionary are unique, disable dictionary encoding
 		/// </summary>
 		public double DictionaryKeySizeThreshold { get; set; } = 0.8;
-
-		/// <summary>
-		/// Check the DictionaryKeySizeThreshold after the first index stride, rather than after the first stripe
-		/// </summary>
-		public bool RowIndexStrideDictionaryCheck { get; set; } = true;
-
-		/// <summary>
-		/// List of columns to create bloom filters for
-		/// </summary>
-		public string BloomFilterColumns { get; set; } = "";
-
-		/// <summary>
-		/// Search argument for predicate pushdown
-		/// </summary>
-		public string KryoSarg { get; set; } = null;
-
-		/// <summary>
-		/// Column names for the search argument
-		/// </summary>
-		public string SargColumns { get; set; } = null;
 	}
 }

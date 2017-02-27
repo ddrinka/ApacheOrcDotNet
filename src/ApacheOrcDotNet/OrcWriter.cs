@@ -1,4 +1,6 @@
 ﻿using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Infrastructure;
+using ApacheOrcDotNet.Stripes;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,48 +11,39 @@ namespace ApacheOrcDotNet
 {
 	public class OrcWriter<T> : IOrcWriter<T>
 	{
-		readonly WriterConfiguration _configuration;
-//		readonly TreeWriter _treeWriter;
+		readonly Stream _outputStream;
+		readonly OrcCompressedBufferFactory _bufferFactory;
+		readonly StripeWriter _stripeWriter;
 
-		internal OrcWriter(Stream outputStream, WriterConfiguration configuration)//, ICompressionFactory compressionFactory)
+		readonly List<uint> _version = new List<uint> { 0, 12 };
+		readonly uint _writerVersion = 5;
+		readonly string _magic = "ORC";
+
+		public OrcWriter(Stream outputStream, WriterConfiguration configuration)
 		{
-			_configuration = configuration;
-//			_compressor = compressionFactory.CreateCompressor(configuration.Compress, configuration.CompressionStrategy);
-//			_treeWriter = new TreeWriter(typeof(T), outputStream);  //Which stream???
-			configuration.BufferSize = Math.Min(configuration.BufferSize, GetMinimumBufferSize());
+			_outputStream = outputStream;
 
-//			WriteHeader();
-		}
+			_bufferFactory = new OrcCompressedBufferFactory(configuration);
+			_stripeWriter = new StripeWriter(
+				typeof(T),
+				outputStream,
+				configuration.EncodingStrategy == EncodingStrategy.Speed,
+				_bufferFactory,
+				configuration.RowIndexStride,
+				configuration.StripeSize
+				);
 
-		int GetMinimumBufferSize()
-		{
-			throw new NotImplementedException();
-			//From Java implementation, the recomendation is 2 streams per column with 10 buffers per stream
-/*			var numColumns = _treeWriter.NumColumns;
-			var desiredBufferSize = (int)(_configuration.StripeSize / (2 * 10 * numColumns));
-			for(int i=2;i<7;i++)
-			{
-				int alignedBufferSize = (int)Math.Pow(2, i) * 1024;
-				if (desiredBufferSize < alignedBufferSize)
-					return alignedBufferSize;
-			}
-			return 256 * 1024;
-*/
+			WriteHeader();
 		}
 
 		public void AddRow(T row)
 		{
-			throw new NotImplementedException();
+			_stripeWriter.AddRows(new object[] { row });
 		}
 
 		public void AddRows(IEnumerable<T> rows)
 		{
-			throw new NotImplementedException();
-		}
-
-		public void AddRows(T[] rows)
-		{
-			throw new NotImplementedException();
+			_stripeWriter.AddRows((IEnumerable<object>)rows);
 		}
 
 		public void AddUserMetadata(string key, byte[] value)
@@ -60,7 +53,49 @@ namespace ApacheOrcDotNet
 
 		public void Dispose()
 		{
-			throw new NotImplementedException();
+			_stripeWriter.RowAddingCompleted();
+
+			WriteTail();
+		}
+
+		void WriteTail()
+		{
+			var footer = _stripeWriter.GetFooter();
+			var metadata = _stripeWriter.GetMetadata();
+			var footerStream = _bufferFactory.SerializeAndCompress(footer);
+			var metadataStream = _bufferFactory.SerializeAndCompress(metadata);
+			footerStream.CopyTo(_outputStream);
+			metadataStream.CopyTo(_outputStream);
+
+			var postScript = GetPostscript((ulong)footerStream.Length, (ulong)metadataStream.Length);
+			var postScriptStream = new MemoryStream();
+			ProtoBuf.Serializer.Serialize(postScriptStream, postScript);
+			postScriptStream.CopyTo(_outputStream);
+
+			if (postScriptStream.Length > 255)
+				throw new InvalidDataException("Invalid Postscript length");
+
+			_outputStream.WriteByte((byte)postScriptStream.Length);
+		}
+
+		Protocol.PostScript GetPostscript(ulong footerLength, ulong metadataLength)
+		{
+			return new Protocol.PostScript
+			{
+				FooterLength = footerLength,
+				Compression = _bufferFactory.CompressionKind,
+				CompressionBlockSize = (ulong)_bufferFactory.CompressionBlockSize,
+				Version = _version,
+				MetadataLength = metadataLength,
+				WriterVersion = _writerVersion,
+				Magic = _magic
+			};
+		}
+
+		void WriteHeader()
+		{
+			var magic = new byte[] { (byte)'O', (byte)'R', (byte)'C' };
+			_outputStream.Write(magic, 0, magic.Length);
 		}
 	}
 }

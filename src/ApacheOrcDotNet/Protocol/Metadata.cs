@@ -10,6 +10,6 @@ namespace ApacheOrcDotNet.Protocol
 	public class Metadata
 	{
 		[ProtoMember(1)]
-		public List<StripeStatistics> StripeStats { get; } = new List<StripeStatistics>();
+		public List<StripeStatistics> StripeStats { get; set; } = new List<StripeStatistics>();
     }
 }

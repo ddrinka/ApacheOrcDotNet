@@ -19,6 +19,7 @@ namespace ApacheOrcDotNet.Stripes
 		readonly int _strideLength;
 		readonly long _stripeLength;
 		readonly List<ColumnWriterDetails> _columnWriters = new List<ColumnWriterDetails>();
+		readonly List<Protocol.StripeStatistics> _stripeStats = new List<Protocol.StripeStatistics>();
 
 		bool _rowAddingCompleted = false;
 		int _rowsInStride = 0;
@@ -67,18 +68,31 @@ namespace ApacheOrcDotNet.Stripes
 			_rowAddingCompleted = true;
 		}
 
-		public void FillFooter(Protocol.Footer footer)
+		public Protocol.Footer GetFooter()
 		{
 			if (!_rowAddingCompleted)
 				throw new InvalidOperationException("Row adding not completed");
 
-			footer.ContentLength = (ulong)_contentLength;
-			footer.NumberOfRows = (ulong)_rowsInFile;
-			footer.RowIndexStride = (uint)_strideLength;
-			footer.Stripes.AddRange(_stripeInformations);
-			foreach (var writer in _columnWriters)
-				footer.Statistics.Add(writer.FileStatistics);
-			footer.Types.AddRange(GetColumnTypes());
+			return new Protocol.Footer
+			{
+				ContentLength = (ulong)_contentLength,
+				NumberOfRows = (ulong)_rowsInFile,
+				RowIndexStride = (uint)_strideLength,
+				Stripes = _stripeInformations,
+				Statistics = _columnWriters.Select(c => c.FileStatistics).ToList(),
+				Types=GetColumnTypes().ToList()
+			};
+		}
+
+		public Protocol.Metadata GetMetadata()
+		{
+			if (!_rowAddingCompleted)
+				throw new InvalidOperationException("Row adding not completed");
+
+			return new Protocol.Metadata
+			{
+				StripeStats = _stripeStats
+			};
 		}
 
 		void CompleteStride()
@@ -99,17 +113,21 @@ namespace ApacheOrcDotNet.Stripes
 		void CompleteStripe()
 		{
 			var stripeFooter = new Protocol.StripeFooter();
+			var stripeStats = new Protocol.StripeStatistics();
 			foreach (var writer in _columnWriters)
 			{
 				writer.ColumnWriter.CompleteAddingBlocks();
 				writer.ColumnWriter.FillStripeFooter(stripeFooter);
 
+				var columnStats = new ColumnStatistics();
 				foreach (var stats in writer.ColumnWriter.Statistics)
 				{
-					stats.FillColumnStatistics(writer.StripeStatistics);
+					stats.FillColumnStatistics(columnStats);
 					stats.FillColumnStatistics(writer.FileStatistics);
 				}
+				stripeStats.ColStats.Add(columnStats);
 			}
+			_stripeStats.Add(stripeStats);
 
 			var stripeInformation = new Protocol.StripeInformation();
 			stripeInformation.Offset = (ulong)_outputStream.Position;
@@ -130,10 +148,8 @@ namespace ApacheOrcDotNet.Stripes
 			stripeInformation.DataLength = (ulong)_outputStream.Position - stripeInformation.IndexLength - stripeInformation.Offset;
 
 			//Footer
-			var stripeFooterBuffer = _bufferFactory.CreateBuffer(Protocol.StreamKind.Data);
-			ProtoBuf.Serializer.Serialize(stripeFooterBuffer, stripeFooter);
-			stripeFooterBuffer.WritingCompleted();
-			stripeFooterBuffer.CompressedBuffer.CopyTo(_outputStream);
+			var stripeFooterStream = _bufferFactory.SerializeAndCompress(stripeFooter);
+			stripeFooterStream.CopyTo(_outputStream);
 			stripeInformation.FooterLength = (ulong)_outputStream.Position - stripeInformation.DataLength - stripeInformation.IndexLength - stripeInformation.Offset;
 
 			_stripeInformations.Add(stripeInformation);
@@ -285,7 +301,6 @@ namespace ApacheOrcDotNet.Stripes
 		public IColumnWriter ColumnWriter { get; set; }
 		public Action<object> AddValueToState { get; set; }
 		public Action WriteValuesFromState { get; set; }
-		public ColumnStatistics StripeStatistics { get; } = new ColumnStatistics();
 		public ColumnStatistics FileStatistics { get; } = new ColumnStatistics();
 		public Protocol.ColumnType ColumnType { get; set; }
 	}

@@ -3,32 +3,41 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
+using ApacheOrcDotNet.Protocol;
 
 namespace ApacheOrcDotNet.Compression
 {
 	public class OrcCompressedBufferFactory
 	{
-		readonly int _compressionBlockSize;
-		readonly Protocol.CompressionKind _compressionKind;
-		readonly CompressionStrategy _compressionStrategy;
+		public int CompressionBlockSize { get; }
+		public CompressionKind CompressionKind { get; }
+		public CompressionStrategy CompressionStrategy { get; }
 
 		public OrcCompressedBufferFactory(WriterConfiguration configuration)
 		{
-			_compressionBlockSize = configuration.BufferSize;
-			_compressionKind = configuration.Compress.ToCompressionKind();
-			_compressionStrategy = configuration.CompressionStrategy;
+			CompressionBlockSize = configuration.BufferSize;
+			CompressionKind = configuration.Compress.ToCompressionKind();
+			CompressionStrategy = configuration.CompressionStrategy;
 		}
 
 		public OrcCompressedBufferFactory(int compressionBlockSize, Protocol.CompressionKind compressionKind, CompressionStrategy compressionStrategy)
 		{
-			_compressionBlockSize = compressionBlockSize;
-			_compressionKind = compressionKind;
-			_compressionStrategy = compressionStrategy;
+			CompressionBlockSize = compressionBlockSize;
+			CompressionKind = compressionKind;
+			CompressionStrategy = compressionStrategy;
 		}
 
 		public OrcCompressedBuffer CreateBuffer(Protocol.StreamKind streamKind)
 		{
-			return new OrcCompressedBuffer(_compressionBlockSize, _compressionKind, _compressionStrategy, streamKind);
+			return new OrcCompressedBuffer(CompressionBlockSize, CompressionKind, CompressionStrategy)
+			{
+				StreamKind = streamKind
+			};
+		}
+
+		public OrcCompressedBuffer CreateBuffer()
+		{
+			return new OrcCompressedBuffer(CompressionBlockSize, CompressionKind, CompressionStrategy);
 		}
     }
 }

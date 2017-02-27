@@ -20,12 +20,6 @@ namespace ApacheOrcDotNet
 		void AddRow(T row);
 
 		/// <summary>
-		/// Add a batch of rows
-		/// </summary>
-		/// <param name="rows"></param>
-		void AddRows(T[] rows);
-
-		/// <summary>
 		/// Add all rows in the provided enumerable
 		/// </summary>
 		void AddRows(IEnumerable<T> rows);

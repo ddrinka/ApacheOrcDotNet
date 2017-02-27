@@ -16,17 +16,16 @@ namespace ApacheOrcDotNet.Compression
 
 		bool _doneWriting = false;
 
-		public OrcCompressedBuffer(int compressionBlockSize, Protocol.CompressionKind compressionKind, CompressionStrategy compressionStrategy, Protocol.StreamKind streamKind)
+		public OrcCompressedBuffer(int compressionBlockSize, Protocol.CompressionKind compressionKind, CompressionStrategy compressionStrategy)
 		{
 			_compressionBlockSize = compressionBlockSize;
 			_compressionKind = compressionKind;
 			_compressionStrategy = compressionStrategy;
-			StreamKind = streamKind;
 		}
 
 		public MemoryStream CompressedBuffer { get; } = new MemoryStream();
 		public long CurrentBlockLength => _currentBlock.Length;
-		public Protocol.StreamKind StreamKind { get; }
+		public Protocol.StreamKind StreamKind { get; set; }
 		public bool AreCompressing => _compressionKind != Protocol.CompressionKind.None;
 		public bool MustBeIncluded { get; set; } = true;
 

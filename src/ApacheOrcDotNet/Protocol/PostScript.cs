@@ -23,7 +23,7 @@ namespace ApacheOrcDotNet.Protocol
 		[ProtoMember(2)] public CompressionKind Compression { get; set; }
 		[ProtoMember(3)] public ulong CompressionBlockSize { get; set; }
 		[ProtoMember(4, IsPacked = true)]
-		public List<uint> Version { get; } = new List<uint>();
+		public List<uint> Version { get; set; } = new List<uint>();
 		public uint? VersionMajor => Version.Count > 0 ? (uint?)Version[0] : null;
 		public uint? VersionMinor => Version.Count > 1 ? (uint?)Version[1] : null;
 		[ProtoMember(5)] public ulong MetadataLength { get; set; }

@@ -37,12 +37,11 @@ namespace ApacheOrcDotNet.Test.Stripes
 
 			var bufferFactory = new OrcCompressedBufferFactory(256 * 1024, CompressionKind.Zlib, CompressionStrategy.Size);
 			var stream = new MemoryStream();
-			var footer = new Footer();
 
 			var stripeWriter = new StripeWriter(typeof(SingleValuePoco), stream, false, bufferFactory, 10000, 512 * 1024 * 1024);
 			stripeWriter.AddRows(pocos);
 			stripeWriter.RowAddingCompleted();
-			stripeWriter.FillFooter(footer);
+			var footer=stripeWriter.GetFooter();
 
 			stream.Seek(0, SeekOrigin.Begin);
 			var stripes = new StripeReaderCollection(stream, footer, CompressionKind.Zlib);
