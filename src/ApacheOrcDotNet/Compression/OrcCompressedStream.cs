@@ -67,6 +67,7 @@ namespace ApacheOrcDotNet.Compression
 				}
 				else
 				{
+					temporaryStream.Seek(0, SeekOrigin.Begin);
 					WriteBlockHeader(compressedDestination, (int)temporaryStream.Length, true);
 					temporaryStream.CopyTo(compressedDestination);
 				}
