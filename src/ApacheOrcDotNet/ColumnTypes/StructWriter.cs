@@ -17,7 +17,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		protected override ColumnEncodingKind DetectEncodingKind(IList<object> values)
 		{
-			return ColumnEncodingKind.DirectV2;
+			return ColumnEncodingKind.Direct;
 		}
 
 		protected override void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, ColumnEncodingKind encodingKind)
