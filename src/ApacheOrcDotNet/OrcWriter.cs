@@ -60,16 +60,19 @@ namespace ApacheOrcDotNet
 
 		void WriteTail()
 		{
-			var footer = _stripeWriter.GetFooter();
 			var metadata = _stripeWriter.GetMetadata();
-			var footerStream = _bufferFactory.SerializeAndCompress(footer);
+			var footer = _stripeWriter.GetFooter();
+			footer.HeaderLength = (ulong)_magic.Length;
+
 			var metadataStream = _bufferFactory.SerializeAndCompress(metadata);
-			footerStream.CopyTo(_outputStream);
+			var footerStream = _bufferFactory.SerializeAndCompress(footer);
 			metadataStream.CopyTo(_outputStream);
+			footerStream.CopyTo(_outputStream);
 
 			var postScript = GetPostscript((ulong)footerStream.Length, (ulong)metadataStream.Length);
 			var postScriptStream = new MemoryStream();
 			ProtoBuf.Serializer.Serialize(postScriptStream, postScript);
+			postScriptStream.Seek(0, SeekOrigin.Begin);
 			postScriptStream.CopyTo(_outputStream);
 
 			if (postScriptStream.Length > 255)
