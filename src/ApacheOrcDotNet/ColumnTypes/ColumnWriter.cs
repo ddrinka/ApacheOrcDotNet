@@ -16,15 +16,17 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
 		public IList<long> CompressedLengths => _stripeStreamBuffers.Select(s => s.CompressedBuffer.Length).ToArray();
+		public uint ColumnId { get; }
 
 		protected abstract IStatistics CreateStatistics();
 		protected abstract Protocol.ColumnEncodingKind DetectEncodingKind(IList<T> values);
 		protected abstract void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, Protocol.ColumnEncodingKind encodingKind);
 		protected abstract void EncodeValues(IList<T> values, IList<OrcCompressedBuffer> buffers, IStatistics statistics);
 
-		public ColumnWriter(OrcCompressedBufferFactory bufferFactory)
+		public ColumnWriter(OrcCompressedBufferFactory bufferFactory, uint columnId)
 		{
 			_bufferFactory = bufferFactory;
+			ColumnId = columnId;
 		}
 
 		/// <summary>
@@ -72,7 +74,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		public void CopyDataBuffersTo(Stream outputStream)
 		{
 			if (!_blockAddingIsComplete)
-				throw new InvalidOperationException("Blocking adding not marked as complete");
+				throw new InvalidOperationException("Block adding not marked as complete");
 
 			for (int i = 1; i < _stripeStreamBuffers.Count; i++)
 				_stripeStreamBuffers[i].CompressedBuffer.CopyTo(outputStream);
@@ -86,10 +88,10 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_stripeStreamBuffers[0].CompressedBuffer.CopyTo(outputStream);
 		}
 
-		public void FillStripeFooter(Protocol.StripeFooter footer)
+		public void FillColumnToStripeFooter(Protocol.StripeFooter footer)
 		{
 			if (!_blockAddingIsComplete)
-				throw new InvalidOperationException("Blocking adding not marked as complete");
+				throw new InvalidOperationException("Block adding not marked as complete");
 
 			var columnEncoding = new Protocol.ColumnEncoding
 			{
@@ -97,12 +99,39 @@ namespace ApacheOrcDotNet.ColumnTypes
 				DictionarySize = 0      //TODO fill in dictionary size when we have a dictionary
 			};
 			footer.Columns.Add(columnEncoding);
+		}
+
+		public void FillIndexToStripeFooter(Protocol.StripeFooter footer)
+		{
+			if (!_blockAddingIsComplete)
+				throw new InvalidOperationException("Block adding not marked as complete");
 
 			foreach(var buffer in _stripeStreamBuffers)
 			{
+				if (buffer.StreamKind != Protocol.StreamKind.RowIndex)		//Only output indexes
+					continue;
 				var stream = new Protocol.Stream
 				{
-					Column = (uint)footer.Columns.Count - 1,
+					Column = ColumnId,
+					Kind = Protocol.StreamKind.RowIndex,
+					Length = (ulong)buffer.CompressedBuffer.Length
+				};
+				footer.Streams.Add(stream);
+			}
+		}
+
+		public void FillDataToStripeFooter(Protocol.StripeFooter footer)
+		{
+			if (!_blockAddingIsComplete)
+				throw new InvalidOperationException("Block adding not marked as complete");
+
+			foreach (var buffer in _stripeStreamBuffers)
+			{
+				if (buffer.StreamKind == Protocol.StreamKind.RowIndex)		//Don't output indexes
+					continue;
+				var stream = new Protocol.Stream
+				{
+					Column = ColumnId,
 					Kind = buffer.StreamKind,
 					Length = (ulong)buffer.CompressedBuffer.Length
 				};

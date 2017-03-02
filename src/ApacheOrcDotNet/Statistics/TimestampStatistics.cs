@@ -11,8 +11,8 @@ namespace ApacheOrcDotNet.Statistics
     {
 		DateTime Epoch { get; set; } = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-		[ProtoMember(1)] public long Minimum { get; set; }
-		[ProtoMember(2)] public long Maximum { get; set; }
+		[ProtoMember(1, DataFormat = DataFormat.ZigZag)] public long Minimum { get; set; }
+		[ProtoMember(2, DataFormat = DataFormat.ZigZag)] public long Maximum { get; set; }
 
 		DateTime IDateTimeStatistics.Minimum
 		{

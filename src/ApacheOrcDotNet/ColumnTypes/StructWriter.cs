@@ -10,8 +10,8 @@ namespace ApacheOrcDotNet.ColumnTypes
     public class StructWriter : ColumnWriter<object>
     {
 		//Assume all root values are present
-		public StructWriter(OrcCompressedBufferFactory bufferFactory)
-			:base(bufferFactory)
+		public StructWriter(OrcCompressedBufferFactory bufferFactory, uint columnId)
+			:base(bufferFactory, columnId)
 		{
 		}
 

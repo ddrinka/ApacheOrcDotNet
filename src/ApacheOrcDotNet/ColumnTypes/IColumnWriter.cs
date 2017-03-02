@@ -10,10 +10,13 @@ namespace ApacheOrcDotNet.ColumnTypes
     {
 		List<IStatistics> Statistics { get; }
 		IList<long> CompressedLengths { get; }
+		uint ColumnId { get; }
 		void CompleteAddingBlocks();
 		void CopyDataBuffersTo(Stream outputStream);
 		void CopyIndexBufferTo(Stream outputStream);
-		void FillStripeFooter(Protocol.StripeFooter footer);
+		void FillColumnToStripeFooter(Protocol.StripeFooter footer);
+		void FillIndexToStripeFooter(Protocol.StripeFooter footer);
+		void FillDataToStripeFooter(Protocol.StripeFooter footer);
 		void Reset();
 	}
 }

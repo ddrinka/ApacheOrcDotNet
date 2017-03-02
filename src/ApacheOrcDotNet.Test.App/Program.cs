@@ -10,10 +10,22 @@ namespace ApacheOrcDotNet.Test.App
     {
         public static void Main(string[] args)
         {
-			var random = new Random(123);
+			var rand = new Random(123);
 			var testElements = new List<TestClass>();
-			for (int i = 0; i < 70000; i++)
-				testElements.Add(new TestClass { Column1 = random.Next() });
+			for (int i = 0; i < 80000; i++)
+			{
+				var random = rand.Next();
+				var set = i / 10000;
+				var randomInRange = (random % 10000) + set * 10000 - 40000;
+				var element = new TestClass
+				{
+					Random = random,
+					RandomInRange = randomInRange,
+					Incrementing = i,
+					SetNumber = set
+				};
+				testElements.Add(element);
+			}
 
 			using (var fileStream = new FileStream("test.orc", FileMode.Create, FileAccess.Write))
 			using (var writer = new OrcWriter<TestClass>(fileStream, new WriterConfiguration())) //Use the default configuration
@@ -25,6 +37,9 @@ namespace ApacheOrcDotNet.Test.App
 
 	class TestClass
 	{
-		public int Column1 { get; set; }
+		public int Random { get; set; }
+		public int RandomInRange { get; set; }
+		public int Incrementing { get; set; }
+		public int SetNumber { get; set; }
 	}
 }
