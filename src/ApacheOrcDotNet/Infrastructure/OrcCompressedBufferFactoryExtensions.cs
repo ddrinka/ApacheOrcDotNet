@@ -12,7 +12,7 @@ namespace ApacheOrcDotNet.Infrastructure
 		public static MemoryStream SerializeAndCompress(this OrcCompressedBufferFactory bufferFactory, object instance)
 		{
 			var buffer = bufferFactory.CreateBuffer();
-			ProtoBuf.Serializer.Serialize(buffer, instance);
+			StaticProtoBuf.Serializer.Serialize(buffer, instance);
 			buffer.WritingCompleted();
 			return buffer.CompressedBuffer;
 		}

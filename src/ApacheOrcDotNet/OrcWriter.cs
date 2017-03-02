@@ -1,6 +1,7 @@
 ﻿using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Infrastructure;
 using ApacheOrcDotNet.Stripes;
+using ProtoBuf.Meta;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -71,7 +72,7 @@ namespace ApacheOrcDotNet
 
 			var postScript = GetPostscript((ulong)footerStream.Length, (ulong)metadataStream.Length);
 			var postScriptStream = new MemoryStream();
-			ProtoBuf.Serializer.Serialize(postScriptStream, postScript);
+			StaticProtoBuf.Serializer.Serialize(postScriptStream, postScript);
 			postScriptStream.Seek(0, SeekOrigin.Begin);
 			postScriptStream.CopyTo(_outputStream);
 

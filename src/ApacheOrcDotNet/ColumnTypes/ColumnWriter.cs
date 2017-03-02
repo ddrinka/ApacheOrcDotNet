@@ -1,4 +1,5 @@
 ﻿using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Infrastructure;
 using ApacheOrcDotNet.Statistics;
 using System;
 using System.Collections.Generic;
@@ -157,7 +158,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 				indexes.Entry.Add(indexEntry);
 			}
 
-			ProtoBuf.Serializer.Serialize(_stripeStreamBuffers[0], indexes);
+			StaticProtoBuf.Serializer.Serialize(_stripeStreamBuffers[0], indexes);
 		}
 	}
 
