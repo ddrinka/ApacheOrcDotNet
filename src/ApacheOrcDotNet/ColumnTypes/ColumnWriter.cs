@@ -49,6 +49,9 @@ namespace ApacheOrcDotNet.ColumnTypes
 			var statistics = CreateStatistics();
 			foreach (var buffer in _stripeStreamBuffers)
 			{
+				if (buffer.StreamKind == Protocol.StreamKind.RowIndex)		//Don't index the index
+					continue;
+
 				if (buffer.AreCompressing)
 					statistics.AnnotatePosition(buffer.CompressedBuffer.Length, buffer.CurrentBlockLength, 0);      //Our implementation always ends the RLE at the stride
 				else

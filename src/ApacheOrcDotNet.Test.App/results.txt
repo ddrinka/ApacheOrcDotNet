@@ -1,0 +1,93 @@
+﻿root@33f8d14d65e4:~# java -jar orc-tools-1.4.0-SNAPSHOT-uber.jar meta -r 0,1,2,3,4 user/test.orc
+log4j:WARN No appenders could be found for logger (org.apache.hadoop.metrics2.lib.MutableMetricsFactory).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+Processing data file user/test.orc [length: 480927]
+Structure for user/test.orc
+File Version: 0.12 with ORC_101
+Rows: 80000
+Compression: ZLIB
+Compression size: 262144
+Type: struct<Random:int,RandomInRange:int,Incrementing:int,SetNumber:int>
+
+Stripe Statistics:
+  Stripe 1:
+    Column 0: count: 80000 hasNull: false
+    Column 1: count: 80000 hasNull: false min: 40067 max: 2147466043 sum: 85664769785493
+    Column 2: count: 80000 hasNull: false min: -40000 max: 39997 sum: -2164507
+    Column 3: count: 80000 hasNull: false min: 0 max: 79999 sum: 3199960000
+    Column 4: count: 80000 hasNull: false min: 0 max: 7 sum: 280000
+
+File Statistics:
+  Column 0: count: 80000 hasNull: false
+  Column 1: count: 80000 hasNull: false min: 40067 max: 2147466043 sum: 85664769785493
+  Column 2: count: 80000 hasNull: false min: -40000 max: 39997 sum: -2164507
+  Column 3: count: 80000 hasNull: false min: 0 max: 79999 sum: 3199960000
+  Column 4: count: 80000 hasNull: false min: 0 max: 7 sum: 280000
+
+Stripes:
+  Stripe: offset: 3 data: 479792 rows: 80000 tail: 82 index: 734
+    Stream: column 0 section ROW_INDEX start: 3 length 19
+    Stream: column 1 section ROW_INDEX start: 22 length 221
+    Stream: column 2 section ROW_INDEX start: 243 length 186
+    Stream: column 3 section ROW_INDEX start: 429 length 183
+    Stream: column 4 section ROW_INDEX start: 612 length 125
+    Stream: column 1 section DATA start: 737 length 320326
+    Stream: column 2 section DATA start: 321063 length 159064
+    Stream: column 3 section DATA start: 480127 length 350
+    Stream: column 4 section DATA start: 480477 length 52
+    Encoding column 0: DIRECT
+    Encoding column 1: DIRECT_V2
+    Encoding column 2: DIRECT_V2
+    Encoding column 3: DIRECT_V2
+    Encoding column 4: DIRECT_V2
+    Row group indices for column 0:
+      Entry 0: count: 10000 hasNull: false positions:
+      Entry 1: count: 10000 hasNull: false positions:
+      Entry 2: count: 10000 hasNull: false positions:
+      Entry 3: count: 10000 hasNull: false positions:
+      Entry 4: count: 10000 hasNull: false positions:
+      Entry 5: count: 10000 hasNull: false positions:
+      Entry 6: count: 10000 hasNull: false positions:
+      Entry 7: count: 10000 hasNull: false positions:
+    Row group indices for column 1:
+      Entry 0: count: 10000 hasNull: false min: 128372 max: 2147314528 sum: 10695800028973 positions: 0,0,0
+      Entry 1: count: 10000 hasNull: false min: 210784 max: 2147446314 sum: 10587238401343 positions: 0,40040,0
+      Entry 2: count: 10000 hasNull: false min: 405464 max: 2147454317 sum: 10662041376658 positions: 0,80080,0
+      Entry 3: count: 10000 hasNull: false min: 65857 max: 2147131325 sum: 10689244192344 positions: 0,120120,0
+      Entry 4: count: 10000 hasNull: false min: 40067 max: 2147447310 sum: 10773982646933 positions: 0,160160,0
+      Entry 5: count: 10000 hasNull: false min: 173453 max: 2147466043 sum: 10747008510811 positions: 0,200200,0
+      Entry 6: count: 10000 hasNull: false min: 387884 max: 2147338841 sum: 10798604245786 positions: 0,240240,0
+      Entry 7: count: 10000 hasNull: false min: 413655 max: 2147393649 sum: 10710850382645 positions: 262147,18136,0
+    Row group indices for column 2:
+      Entry 0: count: 10000 hasNull: false min: -40000 max: -30001 sum: -350361027 positions: 0,0,0
+      Entry 1: count: 10000 hasNull: false min: -30000 max: -20003 sum: -249488657 positions: 0,30040,0
+      Entry 2: count: 10000 hasNull: false min: -20000 max: -10002 sum: -150453342 positions: 0,50080,0
+      Entry 3: count: 10000 hasNull: false min: -10000 max: -3 sum: -50417656 positions: 0,70120,0
+      Entry 4: count: 10000 hasNull: false min: 2 max: 9999 sum: 49396933 positions: 0,90160,0
+      Entry 5: count: 10000 hasNull: false min: 10003 max: 19998 sum: 149570811 positions: 0,110200,0
+      Entry 6: count: 10000 hasNull: false min: 20000 max: 29995 sum: 249515786 positions: 0,130240,0
+      Entry 7: count: 10000 hasNull: false min: 30002 max: 39997 sum: 350072645 positions: 0,150280,0
+    Row group indices for column 3:
+      Entry 0: count: 10000 hasNull: false min: 0 max: 9999 sum: 49995000 positions: 0,0,0
+      Entry 1: count: 10000 hasNull: false min: 10000 max: 19999 sum: 149995000 positions: 0,103,0
+      Entry 2: count: 10000 hasNull: false min: 20000 max: 29999 sum: 249995000 positions: 0,223,0
+      Entry 3: count: 10000 hasNull: false min: 30000 max: 39999 sum: 349995000 positions: 0,343,0
+      Entry 4: count: 10000 hasNull: false min: 40000 max: 49999 sum: 449995000 positions: 0,463,0
+      Entry 5: count: 10000 hasNull: false min: 50000 max: 59999 sum: 549995000 positions: 0,583,0
+      Entry 6: count: 10000 hasNull: false min: 60000 max: 69999 sum: 649995000 positions: 0,703,0
+      Entry 7: count: 10000 hasNull: false min: 70000 max: 79999 sum: 749995000 positions: 0,823,0
+    Row group indices for column 4:
+      Entry 0: count: 10000 hasNull: false min: 0 max: 0 sum: 0 positions: 0,0,0
+      Entry 1: count: 10000 hasNull: false min: 1 max: 1 sum: 10000 positions: 0,80,0
+      Entry 2: count: 10000 hasNull: false min: 2 max: 2 sum: 20000 positions: 0,160,0
+      Entry 3: count: 10000 hasNull: false min: 3 max: 3 sum: 30000 positions: 0,240,0
+      Entry 4: count: 10000 hasNull: false min: 4 max: 4 sum: 40000 positions: 0,320,0
+      Entry 5: count: 10000 hasNull: false min: 5 max: 5 sum: 50000 positions: 0,400,0
+      Entry 6: count: 10000 hasNull: false min: 6 max: 6 sum: 60000 positions: 0,480,0
+      Entry 7: count: 10000 hasNull: false min: 7 max: 7 sum: 70000 positions: 0,560,0
+
+File length: 480927 bytes
+Padding length: 0 bytes
+Padding ratio: 0%
+________________________________________________________________________________________________________________________
