@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -288,6 +289,34 @@ namespace ApacheOrcDotNet.Test.Encodings
 				stream.Seek(0, SeekOrigin.Begin);
 				var actual = stream.ReadVarIntUnsigned();
 				Assert.Equal(expected, (ulong)actual);
+			}
+		}
+
+		[Fact]
+		public void RoundTrip_VarInt_BigInt()
+		{
+			var random = new Random(123);
+			for (int i = 0; i < 1000; i++)
+			{
+				var buffer = new byte[4 * 3 + 1];
+				random.NextBytes(buffer);
+
+				var low = BitConverter.ToUInt32(buffer, 0);
+				var mid = BitConverter.ToUInt32(buffer, 4);
+				var high = BitConverter.ToUInt32(buffer, 8);
+				var isNegative = buffer[12] % 2 == 0;
+
+				var expected = new BigInteger(low) | (new BigInteger(mid) << 32) | (new BigInteger(high) << 64);
+				if (isNegative)
+					expected = -expected;
+
+				using (var stream = new MemoryStream())
+				{
+					stream.WriteVarIntSigned(low, mid, high, isNegative);
+					stream.Seek(0, SeekOrigin.Begin);
+					var actual = stream.ReadBigVarInt();
+					Assert.Equal(expected, actual);
+				}
 			}
 		}
 	}

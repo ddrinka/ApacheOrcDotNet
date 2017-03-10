@@ -309,7 +309,7 @@ namespace ApacheOrcDotNet.Encodings
 			do
 			{
 				currentByte = stream.ReadByte();
-				if (currentByte < 1)
+				if (currentByte < 0)
 					return null;        //Reached the end of the stream
 
 				currentLong |= (currentByte & 0x7f) << (bitCount % 63);
@@ -342,6 +342,81 @@ namespace ApacheOrcDotNet.Encodings
 			result >>= 1;
 
 			return result;
+		}
+
+		public static void WriteVarIntSigned(this Stream stream, uint low, uint mid, uint high, bool isNegative)
+		{
+			byte value;
+			//Write sign bit and 0-5 bits from low
+			value = (byte)(isNegative ? 1 : 0 | (low & 0x3f) << 1);
+			if (high == 0 && mid == 0 && (low & ~0x3f) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 6-12 bits from low
+			value = (byte)((low & 0x7f << 6) >> 6);
+			if (high == 0 && mid == 0 && (low & ~0x1fff) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 13-19 bits from low
+			value = (byte)((low & 0x7f << 13) >> 13);
+			if (high == 0 && mid == 0 && (low & ~0xFFFFF) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 20-26 bits from low
+			value = (byte)((low & 0x7f << 20) >> 20);
+			if (high == 0 && mid == 0 && (low & ~0x7ffffff) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 27-31 bits from low and 0-1 bits from mid
+			value = (byte)(((low & 0x1f << 27) >> 27) | (mid & 0x3));
+			if (high == 0 && (mid & ~0x3) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 2-8 bits from mid
+			value = (byte)((mid & 0x7f << 2) >> 2);
+			if (high == 0 && (mid & ~0x1ff) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 9-15 bits from mid
+			value = (byte)((mid & 0x7f << 9) >> 9);
+			if (high == 0 && (mid & ~0xffff) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 16-22 bits from mid
+			value = (byte)((mid & 0x7f << 16) >> 16);
+			if (high == 0 && (mid & ~0x7fffff) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 23-29 bits from mid
+			value = (byte)((mid & 0x7f << 23) >> 23);
+			if (high == 0 && (mid & ~0x3fffffff) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 30-31 bits from mid and 0-4 bits from high
+			value = (byte)(((mid & 0x3 << 30) >> 30) | (high & 0x1f));
+			if ((high & ~0x1f) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 5-11 bits from high
+			value = (byte)((high & 0x7f << 5) >> 5);
+			if ((high & ~0xfff) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 12-18 bits from high
+			value = (byte)((high & 0x7f << 12) >> 12);
+			if ((high & ~0x7ffff) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 19-25 bits from high
+			value = (byte)((high & 0x7f << 19) >> 19);
+			if ((high & ~0x3ffffff) == 0)
+				goto done;
+			stream.WriteByte((byte)(value | 0x80));
+			//Write 26-31 bits from high
+			value = (byte)((high & 0x3f << 26) >> 26);
+
+			done:
+			stream.WriteByte(value);
 		}
 
 		public static bool SubtractionWouldOverflow(long left, long right)
