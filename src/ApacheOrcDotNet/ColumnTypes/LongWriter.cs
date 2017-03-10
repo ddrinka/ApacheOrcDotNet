@@ -53,7 +53,6 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 			var valList = new List<long>(values.Count);
 
-			int bufferIndex = 0;
 			if (_isNullable)
 			{
 				var presentList = new List<bool>(values.Count);
@@ -69,8 +68,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 				var presentEncoder = new BitWriter(_presentBuffer);
 				presentEncoder.Write(presentList);
 				if (stats.HasNull)
-					buffers[bufferIndex].MustBeIncluded = true;     //A null occurred.  Make sure to write this stream
-				bufferIndex++;
+					_presentBuffer.MustBeIncluded = true;     //A null occurred.  Make sure to write this stream
 			}
 			else
 			{
