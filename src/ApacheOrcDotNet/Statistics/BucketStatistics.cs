@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.Statistics
 	public class BucketStatistics : IBooleanStatistics
 	{
 		[ProtoMember(1, IsPacked = true)]
-		public List<ulong> Count { get; } = new List<ulong>();
+		public List<ulong> Count { get; set; } = new List<ulong>();
 
 		public ulong FalseCount
 		{

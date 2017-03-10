@@ -221,29 +221,53 @@ namespace ApacheOrcDotNet.Stripes
 			var propertyType = propertyInfo.PropertyType;
 
 			if(propertyType==typeof(int))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<int>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Int, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<int>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Int);
 			if (propertyType == typeof(long))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<long>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Long, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<long>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Long);
 			if (propertyType == typeof(short))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<short>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Short, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<short>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Short);
 			if (propertyType == typeof(uint))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<uint>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Int, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<uint>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Int);
 			if (propertyType == typeof(ulong))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => (long)GetValue<ulong>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Long, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(false, columnId), propertyInfo, classInstance => (long)GetValue<ulong>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Long);
 			if (propertyType == typeof(ushort))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<ushort>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Short, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<ushort>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Short);
 			if (propertyType == typeof(int?))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<int?>(classInstance, propertyInfo), true, Protocol.ColumnTypeKind.Int, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<int?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Int);
 			if (propertyType == typeof(long?))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<long?>(classInstance, propertyInfo), true, Protocol.ColumnTypeKind.Long, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<long?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Long);
 			if (propertyType == typeof(short?))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<short?>(classInstance, propertyInfo), false, Protocol.ColumnTypeKind.Short, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<short?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Short);
 			if (propertyType == typeof(uint?))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<uint?>(classInstance, propertyInfo), true, Protocol.ColumnTypeKind.Int, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<uint?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Int);
 			if (propertyType == typeof(ulong?))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => (long?)GetValue<ulong?>(classInstance, propertyInfo), true, Protocol.ColumnTypeKind.Long, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(true, columnId), propertyInfo, classInstance => (long?)GetValue<ulong?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Long);
 			if (propertyType == typeof(ushort?))
-				return GetLongColumnWriterDetails(propertyInfo, classInstance => GetValue<ushort?>(classInstance, propertyInfo), true, Protocol.ColumnTypeKind.Short, columnId);
+				return GetColumnWriterDetails(GetLongColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<ushort?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Short);
+			if (propertyType == typeof(byte))
+				return GetColumnWriterDetails(GetByteColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<byte>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Byte);
+			if (propertyType == typeof(sbyte))
+				return GetColumnWriterDetails(GetByteColumnWriter(false, columnId), propertyInfo, classInstance => (byte)GetValue<sbyte>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Byte);
+			if (propertyType == typeof(byte?))
+				return GetColumnWriterDetails(GetByteColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<byte?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Byte);
+			if (propertyType == typeof(sbyte?))
+				return GetColumnWriterDetails(GetByteColumnWriter(true, columnId), propertyInfo, classInstance => (byte?)GetValue<sbyte?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Byte);
+			if (propertyType == typeof(bool))
+				return GetColumnWriterDetails(GetBooleanColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<bool>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Boolean);
+			if (propertyType == typeof(bool?))
+				return GetColumnWriterDetails(GetBooleanColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<bool?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Boolean);
+			if (propertyType == typeof(float))
+				return GetColumnWriterDetails(GetFloatColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<float>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Float);
+			if (propertyType == typeof(float?))
+				return GetColumnWriterDetails(GetFloatColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<float?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Float);
+			if (propertyType == typeof(double))
+				return GetColumnWriterDetails(GetDoubleColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<double>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Double);
+			if (propertyType == typeof(double?))
+				return GetColumnWriterDetails(GetDoubleColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<double?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Double);
+			if (propertyType == typeof(byte[]))
+				return GetColumnWriterDetails(GetBinaryColumnWriter(columnId), propertyInfo, classInstance => GetValue<byte[]>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Binary);
+
+
 
 			throw new NotImplementedException($"Only basic types are supported. Unable to handle type {propertyType}");
 		}
@@ -280,10 +304,9 @@ namespace ApacheOrcDotNet.Stripes
 			};
 		}
 
-		ColumnWriterDetails GetLongColumnWriterDetails(PropertyInfo propertyInfo, Func<object, long?> valueGetter, bool isNullable, Protocol.ColumnTypeKind columnKind, uint columnId)
+		ColumnWriterDetails GetColumnWriterDetails<T>(ColumnWriter<T> columnWriter, PropertyInfo propertyInfo, Func<object, T> valueGetter, Protocol.ColumnTypeKind columnKind)
 		{
-			var columnWriter = new LongWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
-			var state = new List<long?>();
+			var state = new List<T>();
 			return new ColumnWriterDetails
 			{
 				PropertyName = propertyInfo.Name,
@@ -304,7 +327,37 @@ namespace ApacheOrcDotNet.Stripes
 				}
 			};
 		}
-    }
+
+		ColumnWriter<long?> GetLongColumnWriter(bool isNullable, uint columnId)
+		{
+			return new LongWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
+		}
+
+		ColumnWriter<byte?> GetByteColumnWriter(bool isNullable, uint columnId)
+		{
+			return new ByteWriter(isNullable, _bufferFactory, columnId);
+		}
+
+		ColumnWriter<bool?> GetBooleanColumnWriter(bool isNullable, uint columnId)
+		{
+			return new BooleanWriter(isNullable, _bufferFactory, columnId);
+		}
+
+		ColumnWriter<float?> GetFloatColumnWriter(bool isNullable, uint columnId)
+		{
+			return new FloatWriter(isNullable, _bufferFactory, columnId);
+		}
+
+		ColumnWriter<double?> GetDoubleColumnWriter(bool isNullable, uint columnId)
+		{
+			return new DoubleWriter(isNullable, _bufferFactory, columnId);
+		}
+
+		ColumnWriter<byte[]> GetBinaryColumnWriter(uint columnId)
+		{
+			return new ColumnTypes.BinaryWriter(_shouldAlignNumericValues, _bufferFactory, columnId);
+		}
+	}
 
 	class ColumnWriterDetails
 	{

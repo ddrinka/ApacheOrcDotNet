@@ -28,6 +28,20 @@ namespace ApacheOrcDotNet.Encodings
 			return result;
 		}
 
+		public static void WriteFloatBE(this Stream stream, float value)
+		{
+			var bytes = BitConverter.GetBytes(value);
+			for (int i = bytes.Length - 1; i >= 0; i--)
+				stream.WriteByte(bytes[i]);
+		}
+
+		public static void WriteDoubleBE(this Stream stream, double value)
+		{
+			var bytes = BitConverter.GetBytes(value);
+			for (int i = bytes.Length - 1; i >= 0; i--)
+				stream.WriteByte(bytes[i]);
+		}
+
 		public static void WriteLongBE(this Stream stream, int numBytes, long value)
 		{
 			for (int i = numBytes - 1; i >= 0; i--)

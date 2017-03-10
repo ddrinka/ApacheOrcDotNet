@@ -9,6 +9,6 @@ namespace ApacheOrcDotNet.Statistics
     {
 		double Minimum { get; }
 		double Maximum { get; }
-		double Sum { get; }
+		double? Sum { get; }
     }
 }
