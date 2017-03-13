@@ -266,8 +266,10 @@ namespace ApacheOrcDotNet.Stripes
 				return GetColumnWriterDetails(GetDoubleColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<double?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Double);
 			if (propertyType == typeof(byte[]))
 				return GetColumnWriterDetails(GetBinaryColumnWriter(columnId), propertyInfo, classInstance => GetValue<byte[]>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Binary);
-
-
+			if(propertyType==typeof(decimal))
+				return GetColumnWriterDetails(GetDecimalColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<decimal>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Decimal);
+			if (propertyType == typeof(decimal?))
+				return GetColumnWriterDetails(GetDecimalColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<decimal?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Decimal);
 
 			throw new NotImplementedException($"Only basic types are supported. Unable to handle type {propertyType}");
 		}
@@ -356,6 +358,11 @@ namespace ApacheOrcDotNet.Stripes
 		ColumnWriter<byte[]> GetBinaryColumnWriter(uint columnId)
 		{
 			return new ColumnTypes.BinaryWriter(_shouldAlignNumericValues, _bufferFactory, columnId);
+		}
+
+		ColumnWriter<decimal?> GetDecimalColumnWriter(bool isNullable, uint columnId)
+		{
+			return new DecimalWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
 		}
 	}
 
