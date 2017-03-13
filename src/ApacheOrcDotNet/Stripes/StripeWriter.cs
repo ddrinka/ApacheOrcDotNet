@@ -270,6 +270,14 @@ namespace ApacheOrcDotNet.Stripes
 				return GetColumnWriterDetails(GetDecimalColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<decimal>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Decimal);
 			if (propertyType == typeof(decimal?))
 				return GetColumnWriterDetails(GetDecimalColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<decimal?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Decimal);
+			if(propertyType==typeof(DateTime))
+				return GetColumnWriterDetails(GetTimestampColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTime>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Timestamp);
+			if (propertyType == typeof(DateTime?))
+				return GetColumnWriterDetails(GetTimestampColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<DateTime?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Timestamp);
+			if (propertyType == typeof(DateTimeOffset))
+				return GetColumnWriterDetails(GetTimestampColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTimeOffset>(classInstance, propertyInfo).UtcDateTime, Protocol.ColumnTypeKind.Timestamp);
+			if (propertyType == typeof(DateTimeOffset?))
+				return GetColumnWriterDetails(GetTimestampColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTimeOffset?>(classInstance, propertyInfo)?.UtcDateTime, Protocol.ColumnTypeKind.Timestamp);
 
 			throw new NotImplementedException($"Only basic types are supported. Unable to handle type {propertyType}");
 		}
@@ -363,6 +371,11 @@ namespace ApacheOrcDotNet.Stripes
 		ColumnWriter<decimal?> GetDecimalColumnWriter(bool isNullable, uint columnId)
 		{
 			return new DecimalWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
+		}
+
+		ColumnWriter<DateTime?> GetTimestampColumnWriter(bool isNullable, uint columnId)
+		{
+			return new TimestampWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
 		}
 	}
 
