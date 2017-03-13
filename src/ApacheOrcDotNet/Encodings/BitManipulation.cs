@@ -334,12 +334,7 @@ namespace ApacheOrcDotNet.Encodings
 			}
 
 			//Un zig-zag
-			if ((result & 0x1) == 1)       //Can this be optimized?
-			{
-				result++;
-				result = -result;
-			}
-			result >>= 1;
+			result = (result >> 1) ^ -(result & 1);
 
 			return result;
 		}
@@ -348,7 +343,7 @@ namespace ApacheOrcDotNet.Encodings
 		{
 			byte value;
 			//Write sign bit and 0-5 bits from low
-			value = (byte)(isNegative ? 1 : 0 | (low & 0x3f) << 1);
+			value = (byte)((isNegative ? 1u : 0u) | (low & 0x3f) << 1);
 			if (high == 0 && mid == 0 && (low & ~0x3f) == 0)
 				goto done;
 			stream.WriteByte((byte)(value | 0x80));
@@ -368,7 +363,7 @@ namespace ApacheOrcDotNet.Encodings
 				goto done;
 			stream.WriteByte((byte)(value | 0x80));
 			//Write 27-31 bits from low and 0-1 bits from mid
-			value = (byte)(((low & 0x1f << 27) >> 27) | (mid & 0x3));
+			value = (byte)(((low & 0x1f << 27) >> 27) | ((mid & 0x3) << 5));
 			if (high == 0 && (mid & ~0x3) == 0)
 				goto done;
 			stream.WriteByte((byte)(value | 0x80));
@@ -393,7 +388,7 @@ namespace ApacheOrcDotNet.Encodings
 				goto done;
 			stream.WriteByte((byte)(value | 0x80));
 			//Write 30-31 bits from mid and 0-4 bits from high
-			value = (byte)(((mid & 0x3 << 30) >> 30) | (high & 0x1f));
+			value = (byte)(((mid & 0x3 << 30) >> 30) | ((high & 0x1f) << 2));
 			if ((high & ~0x1f) == 0)
 				goto done;
 			stream.WriteByte((byte)(value | 0x80));

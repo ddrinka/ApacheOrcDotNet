@@ -293,22 +293,61 @@ namespace ApacheOrcDotNet.Test.Encodings
 		}
 
 		[Fact]
-		public void RoundTrip_VarInt_BigInt()
+		public void RoundTrip_VarInt_BigInt_DebuggingSequences()
 		{
+			var sequences = new List<Tuple<uint, uint, uint, bool>>
+			{
+				Tuple.Create(0xffffffffu, 0xffffffffu, 0xffffffffu, false),
+				Tuple.Create(0xffffffffu, 0xffffffffu, 0xffffffffu, true),
+				Tuple.Create(0xf80fe03fu, 0x3f80fe03u, 0x3f80fe0u, false),
+				Tuple.Create(0xf80fe03fu, 0x3f80fe03u, 0x3f80fe0u, true),
+				Tuple.Create(~0xf80fe03fu, ~0x3f80fe03u, ~0x3f80fe0u, false),
+				Tuple.Create(~0xf80fe03fu, ~0x3f80fe03u, ~0x3f80fe0u, true),
+				Tuple.Create(0x870e1c38u, 0x3870e1c3u, 0xc3870e1cu, true),
+				Tuple.Create(0x870e1c38u, 0x3870e1c3u, 0xc3870e1cu, false),
+				Tuple.Create(~0x870e1c38u, ~0x3870e1c3u, ~0xc3870e1cu, true),
+				Tuple.Create(~0x870e1c38u, ~0x3870e1c3u, ~0xc3870e1cu, false),
+			};
+
+			CheckBigIntVarInt(sequences);
+		}
+
+		[Fact]
+		public void RoundTrip_VarInt_BigInt_Random()
+		{
+			var values = new List<Tuple<uint, uint, uint, bool>>();
+
 			var random = new Random(123);
 			for (int i = 0; i < 1000; i++)
 			{
 				var buffer = new byte[4 * 3 + 1];
 				random.NextBytes(buffer);
 
-				var low = BitConverter.ToUInt32(buffer, 0);
-				var mid = BitConverter.ToUInt32(buffer, 4);
-				var high = BitConverter.ToUInt32(buffer, 8);
-				var isNegative = buffer[12] % 2 == 0;
+				values.Add(Tuple.Create(BitConverter.ToUInt32(buffer, 8), BitConverter.ToUInt32(buffer, 4), BitConverter.ToUInt32(buffer, 0), buffer[12] % 2 == 0));
+			}
+
+			CheckBigIntVarInt(values);
+		}
+
+		[Fact]
+		public void RoundTrip_VarInt_BigInt_Debugging()
+		{
+			var values = new[] { Tuple.Create(0xffffffffu, 0xffffffffu, 0xffffffffu, true) };
+			CheckBigIntVarInt(values);
+		}
+
+		void CheckBigIntVarInt(IEnumerable<Tuple<uint,uint,uint,bool>> values)
+		{
+			foreach (var tuple in values)
+			{
+				var low = tuple.Item3;
+				var mid = tuple.Item2;
+				var high = tuple.Item1;
+				var isNegative = tuple.Item4;
 
 				var expected = new BigInteger(low) | (new BigInteger(mid) << 32) | (new BigInteger(high) << 64);
 				if (isNegative)
-					expected = -expected;
+					expected = -(expected + 1);
 
 				using (var stream = new MemoryStream())
 				{
