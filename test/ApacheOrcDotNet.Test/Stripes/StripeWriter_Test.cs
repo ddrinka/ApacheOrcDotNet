@@ -38,7 +38,7 @@ namespace ApacheOrcDotNet.Test.Stripes
 			var bufferFactory = new OrcCompressedBufferFactory(256 * 1024, CompressionKind.Zlib, CompressionStrategy.Size);
 			var stream = new MemoryStream();
 
-			var stripeWriter = new StripeWriter(typeof(SingleValuePoco), stream, false, bufferFactory, 10000, 512 * 1024 * 1024);
+			var stripeWriter = new StripeWriter(typeof(SingleValuePoco), stream, false, 0.8, bufferFactory, 10000, 512 * 1024 * 1024);
 			stripeWriter.AddRows(pocos);
 			stripeWriter.RowAddingCompleted();
 			var footer=stripeWriter.GetFooter();

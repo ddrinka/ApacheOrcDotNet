@@ -15,6 +15,7 @@ namespace ApacheOrcDotNet.Stripes
 		readonly string _typeName;
 		readonly Stream _outputStream;
 		readonly bool _shouldAlignNumericValues;
+		readonly double _uniqueStringThresholdRatio;
 		readonly Compression.OrcCompressedBufferFactory _bufferFactory;
 		readonly int _strideLength;
 		readonly long _stripeLength;
@@ -28,11 +29,12 @@ namespace ApacheOrcDotNet.Stripes
 		long _contentLength = 0;
 		List<Protocol.StripeInformation> _stripeInformations = new List<Protocol.StripeInformation>();
 
-		public StripeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength, long stripeLength)
+		public StripeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, double uniqueStringThresholdRatio, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength, long stripeLength)
 		{
 			_typeName = pocoType.Name;
 			_outputStream = outputStream;
 			_shouldAlignNumericValues = shouldAlignNumericValues;
+			_uniqueStringThresholdRatio = uniqueStringThresholdRatio;
 			_bufferFactory = bufferFactory;
 			_strideLength = strideLength;
 			_stripeLength = stripeLength;
@@ -220,6 +222,7 @@ namespace ApacheOrcDotNet.Stripes
 		{
 			var propertyType = propertyInfo.PropertyType;
 
+			//TODO move this to a pattern match switch
 			if(propertyType==typeof(int))
 				return GetColumnWriterDetails(GetLongColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<int>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Int);
 			if (propertyType == typeof(long))
@@ -278,6 +281,8 @@ namespace ApacheOrcDotNet.Stripes
 				return GetColumnWriterDetails(GetTimestampColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTimeOffset>(classInstance, propertyInfo).UtcDateTime, Protocol.ColumnTypeKind.Timestamp);
 			if (propertyType == typeof(DateTimeOffset?))
 				return GetColumnWriterDetails(GetTimestampColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTimeOffset?>(classInstance, propertyInfo)?.UtcDateTime, Protocol.ColumnTypeKind.Timestamp);
+			if(propertyType==typeof(string))
+				return GetColumnWriterDetails(GetStringColumnWriter(columnId), propertyInfo, classInstance => GetValue<string>(classInstance, propertyInfo), Protocol.ColumnTypeKind.String);
 
 			throw new NotImplementedException($"Only basic types are supported. Unable to handle type {propertyType}");
 		}
@@ -376,6 +381,12 @@ namespace ApacheOrcDotNet.Stripes
 		ColumnWriter<DateTime?> GetTimestampColumnWriter(bool isNullable, uint columnId)
 		{
 			return new TimestampWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
+		}
+
+		ColumnWriter<string> GetStringColumnWriter(uint columnId)
+		{
+			//TODO consider if we need separate configuration options for aligning lengths vs lookup values
+			return new ColumnTypes.StringWriter(_shouldAlignNumericValues, _shouldAlignNumericValues, _uniqueStringThresholdRatio, _bufferFactory, columnId);
 		}
 	}
 

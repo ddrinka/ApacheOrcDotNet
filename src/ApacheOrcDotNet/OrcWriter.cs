@@ -29,6 +29,7 @@ namespace ApacheOrcDotNet
 				typeof(T),
 				outputStream,
 				configuration.EncodingStrategy == EncodingStrategy.Speed,
+				configuration.DictionaryKeySizeThreshold,
 				_bufferFactory,
 				configuration.RowIndexStride,
 				configuration.StripeSize
