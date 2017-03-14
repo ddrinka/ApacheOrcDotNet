@@ -44,7 +44,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		protected override IStatistics CreateStatistics() => new DoubleWriterStatistics();
 
-		protected override void EncodeValues(IList<double?> values, IList<OrcCompressedBuffer> buffers, IStatistics statistics)
+		protected override void EncodeValues(IList<double?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
 		{
 			var stats = (DoubleWriterStatistics)statistics;
 

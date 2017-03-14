@@ -43,7 +43,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		protected override IStatistics CreateStatistics() => new BinaryWriterStatistics();
 
-		protected override void EncodeValues(IList<byte[]> values, IList<OrcCompressedBuffer> buffers, IStatistics statistics)
+		protected override void EncodeValues(IList<byte[]> values, ColumnEncodingKind encodingKind, IStatistics statistics)
 		{
 			var stats = (BinaryWriterStatistics)statistics;
 

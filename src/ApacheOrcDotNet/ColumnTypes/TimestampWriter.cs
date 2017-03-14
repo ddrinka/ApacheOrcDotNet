@@ -51,7 +51,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		protected override IStatistics CreateStatistics() => new TimestampWriterStatistics();
 
-		protected override void EncodeValues(IList<DateTime?> values, IList<OrcCompressedBuffer> buffers, IStatistics statistics)
+		protected override void EncodeValues(IList<DateTime?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
 		{
 			var stats = (TimestampWriterStatistics)statistics;
 

@@ -47,7 +47,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		protected override IStatistics CreateStatistics() => new LongWriterStatistics();
 
-		protected override void EncodeValues(IList<long?> values, IList<OrcCompressedBuffer> buffers, IStatistics statistics)
+		protected override void EncodeValues(IList<long?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
 		{
 			var stats = (LongWriterStatistics)statistics;
 

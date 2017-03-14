@@ -26,7 +26,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		protected override IStatistics CreateStatistics() => new StructWriterStatistics();
 
-		protected override void EncodeValues(IList<object> values, IList<OrcCompressedBuffer> buffers, IStatistics statistics)
+		protected override void EncodeValues(IList<object> values, ColumnEncodingKind encodingKind, IStatistics statistics)
 		{
 			var stats = (StructWriterStatistics)statistics;
 			stats.NumValues += (uint)values.Count;

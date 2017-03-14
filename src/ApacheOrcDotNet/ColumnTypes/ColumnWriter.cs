@@ -22,7 +22,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		protected abstract IStatistics CreateStatistics();
 		protected abstract Protocol.ColumnEncodingKind DetectEncodingKind(IList<T> values);
 		protected abstract void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, Protocol.ColumnEncodingKind encodingKind);
-		protected abstract void EncodeValues(IList<T> values, IList<OrcCompressedBuffer> buffers, IStatistics statistics);
+		protected abstract void EncodeValues(IList<T> values, Protocol.ColumnEncodingKind encodingKind, IStatistics statistics);
 
 		public ColumnWriter(OrcCompressedBufferFactory bufferFactory, uint columnId)
 		{
@@ -58,7 +58,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 					statistics.AnnotatePosition(buffer.CompressedBuffer.Length + buffer.CurrentBlockLength, 0);     //If we're not compressing, output the total length as a single value
 			}
 
-			EncodeValues(values, _stripeStreamBuffers, statistics);
+			EncodeValues(values, _columnEncoding, statistics);
 
 			Statistics.Add(statistics);
 		}

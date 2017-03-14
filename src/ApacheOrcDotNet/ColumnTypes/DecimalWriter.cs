@@ -49,7 +49,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		protected override IStatistics CreateStatistics() => new DecimalWriterStatistics();
 
-		protected override void EncodeValues(IList<decimal?> values, IList<OrcCompressedBuffer> buffers, IStatistics statistics)
+		protected override void EncodeValues(IList<decimal?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
 		{
 			var stats = (DecimalWriterStatistics)statistics;
 

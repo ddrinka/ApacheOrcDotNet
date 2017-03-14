@@ -44,13 +44,12 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		protected override IStatistics CreateStatistics() => new LongWriterStatistics();
 
-		protected override void EncodeValues(IList<byte?> values, IList<OrcCompressedBuffer> buffers, IStatistics statistics)
+		protected override void EncodeValues(IList<byte?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
 		{
 			var stats = (LongWriterStatistics)statistics;
 
 			var valList = new List<byte>(values.Count);
 
-			int bufferIndex = 0;
 			if(_isNullable)
 			{
 				var presentList = new List<bool>(values.Count);
@@ -66,8 +65,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 				var presentEncoder = new BitWriter(_presentBuffer);
 				presentEncoder.Write(presentList);
 				if (stats.HasNull)
-					buffers[bufferIndex].MustBeIncluded = true;
-				bufferIndex++;
+					_presentBuffer.MustBeIncluded = true;
 			}
 			else
 			{
