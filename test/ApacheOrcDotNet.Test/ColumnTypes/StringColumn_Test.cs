@@ -60,7 +60,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 			var length = (rnd.Next() % (maximumLength - minimumLength + 1)) + minimumLength;
 			var sb = new StringBuilder();
 			for (int i = 0; i < length; i++)
-				sb.Append((byte)((rnd.Next() % (maximumAscii - minimumAscii + 1)) + minimumAscii));
+				sb.Append((char)(byte)((rnd.Next() % (maximumAscii - minimumAscii + 1)) + minimumAscii));
 			return sb.ToString();
 		}
 

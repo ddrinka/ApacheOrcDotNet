@@ -28,7 +28,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		IEnumerable<string> ReadDirectV2()
 		{
 			var present = ReadBooleanStream(Protocol.StreamKind.Present);
-			var data = ReadByteStream(Protocol.StreamKind.Data);
+			var data = ReadBinaryStream(Protocol.StreamKind.Data);
 			var length = ReadNumericStream(Protocol.StreamKind.Length, false);
 			if (data == null || length == null)
 				throw new InvalidDataException("DATA and LENGTH streams must be available");
@@ -68,7 +68,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			var present = ReadBooleanStream(Protocol.StreamKind.Present);
 			var data = ReadNumericStream(Protocol.StreamKind.Data, false);
-			var dictionaryData = ReadByteStream(Protocol.StreamKind.DictionaryData);
+			var dictionaryData = ReadBinaryStream(Protocol.StreamKind.DictionaryData);
 			var length = ReadNumericStream(Protocol.StreamKind.Length, false);
 			if (data == null || dictionaryData == null || length == null)
 				throw new InvalidDataException("DATA, DICTIONARY_DATA, and LENGTH streams must be available");

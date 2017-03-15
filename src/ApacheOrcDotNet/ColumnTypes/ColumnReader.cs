@@ -40,7 +40,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			if (stripeStream == null)
 				return null;
 
-			if (stripeStream.ColumnEncodingKind != Protocol.ColumnEncodingKind.DirectV2)
+			if (stripeStream.ColumnEncodingKind != Protocol.ColumnEncodingKind.DirectV2 && stripeStream.ColumnEncodingKind != Protocol.ColumnEncodingKind.DictionaryV2)
 				throw new NotImplementedException($"Unimplemented Numeric {nameof(Protocol.ColumnEncodingKind)} {stripeStream.ColumnEncodingKind}");
 
 			var stream = stripeStream.GetDecompressedStream();

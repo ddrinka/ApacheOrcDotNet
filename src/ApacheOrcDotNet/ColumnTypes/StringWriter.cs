@@ -120,7 +120,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 				foreach (var dictEntry in unsortedDictionary.OrderBy(d => d.Key, StringComparer.Ordinal))
 				{
 					sortedDictionary.Add(dictEntry.Key);
-					dictEntry.Value.Id = i;
+					dictEntry.Value.Id = i++;
 				}
 
 				//Generate the lookup list
