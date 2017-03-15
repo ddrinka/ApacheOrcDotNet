@@ -18,7 +18,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			var present = ReadBooleanStream(Protocol.StreamKind.Present);
 			var data = ReadVarIntStream(Protocol.StreamKind.Data);
-			var secondary = ReadNumericStream(Protocol.StreamKind.Secondary, true);
+			var secondary = ReadNumericStream(Protocol.StreamKind.Secondary, false);
 			if(data==null||secondary==null)
 				throw new InvalidDataException("DATA and SECONDARY streams must be available");
 
