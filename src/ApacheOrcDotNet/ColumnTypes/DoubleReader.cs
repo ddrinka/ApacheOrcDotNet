@@ -1,4 +1,5 @@
-﻿using ApacheOrcDotNet.Stripes;
+﻿using ApacheOrcDotNet.Encodings;
+using ApacheOrcDotNet.Stripes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,9 +20,12 @@ namespace ApacheOrcDotNet.ColumnTypes
 			int dataIndex = 0;
 			if (present == null)
 			{
-				var value = BitConverter.ToDouble(data, dataIndex);
-				dataIndex += 8;
-				yield return value;
+				while (dataIndex + 8 <= data.Length)
+				{
+					var value = BitManipulation.ReadDoubleBE(data, dataIndex);
+					dataIndex += 8;
+					yield return value;
+				}
 			}
 			else
 			{
@@ -29,7 +33,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 				{
 					if (isPresent)
 					{
-						var value = BitConverter.ToDouble(data, dataIndex);
+						var value = BitManipulation.ReadDoubleBE(data, dataIndex);
 						dataIndex += 8;
 						yield return value;
 					}
