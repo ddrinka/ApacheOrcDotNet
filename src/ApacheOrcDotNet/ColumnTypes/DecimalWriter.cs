@@ -81,6 +81,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			{
 				foreach(var value in values)
 				{
+					stats.AddValue(value);
 					byte scale;
 					var parts = GetParts(value.Value, out scale);
 					wholePartsList.Add(parts);
