@@ -16,7 +16,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		public IEnumerable<byte[]> Read()
 		{
 			var present = ReadBooleanStream(Protocol.StreamKind.Present);
-			var data = ReadByteStream(Protocol.StreamKind.Data);
+			var data = ReadBinaryStream(Protocol.StreamKind.Data);
 			var length = ReadNumericStream(Protocol.StreamKind.Length, false);
 			if (data == null || length == null)
 				throw new InvalidDataException("DATA and LENGTH streams must be available");
