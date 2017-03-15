@@ -22,7 +22,11 @@ namespace ApacheOrcDotNet.Test.App
 					Random = random,
 					RandomInRange = randomInRange,
 					Incrementing = i,
-					SetNumber = set
+					SetNumber = set,
+					Double = (double)i / (set+1),
+					Float = (float)i / (set+1),
+					Dec = i / (decimal)Math.Pow(10, set),
+					Str = $"Random={random}, RandomInRange={randomInRange}, Incrementing={i}, SetNumber={set}"
 				};
 				testElements.Add(element);
 			}
@@ -41,5 +45,9 @@ namespace ApacheOrcDotNet.Test.App
 		public int RandomInRange { get; set; }
 		public int Incrementing { get; set; }
 		public int SetNumber { get; set; }
+		public double Double { get; set; }
+		public float Float { get; set; }
+		public decimal Dec { get; set; }
+		public string Str { get; set; }
 	}
 }
