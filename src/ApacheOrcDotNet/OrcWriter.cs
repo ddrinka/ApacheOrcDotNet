@@ -30,6 +30,8 @@ namespace ApacheOrcDotNet
 				outputStream,
 				configuration.EncodingStrategy == EncodingStrategy.Speed,
 				configuration.DictionaryKeySizeThreshold,
+				configuration.DefaultDecimalPrecision,
+				configuration.DefaultDecimalScale,
 				_bufferFactory,
 				configuration.RowIndexStride,
 				configuration.StripeSize

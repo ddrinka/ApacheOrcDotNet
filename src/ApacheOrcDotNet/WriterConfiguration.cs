@@ -59,8 +59,20 @@ namespace ApacheOrcDotNet
 		public double BloomFilterFpp { get; set; } = 0.05;
 
 		/// <summary>
-		/// If this fraction of keys in a dictionary are unique, disable dictionary encoding
+		/// If more than this fraction of keys in a dictionary are unique, disable dictionary encoding
 		/// </summary>
 		public double DictionaryKeySizeThreshold { get; set; } = 0.8;
+
+		/// <summary>
+		/// Default precision (total number of digits before and after the decimal place) to use for decimals with un-configured precision
+		/// The default, 18, allows Presto to read decimals as longs rather than BigInts
+		/// </summary>
+		public int DefaultDecimalPrecision { get; set; } = 18;
+
+		/// <summary>
+		/// Default scale (number of digits after the decimal place) to use for decimals with un-configured precision
+		/// The default, 6, allows for number to be stored from -999,999,999,999.999999 to 999,999,999,999.999999, i.e. approximately one trillion
+		/// </summary>
+		public int DefaultDecimalScale { get; set; } = 6;
 	}
 }

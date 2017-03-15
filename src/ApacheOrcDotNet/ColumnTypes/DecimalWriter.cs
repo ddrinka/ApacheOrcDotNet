@@ -16,7 +16,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		readonly OrcCompressedBuffer _dataBuffer;
 		readonly OrcCompressedBuffer _secondaryBuffer;
 
-		public DecimalWriter(bool isNullable, bool shouldAlignEncodedValues, OrcCompressedBufferFactory bufferFactory, uint columnId)
+		public DecimalWriter(bool isNullable, bool shouldAlignEncodedValues, uint precision, uint scale, OrcCompressedBufferFactory bufferFactory, uint columnId)
 			: base(bufferFactory, columnId)
 		{
 			_isNullable = isNullable;
@@ -97,6 +97,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		Tuple<uint, uint, uint, bool> GetParts(decimal d, out byte scale)
 		{
+			//TODO verify each decimal is allowed within configured precision and scale of the column
+
 			var bits = decimal.GetBits(d);
 			var isNegative = (bits[3] & 0x80000000) != 0;
 			scale = (byte)((bits[3] >> 16) & 0x7F);

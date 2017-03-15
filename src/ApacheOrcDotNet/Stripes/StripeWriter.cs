@@ -16,6 +16,8 @@ namespace ApacheOrcDotNet.Stripes
 		readonly Stream _outputStream;
 		readonly bool _shouldAlignNumericValues;
 		readonly double _uniqueStringThresholdRatio;
+		readonly int _defaultDecimalPrecision;
+		readonly int _defaultDecimalScale;
 		readonly Compression.OrcCompressedBufferFactory _bufferFactory;
 		readonly int _strideLength;
 		readonly long _stripeLength;
@@ -29,12 +31,14 @@ namespace ApacheOrcDotNet.Stripes
 		long _contentLength = 0;
 		List<Protocol.StripeInformation> _stripeInformations = new List<Protocol.StripeInformation>();
 
-		public StripeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, double uniqueStringThresholdRatio, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength, long stripeLength)
+		public StripeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, double uniqueStringThresholdRatio, int defaultDecimalPrecision, int defaultDecimalScale, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength, long stripeLength)
 		{
 			_typeName = pocoType.Name;
 			_outputStream = outputStream;
 			_shouldAlignNumericValues = shouldAlignNumericValues;
 			_uniqueStringThresholdRatio = uniqueStringThresholdRatio;
+			_defaultDecimalPrecision = defaultDecimalPrecision;
+			_defaultDecimalScale = defaultDecimalScale;
 			_bufferFactory = bufferFactory;
 			_strideLength = strideLength;
 			_stripeLength = stripeLength;
@@ -270,9 +274,9 @@ namespace ApacheOrcDotNet.Stripes
 			if (propertyType == typeof(byte[]))
 				return GetColumnWriterDetails(GetBinaryColumnWriter(columnId), propertyInfo, classInstance => GetValue<byte[]>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Binary);
 			if(propertyType==typeof(decimal))
-				return GetColumnWriterDetails(GetDecimalColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<decimal>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Decimal);
+				return GetDecimalColumnWriterDetails(false, columnId, propertyInfo, classInstance => GetValue<decimal>(classInstance, propertyInfo));
 			if (propertyType == typeof(decimal?))
-				return GetColumnWriterDetails(GetDecimalColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<decimal?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Decimal);
+				return GetDecimalColumnWriterDetails(true, columnId, propertyInfo, classInstance => GetValue<decimal?>(classInstance, propertyInfo));
 			if(propertyType==typeof(DateTime))
 				return GetColumnWriterDetails(GetTimestampColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTime>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Timestamp);
 			if (propertyType == typeof(DateTime?))
@@ -343,6 +347,37 @@ namespace ApacheOrcDotNet.Stripes
 			};
 		}
 
+		ColumnWriterDetails GetDecimalColumnWriterDetails(bool isNullable, uint columnId, PropertyInfo propertyInfo, Func<object, decimal?> valueGetter)
+		{
+			//TODO add two options to configure Precision and Scale, via an attribute on the property, and via a fluent configuration source
+			var precision = (uint)_defaultDecimalPrecision;
+			var scale = (uint)_defaultDecimalScale;
+
+			var state = new List<decimal?>();
+			var columnWriter = new DecimalWriter(isNullable, _shouldAlignNumericValues, precision, scale, _bufferFactory, columnId);
+			return new ColumnWriterDetails
+			{
+				PropertyName = propertyInfo.Name,
+				ColumnWriter = columnWriter,
+				AddValueToState = classInstance =>
+				{
+					var value = valueGetter(classInstance);
+					state.Add(value);
+				},
+				WriteValuesFromState = () =>
+				{
+					columnWriter.AddBlock(state);
+					state.Clear();
+				},
+				ColumnType = new Protocol.ColumnType
+				{
+					Kind = Protocol.ColumnTypeKind.Decimal,
+					Precision = precision,
+					Scale = scale
+				}
+			};
+		}
+
 		ColumnWriter<long?> GetLongColumnWriter(bool isNullable, uint columnId)
 		{
 			return new LongWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
@@ -371,11 +406,6 @@ namespace ApacheOrcDotNet.Stripes
 		ColumnWriter<byte[]> GetBinaryColumnWriter(uint columnId)
 		{
 			return new ColumnTypes.BinaryWriter(_shouldAlignNumericValues, _bufferFactory, columnId);
-		}
-
-		ColumnWriter<decimal?> GetDecimalColumnWriter(bool isNullable, uint columnId)
-		{
-			return new DecimalWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
 		}
 
 		ColumnWriter<DateTime?> GetTimestampColumnWriter(bool isNullable, uint columnId)
