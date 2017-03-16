@@ -10,6 +10,7 @@ namespace ApacheOrcDotNet.Test.App
     {
         public static void Main(string[] args)
         {
+			var baseTime = new DateTime(2017, 3, 16, 0, 0, 0, DateTimeKind.Utc);
 			var rand = new Random(123);
 			var testElements = new List<TestClass>();
 			for (int i = 0; i < 80000; i++)
@@ -17,6 +18,7 @@ namespace ApacheOrcDotNet.Test.App
 				var random = rand.Next();
 				var set = i / 10000;
 				var randomInRange = (random % 10000) + set * 10000 - 40000;
+				var timestamp = baseTime.AddTicks(random);
 				var element = new TestClass
 				{
 					Random = random,
@@ -26,7 +28,8 @@ namespace ApacheOrcDotNet.Test.App
 					Double = (double)i / (set + 1),
 					Float = (float)i / (set + 1),
 					Dec = i / (decimal)Math.Pow(10, set - 4),
-					Str = $"Random={random}, RandomInRange={randomInRange}, Incrementing={i}, SetNumber={set}"
+					Timestamp = timestamp,
+					Str = $"Random={random}, RandomInRange={randomInRange}, Incrementing={i}, SetNumber={set}, Timestamp={timestamp:MM/dd/yyyy hh:mm:ss.fffffff}"
 				};
 				testElements.Add(element);
 			}
@@ -48,6 +51,7 @@ namespace ApacheOrcDotNet.Test.App
 		public double Double { get; set; }
 		public float Float { get; set; }
 		public decimal Dec { get; set; }
+		public DateTime Timestamp { get; set; }
 		public string Str { get; set; }
 	}
 }
