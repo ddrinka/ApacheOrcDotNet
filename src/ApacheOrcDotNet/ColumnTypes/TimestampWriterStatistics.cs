@@ -8,23 +8,21 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class TimestampWriterStatistics : ColumnWriterStatistics, IStatistics
     {
-		public long Min { get; set; } = long.MinValue;
-		public long Max { get; set; } = long.MaxValue;
+		public long Min { get; set; } = long.MaxValue;
+		public long Max { get; set; } = long.MinValue;
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
 
-		public void AddValue(long? secondsSinceEpoch)
+		public void AddValue(long? millisecondsSinceEpoch)
 		{
-			if (!secondsSinceEpoch.HasValue)
+			if (!millisecondsSinceEpoch.HasValue)
 				HasNull = true;
 			else
 			{
-				//if (value.Value.Kind != DateTimeKind.Utc)
-					//throw new NotSupportedException($"DateTimes used with Timestamp columns must be UTC");
-				if (secondsSinceEpoch > Max)
-					Max = secondsSinceEpoch.Value;
-				if (secondsSinceEpoch < Min)
-					Min = secondsSinceEpoch.Value;
+				if (millisecondsSinceEpoch > Max)
+					Max = millisecondsSinceEpoch.Value;
+				if (millisecondsSinceEpoch < Min)
+					Min = millisecondsSinceEpoch.Value;
 			}
 			NumValues++;
 		}

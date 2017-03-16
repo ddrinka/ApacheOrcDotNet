@@ -71,9 +71,10 @@ namespace ApacheOrcDotNet.ColumnTypes
 					}
 					else
 					{
+						long totalMilliseconds;
 						long fraction;
-						var seconds = GetValues(value.Value, out fraction);
-						stats.AddValue(seconds);
+						var seconds = GetValues(value.Value, out totalMilliseconds, out fraction);
+						stats.AddValue(totalMilliseconds);
 						presentList.Add(true);
 						secondsList.Add(seconds);
 						fractionsList.Add(fraction);
@@ -89,9 +90,10 @@ namespace ApacheOrcDotNet.ColumnTypes
 			{
 				foreach(var value in values)
 				{
+					long totalMilliseconds;
 					long fraction;
-					var seconds = GetValues(value.Value, out fraction);
-					stats.AddValue(seconds);
+					var seconds = GetValues(value.Value, out totalMilliseconds, out fraction);
+					stats.AddValue(totalMilliseconds);
 					secondsList.Add(seconds);
 					fractionsList.Add(fraction);
 				}
@@ -104,10 +106,14 @@ namespace ApacheOrcDotNet.ColumnTypes
 			fractionsEncoder.Write(fractionsList, false, _shouldAlignEncodedValues);
 		}
 
-		long GetValues(DateTime dateTime, out long fraction)
+		long GetValues(DateTime dateTime, out long totalMilliseconds, out long fraction)
 		{
+			if (dateTime.Kind != DateTimeKind.Utc)
+				throw new NotSupportedException("Only UTC DateTimes are supported");
+
 			var ticks = (dateTime - _orcEpoch).Ticks;
 			var seconds = ticks / TimeSpan.TicksPerSecond;
+			totalMilliseconds = ticks / TimeSpan.TicksPerMillisecond;
 			var remainderTicks = (int)(ticks - (seconds * TimeSpan.TicksPerSecond));
 			var nanoseconds = Math.Abs(remainderTicks) * 100;
 			int scaledNanoseconds;
@@ -120,32 +126,28 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			if (nanoseconds >= 1 * 1000 * 1000 * 1000)
 				throw new ArgumentException("Nanoseconds must be less than a single second");
-			/*
-			scaledNanoseconds = nanoseconds / (100 * 1000 * 1000);		//We can't actually encode this case
+			scaledNanoseconds = nanoseconds / (100 * 1000 * 1000);
 			if (scaledNanoseconds * 100 * 1000 * 1000 == nanoseconds)
-				return 8;
-			*/
+				return 7;
 			scaledNanoseconds = nanoseconds / (10 * 1000 * 1000);
 			if (scaledNanoseconds * 10 * 1000 * 1000 == nanoseconds)
-				return 7;
+				return 6;
 			scaledNanoseconds = nanoseconds / (1 * 1000 * 1000);
 			if (scaledNanoseconds * 1 * 1000 * 1000 == nanoseconds)
-				return 6;
+				return 5;
 			scaledNanoseconds = nanoseconds / (100 * 1000);
 			if (scaledNanoseconds * 100 * 1000 == nanoseconds)
-				return 5;
+				return 4;
 			scaledNanoseconds = nanoseconds / (10 * 1000);
 			if (scaledNanoseconds * 10 * 1000 == nanoseconds)
-				return 4;
+				return 3;
 			scaledNanoseconds = nanoseconds / (1 * 1000);
 			if (scaledNanoseconds * 1 * 1000 == nanoseconds)
-				return 3;
+				return 2;
 			scaledNanoseconds = nanoseconds / (100);
 			if (scaledNanoseconds * 100 == nanoseconds)
-				return 2;
-			scaledNanoseconds = nanoseconds / (10);
-			if (scaledNanoseconds * 10 == nanoseconds)
 				return 1;
+			scaledNanoseconds = nanoseconds;
 			return 0;
 		}
 	}
