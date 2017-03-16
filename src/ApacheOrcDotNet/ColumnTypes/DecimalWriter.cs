@@ -1,5 +1,6 @@
 ﻿using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Encodings;
+using ApacheOrcDotNet.Infrastructure;
 using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
@@ -12,15 +13,20 @@ namespace ApacheOrcDotNet.ColumnTypes
 	{
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;
+		readonly int _scale;
 		readonly OrcCompressedBuffer _presentBuffer;
 		readonly OrcCompressedBuffer _dataBuffer;
 		readonly OrcCompressedBuffer _secondaryBuffer;
 
-		public DecimalWriter(bool isNullable, bool shouldAlignEncodedValues, uint precision, uint scale, OrcCompressedBufferFactory bufferFactory, uint columnId)
+		public DecimalWriter(bool isNullable, bool shouldAlignEncodedValues, int precision, int scale, OrcCompressedBufferFactory bufferFactory, uint columnId)
 			: base(bufferFactory, columnId)
 		{
 			_isNullable = isNullable;
 			_shouldAlignEncodedValues = shouldAlignEncodedValues;
+			_scale = scale;
+
+			if (precision > 18)
+				throw new NotSupportedException("This implementation of DecimalWriter does not support precision greater than 18 digits (2^63)");
 
 			if (_isNullable)
 			{
@@ -53,7 +59,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			var stats = (DecimalWriterStatistics)statistics;
 
-			var wholePartsList = new List<Tuple<uint, uint, uint, bool>>(values.Count);
+			var wholePartsList = new List<long>(values.Count);
 			var scaleList = new List<long>(values.Count);
 
 			if (_isNullable)
@@ -65,10 +71,10 @@ namespace ApacheOrcDotNet.ColumnTypes
 					stats.AddValue(value);
 					if (value.HasValue)
 					{
-						byte scale;
-						var parts = GetParts(value.Value, out scale);
-						wholePartsList.Add(parts);
-						scaleList.Add(scale);
+						var longAndScale = value.Value.ToLongAndScale();
+						//var rescaled = longAndScale.Rescale(_scale, false);
+						wholePartsList.Add(longAndScale.Item1);
+						scaleList.Add(longAndScale.Item2);
 					}
 				}
 
@@ -79,13 +85,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 			}
 			else
 			{
-				foreach(var value in values)
+				foreach (var value in values)
 				{
 					stats.AddValue(value);
-					byte scale;
-					var parts = GetParts(value.Value, out scale);
-					wholePartsList.Add(parts);
-					scaleList.Add(scale);
+					var longAndScale = value.Value.ToLongAndScale();
+					//var rescaled = longAndScale.Rescale(_scale, false);
+					wholePartsList.Add(longAndScale.Item1);
+					scaleList.Add(longAndScale.Item2);
 				}
 			}
 
@@ -94,16 +100,6 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 			var scaleEncoder = new IntegerRunLengthEncodingV2Writer(_secondaryBuffer);
 			scaleEncoder.Write(scaleList, false, _shouldAlignEncodedValues);
-		}
-
-		Tuple<uint, uint, uint, bool> GetParts(decimal d, out byte scale)
-		{
-			//TODO verify each decimal is allowed within configured precision and scale of the column
-
-			var bits = decimal.GetBits(d);
-			var isNegative = (bits[3] & 0x80000000) != 0;
-			scale = (byte)((bits[3] >> 16) & 0x7F);
-			return Tuple.Create((uint)bits[0], (uint)bits[1], (uint)bits[2], isNegative);
 		}
 	}
 }

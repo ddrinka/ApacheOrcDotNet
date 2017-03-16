@@ -22,5 +22,13 @@ namespace ApacheOrcDotNet.Encodings
 				_outputStream.WriteVarIntSigned(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4);
 			}
 		}
+
+		public void Write(IList<long> values)
+		{
+			foreach(var value in values)
+			{
+				_outputStream.WriteVarIntSigned(value);
+			}
+		}
     }
 }

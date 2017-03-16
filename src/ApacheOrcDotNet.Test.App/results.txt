@@ -2,7 +2,7 @@
 log4j:WARN No appenders could be found for logger (org.apache.hadoop.metrics2.lib.MutableMetricsFactory).
 log4j:WARN Please initialize the log4j system properly.
 log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
-Processing data file user/test.orc [length: 2082412]
+Processing data file user/test.orc [length: 2117797]
 Structure for user/test.orc
 File Version: 0.12 with ORC_101
 Rows: 80000
@@ -19,7 +19,7 @@ Stripe Statistics:
     Column 4: count: 80000 hasNull: false min: 0 max: 7 sum: 280000
     Column 5: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535714285E8
     Column 6: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535708008E8
-    Column 7: count: 80000 hasNull: false min: 0 max: 9999 sum: 67895669.4445
+    Column 7: count: 80000 hasNull: false min: 0 max: 99990000 sum: 678956694445
     Column 8: count: 80000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7 sum: 5645087
 
 File Statistics:
@@ -30,11 +30,11 @@ File Statistics:
   Column 4: count: 80000 hasNull: false min: 0 max: 7 sum: 280000
   Column 5: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535714285E8
   Column 6: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535708008E8
-  Column 7: count: 80000 hasNull: false min: 0 max: 9999 sum: 67895669.4445
+  Column 7: count: 80000 hasNull: false min: 0 max: 99990000 sum: 678956694445
   Column 8: count: 80000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7 sum: 5645087
 
 Stripes:
-  Stripe: offset: 3 data: 2079599 rows: 80000 tail: 148 index: 1985
+  Stripe: offset: 3 data: 2114968 rows: 80000 tail: 147 index: 1991
     Stream: column 0 section ROW_INDEX start: 3 length 19
     Stream: column 1 section ROW_INDEX start: 22 length 221
     Stream: column 2 section ROW_INDEX start: 243 length 186
@@ -42,19 +42,19 @@ Stripes:
     Stream: column 4 section ROW_INDEX start: 612 length 125
     Stream: column 5 section ROW_INDEX start: 737 length 223
     Stream: column 6 section ROW_INDEX start: 960 length 200
-    Stream: column 7 section ROW_INDEX start: 1160 length 247
-    Stream: column 8 section ROW_INDEX start: 1407 length 581
-    Stream: column 1 section DATA start: 1988 length 320326
-    Stream: column 2 section DATA start: 322314 length 159064
-    Stream: column 3 section DATA start: 481378 length 350
-    Stream: column 4 section DATA start: 481728 length 52
-    Stream: column 5 section DATA start: 481780 length 181659
-    Stream: column 6 section DATA start: 663439 length 201846
-    Stream: column 7 section DATA start: 865285 length 165383
-    Stream: column 7 section SECONDARY start: 1030668 length 1187
-    Stream: column 8 section PRESENT start: 1031855 length 17
-    Stream: column 8 section DATA start: 1031872 length 1027254
-    Stream: column 8 section LENGTH start: 2059126 length 22461
+    Stream: column 7 section ROW_INDEX start: 1160 length 253
+    Stream: column 8 section ROW_INDEX start: 1413 length 581
+    Stream: column 1 section DATA start: 1994 length 320326
+    Stream: column 2 section DATA start: 322320 length 159064
+    Stream: column 3 section DATA start: 481384 length 350
+    Stream: column 4 section DATA start: 481734 length 52
+    Stream: column 5 section DATA start: 481786 length 181659
+    Stream: column 6 section DATA start: 663445 length 201846
+    Stream: column 7 section DATA start: 865291 length 201595
+    Stream: column 7 section SECONDARY start: 1066886 length 344
+    Stream: column 8 section PRESENT start: 1067230 length 17
+    Stream: column 8 section DATA start: 1067247 length 1027254
+    Stream: column 8 section LENGTH start: 2094501 length 22461
     Encoding column 0: DIRECT
     Encoding column 1: DIRECT_V2
     Encoding column 2: DIRECT_V2
@@ -128,14 +128,14 @@ Stripes:
       Entry 6: count: 10000 hasNull: false min: 8571.4287109375 max: 9999.857421875 sum: 9.285642857128906E7 positions: 0,240000,0
       Entry 7: count: 10000 hasNull: false min: 8750.0 max: 9999.875 sum: 9.3749375E7 positions: 164910,17856,0
     Row group indices for column 7:
-      Entry 0: count: 10000 hasNull: false min: 0 max: 9999 sum: 49995000 positions: 0,0,0,0,0,0
-      Entry 1: count: 10000 hasNull: false min: 1000 max: 1999.9 sum: 14999500 positions: 0,21744,0,0,80,0
-      Entry 2: count: 10000 hasNull: false min: 200 max: 299.99 sum: 2499950 positions: 0,50744,0,0,1389,0
-      Entry 3: count: 10000 hasNull: false min: 30 max: 39.999 sum: 349995 positions: 0,79744,0,0,3929,0
-      Entry 4: count: 10000 hasNull: false min: 4 max: 4.9999 sum: 44999.5 positions: 0,108734,0,0,6469,0
-      Entry 5: count: 10000 hasNull: false min: 0.5 max: 0.59999 sum: 5499.95 positions: 0,137724,0,0,11471,0
-      Entry 6: count: 10000 hasNull: false min: 0.06 max: 0.069999 sum: 649.995 positions: 0,166714,0,0,16473,0
-      Entry 7: count: 10000 hasNull: false min: 0.007 max: 0.0079999 sum: 74.9995 positions: 0,195710,0,0,21475,0
+      Entry 0: count: 10000 hasNull: false min: 0 max: 99990000 sum: 499950000000 positions: 0,0,0,0,0,0
+      Entry 1: count: 10000 hasNull: false min: 10000000 max: 19999000 sum: 149995000000 positions: 0,39893,0,0,80,0
+      Entry 2: count: 10000 hasNull: false min: 2000000 max: 2999900 sum: 24999500000 positions: 0,79893,0,0,160,0
+      Entry 3: count: 10000 hasNull: false min: 300000 max: 399990 sum: 3499950000 positions: 0,119893,0,0,240,0
+      Entry 4: count: 10000 hasNull: false min: 40000 max: 49999 sum: 449995000 positions: 0,149893,0,0,320,0
+      Entry 5: count: 10000 hasNull: false min: 5000 max: 5999.9 sum: 54999500 positions: 0,179893,0,0,400,0
+      Entry 6: count: 10000 hasNull: false min: 600 max: 699.99 sum: 6499950 positions: 0,208893,0,0,1709,0
+      Entry 7: count: 10000 hasNull: false min: 70 max: 79.999 sum: 749995 positions: 0,237893,0,0,4249,0
     Row group indices for column 8:
       Entry 0: count: 10000 hasNull: false min: Random=1000151936, RandomInRange=-38064, Incrementing=3544, SetNumber=0 max: Random=999761293, RandomInRange=-38707, Incrementing=6480, SetNumber=0 sum: 703638 positions: 0,0,0,0,0,0,0,0,0
       Entry 1: count: 10000 hasNull: false min: Random=1000282624, RandomInRange=-27376, Incrementing=15417, SetNumber=1 max: Random=999918819, RandomInRange=-21181, Incrementing=16436, SetNumber=1 sum: 714734 positions: 0,20,0,104221,179350,0,0,10024,0
@@ -146,7 +146,7 @@ Stripes:
       Entry 6: count: 10000 hasNull: false min: Random=1000201140, RandomInRange=21140, Incrementing=65315, SetNumber=6 max: Random=999691465, RandomInRange=21465, Incrementing=66790, SetNumber=6 sum: 704887 positions: 0,120,0,786486,41052,0,0,60196,0
       Entry 7: count: 10000 hasNull: false min: Random=1000063230, RandomInRange=33230, Incrementing=77837, SetNumber=7 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7 sum: 704844 positions: 0,140,0,873592,221651,0,0,70226,0
 
-File length: 2082412 bytes
+File length: 2117797 bytes
 Padding length: 0 bytes
 Padding ratio: 0%
 ________________________________________________________________________________________________________________________

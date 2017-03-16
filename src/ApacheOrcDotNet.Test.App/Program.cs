@@ -23,9 +23,9 @@ namespace ApacheOrcDotNet.Test.App
 					RandomInRange = randomInRange,
 					Incrementing = i,
 					SetNumber = set,
-					Double = (double)i / (set+1),
-					Float = (float)i / (set+1),
-					Dec = i / (decimal)Math.Pow(10, set),
+					Double = (double)i / (set + 1),
+					Float = (float)i / (set + 1),
+					Dec = i / (decimal)Math.Pow(10, set - 4),
 					Str = $"Random={random}, RandomInRange={randomInRange}, Incrementing={i}, SetNumber={set}"
 				};
 				testElements.Add(element);

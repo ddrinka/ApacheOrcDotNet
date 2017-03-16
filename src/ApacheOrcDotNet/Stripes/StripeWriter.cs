@@ -350,8 +350,8 @@ namespace ApacheOrcDotNet.Stripes
 		ColumnWriterDetails GetDecimalColumnWriterDetails(bool isNullable, uint columnId, PropertyInfo propertyInfo, Func<object, decimal?> valueGetter)
 		{
 			//TODO add two options to configure Precision and Scale, via an attribute on the property, and via a fluent configuration source
-			var precision = (uint)_defaultDecimalPrecision;
-			var scale = (uint)_defaultDecimalScale;
+			var precision = _defaultDecimalPrecision;
+			var scale = _defaultDecimalScale;
 
 			var state = new List<decimal?>();
 			var columnWriter = new DecimalWriter(isNullable, _shouldAlignNumericValues, precision, scale, _bufferFactory, columnId);
@@ -372,8 +372,8 @@ namespace ApacheOrcDotNet.Stripes
 				ColumnType = new Protocol.ColumnType
 				{
 					Kind = Protocol.ColumnTypeKind.Decimal,
-					Precision = precision,
-					Scale = scale
+					Precision = (uint)precision,
+					Scale = (uint)scale
 				}
 			};
 		}
