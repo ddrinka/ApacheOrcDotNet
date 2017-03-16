@@ -11,6 +11,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 	public class TimestampWriter : ColumnWriter<DateTime?>
 	{
 		readonly static DateTime _orcEpoch = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+		readonly static DateTime _unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;
@@ -71,10 +72,10 @@ namespace ApacheOrcDotNet.ColumnTypes
 					}
 					else
 					{
-						long totalMilliseconds;
+						long millisecondsSinceUnixEpoch;
 						long fraction;
-						var seconds = GetValues(value.Value, out totalMilliseconds, out fraction);
-						stats.AddValue(totalMilliseconds);
+						var seconds = GetValues(value.Value, out millisecondsSinceUnixEpoch, out fraction);
+						stats.AddValue(millisecondsSinceUnixEpoch);
 						presentList.Add(true);
 						secondsList.Add(seconds);
 						fractionsList.Add(fraction);
@@ -90,10 +91,10 @@ namespace ApacheOrcDotNet.ColumnTypes
 			{
 				foreach(var value in values)
 				{
-					long totalMilliseconds;
+					long millisecondsSinceUnixEpoch;
 					long fraction;
-					var seconds = GetValues(value.Value, out totalMilliseconds, out fraction);
-					stats.AddValue(totalMilliseconds);
+					var seconds = GetValues(value.Value, out millisecondsSinceUnixEpoch, out fraction);
+					stats.AddValue(millisecondsSinceUnixEpoch);
 					secondsList.Add(seconds);
 					fractionsList.Add(fraction);
 				}
@@ -106,14 +107,14 @@ namespace ApacheOrcDotNet.ColumnTypes
 			fractionsEncoder.Write(fractionsList, false, _shouldAlignEncodedValues);
 		}
 
-		long GetValues(DateTime dateTime, out long totalMilliseconds, out long fraction)
+		long GetValues(DateTime dateTime, out long millisecondsSinceUnixEpoch, out long fraction)
 		{
 			if (dateTime.Kind != DateTimeKind.Utc)
-				throw new NotSupportedException("Only UTC DateTimes are supported");
+				throw new NotSupportedException("Only UTC DateTimes are supported in Timestamp columns");
 
 			var ticks = (dateTime - _orcEpoch).Ticks;
 			var seconds = ticks / TimeSpan.TicksPerSecond;
-			totalMilliseconds = ticks / TimeSpan.TicksPerMillisecond;
+			millisecondsSinceUnixEpoch = (dateTime - _unixEpoch).Ticks / TimeSpan.TicksPerMillisecond;
 			var remainderTicks = (int)(ticks - (seconds * TimeSpan.TicksPerSecond));
 			var nanoseconds = Math.Abs(remainderTicks) * 100;
 			int scaledNanoseconds;

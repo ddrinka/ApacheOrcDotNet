@@ -13,16 +13,16 @@ namespace ApacheOrcDotNet.ColumnTypes
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
 
-		public void AddValue(long? millisecondsSinceEpoch)
+		public void AddValue(long? millisecondsSinceUnixEpoch)
 		{
-			if (!millisecondsSinceEpoch.HasValue)
+			if (!millisecondsSinceUnixEpoch.HasValue)
 				HasNull = true;
 			else
 			{
-				if (millisecondsSinceEpoch > Max)
-					Max = millisecondsSinceEpoch.Value;
-				if (millisecondsSinceEpoch < Min)
-					Min = millisecondsSinceEpoch.Value;
+				if (millisecondsSinceUnixEpoch > Max)
+					Max = millisecondsSinceUnixEpoch.Value;
+				if (millisecondsSinceUnixEpoch < Min)
+					Min = millisecondsSinceUnixEpoch.Value;
 			}
 			NumValues++;
 		}
