@@ -18,6 +18,7 @@ namespace ApacheOrcDotNet.Test.App
 				var random = rand.Next();
 				var set = i / 10000;
 				var randomInRange = (random % 10000) + set * 10000 - 40000;
+				var dec = i / (decimal)Math.Pow(10, set - 4);
 				var timestamp = baseTime.AddTicks(random);
 				var element = new TestClass
 				{
@@ -27,9 +28,9 @@ namespace ApacheOrcDotNet.Test.App
 					SetNumber = set,
 					Double = (double)i / (set + 1),
 					Float = (float)i / (set + 1),
-					Dec = i / (decimal)Math.Pow(10, set - 4),
+					Dec = dec,
 					Timestamp = timestamp,
-					Str = $"Random={random}, RandomInRange={randomInRange}, Incrementing={i}, SetNumber={set}, Timestamp={timestamp:MM/dd/yyyy hh:mm:ss.fffffff}"
+					Str = $"Random={random}, RandomInRange={randomInRange}, Incrementing={i}, SetNumber={set}, Dec={dec}, Timestamp={timestamp:MM/dd/yyyy hh:mm:ss.fffffff}"
 				};
 				testElements.Add(element);
 			}

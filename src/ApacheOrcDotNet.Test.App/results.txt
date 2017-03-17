@@ -2,7 +2,7 @@
 log4j:WARN No appenders could be found for logger (org.apache.hadoop.metrics2.lib.MutableMetricsFactory).
 log4j:WARN Please initialize the log4j system properly.
 log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
-Processing data file user/test.orc [length: 3059350]
+Processing data file user/test.orc [length: 3295856]
 Structure for user/test.orc
 File Version: 0.12 with ORC_101
 Rows: 80000
@@ -21,7 +21,7 @@ Stripe Statistics:
     Column 6: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535708008E8
     Column 7: count: 80000 hasNull: false min: 0 max: 99990000 sum: 678956694445
     Column 8: count: 80000 hasNull: false min: 2017-03-16 00:00:00.004 max: 2017-03-16 00:03:34.746
-    Column 9: count: 80000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4, Timestamp=03/16/2017 12:01:40.0014068 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Timestamp=03/16/2017 12:01:39.9972874 sum: 8765087
+    Column 9: count: 80000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4, Dec=47447, Timestamp=03/16/2017 12:01:40.0014068 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Dec=71.035, Timestamp=03/16/2017 12:01:39.9972874 sum: 9759653
 
 File Statistics:
   Column 0: count: 80000 hasNull: false
@@ -33,10 +33,10 @@ File Statistics:
   Column 6: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535708008E8
   Column 7: count: 80000 hasNull: false min: 0 max: 99990000 sum: 678956694445
   Column 8: count: 80000 hasNull: false min: 2017-03-16 00:00:00.004 max: 2017-03-16 00:03:34.746
-  Column 9: count: 80000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4, Timestamp=03/16/2017 12:01:40.0014068 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Timestamp=03/16/2017 12:01:39.9972874 sum: 8765087
+  Column 9: count: 80000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4, Dec=47447, Timestamp=03/16/2017 12:01:40.0014068 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Dec=71.035, Timestamp=03/16/2017 12:01:39.9972874 sum: 9759653
 
 Stripes:
-  Stripe: offset: 3 data: 3056101 rows: 80000 tail: 166 index: 2254
+  Stripe: offset: 3 data: 3292476 rows: 80000 tail: 166 index: 2359
     Stream: column 0 section ROW_INDEX start: 3 length 19
     Stream: column 1 section ROW_INDEX start: 22 length 221
     Stream: column 2 section ROW_INDEX start: 243 length 186
@@ -46,20 +46,20 @@ Stripes:
     Stream: column 6 section ROW_INDEX start: 960 length 200
     Stream: column 7 section ROW_INDEX start: 1160 length 253
     Stream: column 8 section ROW_INDEX start: 1413 length 152
-    Stream: column 9 section ROW_INDEX start: 1565 length 692
-    Stream: column 1 section DATA start: 2257 length 320326
-    Stream: column 2 section DATA start: 322583 length 159064
-    Stream: column 3 section DATA start: 481647 length 350
-    Stream: column 4 section DATA start: 481997 length 52
-    Stream: column 5 section DATA start: 482049 length 181659
-    Stream: column 6 section DATA start: 663708 length 201846
-    Stream: column 7 section DATA start: 865554 length 201595
-    Stream: column 7 section SECONDARY start: 1067149 length 344
-    Stream: column 8 section DATA start: 1067493 length 124126
-    Stream: column 8 section SECONDARY start: 1191619 length 284306
-    Stream: column 9 section PRESENT start: 1475925 length 17
-    Stream: column 9 section DATA start: 1475942 length 1559956
-    Stream: column 9 section LENGTH start: 3035898 length 22460
+    Stream: column 9 section ROW_INDEX start: 1565 length 797
+    Stream: column 1 section DATA start: 2362 length 320326
+    Stream: column 2 section DATA start: 322688 length 159064
+    Stream: column 3 section DATA start: 481752 length 350
+    Stream: column 4 section DATA start: 482102 length 52
+    Stream: column 5 section DATA start: 482154 length 181659
+    Stream: column 6 section DATA start: 663813 length 201846
+    Stream: column 7 section DATA start: 865659 length 201595
+    Stream: column 7 section SECONDARY start: 1067254 length 429
+    Stream: column 8 section DATA start: 1067683 length 124126
+    Stream: column 8 section SECONDARY start: 1191809 length 284306
+    Stream: column 9 section PRESENT start: 1476115 length 17
+    Stream: column 9 section DATA start: 1476132 length 1795185
+    Stream: column 9 section LENGTH start: 3271317 length 23521
     Encoding column 0: DIRECT
     Encoding column 1: DIRECT_V2
     Encoding column 2: DIRECT_V2
@@ -140,8 +140,8 @@ Stripes:
       Entry 3: count: 10000 hasNull: false min: 300000 max: 399990 sum: 3499950000 positions: 0,119893,0,0,240,0
       Entry 4: count: 10000 hasNull: false min: 40000 max: 49999 sum: 449995000 positions: 0,149893,0,0,320,0
       Entry 5: count: 10000 hasNull: false min: 5000 max: 5999.9 sum: 54999500 positions: 0,179893,0,0,400,0
-      Entry 6: count: 10000 hasNull: false min: 600 max: 699.99 sum: 6499950 positions: 0,208893,0,0,1709,0
-      Entry 7: count: 10000 hasNull: false min: 70 max: 79.999 sum: 749995 positions: 0,237893,0,0,4249,0
+      Entry 6: count: 10000 hasNull: false min: 600 max: 699.99 sum: 6499950 positions: 0,208893,0,0,2940,0
+      Entry 7: count: 10000 hasNull: false min: 70 max: 79.999 sum: 749995 positions: 0,237893,0,0,7942,0
     Row group indices for column 8:
       Entry 0: count: 10000 hasNull: false min: 2017-03-16 00:00:00.012 max: 2017-03-16 00:03:34.731 positions: 0,0,0,0,0,0
       Entry 1: count: 10000 hasNull: false min: 2017-03-16 00:00:00.021 max: 2017-03-16 00:03:34.744 positions: 0,40040,0,0,40040,0
@@ -152,16 +152,16 @@ Stripes:
       Entry 6: count: 10000 hasNull: false min: 2017-03-16 00:00:00.038 max: 2017-03-16 00:03:34.733 positions: 0,240240,0,0,240240,0
       Entry 7: count: 10000 hasNull: false min: 2017-03-16 00:00:00.041 max: 2017-03-16 00:03:34.739 positions: 101415,18136,0,232631,18136,0
     Row group indices for column 9:
-      Entry 0: count: 10000 hasNull: false min: Random=1000151936, RandomInRange=-38064, Incrementing=3544, SetNumber=0, Timestamp=03/16/2017 12:01:40.0151936 max: Random=999761293, RandomInRange=-38707, Incrementing=6480, SetNumber=0, Timestamp=03/16/2017 12:01:39.9761293 sum: 1093638 positions: 0,0,0,0,0,0,0,0,0
-      Entry 1: count: 10000 hasNull: false min: Random=1000282624, RandomInRange=-27376, Incrementing=15417, SetNumber=1, Timestamp=03/16/2017 12:01:40.0282624 max: Random=999918819, RandomInRange=-21181, Incrementing=16436, SetNumber=1, Timestamp=03/16/2017 12:01:39.9918819 sum: 1104734 positions: 0,20,0,199680,45062,0,0,10024,0
-      Entry 2: count: 10000 hasNull: false min: Random=1000481115, RandomInRange=-18885, Incrementing=25943, SetNumber=2, Timestamp=03/16/2017 12:01:40.0481115 max: Random=99996518, RandomInRange=-13482, Incrementing=25852, SetNumber=2, Timestamp=03/16/2017 12:00:09.9996518 sum: 1104760 positions: 0,40,0,397641,101220,0,0,20058,0
-      Entry 3: count: 10000 hasNull: false min: Random=1000050663, RandomInRange=-9337, Incrementing=32554, SetNumber=3, Timestamp=03/16/2017 12:01:40.0050663 max: Random=999597406, RandomInRange=-2594, Incrementing=36598, SetNumber=3, Timestamp=03/16/2017 12:01:39.9597406 sum: 1093706 positions: 0,60,0,595483,157404,0,0,30094,0
-      Entry 4: count: 10000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4, Timestamp=03/16/2017 12:01:40.0014068 max: Random=999912852, RandomInRange=2852, Incrementing=49769, SetNumber=4, Timestamp=03/16/2017 12:01:39.9912852 sum: 1083668 positions: 0,80,0,794160,202534,0,0,40132,0
-      Entry 5: count: 10000 hasNull: false min: Random=1000330550, RandomInRange=10550, Incrementing=50391, SetNumber=5, Timestamp=03/16/2017 12:01:40.0330550 max: Random=999616830, RandomInRange=16830, Incrementing=54984, SetNumber=5, Timestamp=03/16/2017 12:01:39.9616830 sum: 1094850 positions: 0,100,0,974075,237626,0,0,50159,0
-      Entry 6: count: 10000 hasNull: false min: Random=1000201140, RandomInRange=21140, Incrementing=65315, SetNumber=6, Timestamp=03/16/2017 12:01:40.0201140 max: Random=999691465, RandomInRange=21465, Incrementing=66790, SetNumber=6, Timestamp=03/16/2017 12:01:39.9691465 sum: 1094887 positions: 0,120,0,1192160,21756,0,0,60196,0
-      Entry 7: count: 10000 hasNull: false min: Random=1000063230, RandomInRange=33230, Incrementing=77837, SetNumber=7, Timestamp=03/16/2017 12:01:40.0063230 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Timestamp=03/16/2017 12:01:39.9972874 sum: 1094844 positions: 0,140,0,1366436,68067,0,0,70226,0
+      Entry 0: count: 10000 hasNull: false min: Random=1000151936, RandomInRange=-38064, Incrementing=3544, SetNumber=0, Dec=35440000, Timestamp=03/16/2017 12:01:40.0151936 max: Random=999761293, RandomInRange=-38707, Incrementing=6480, SetNumber=0, Dec=64800000, Timestamp=03/16/2017 12:01:39.9761293 sum: 1232524 positions: 0,0,0,0,0,0,0,0,0
+      Entry 1: count: 10000 hasNull: false min: Random=1000282624, RandomInRange=-27376, Incrementing=15417, SetNumber=1, Dec=15417000, Timestamp=03/16/2017 12:01:40.0282624 max: Random=999918819, RandomInRange=-21181, Incrementing=16436, SetNumber=1, Dec=16436000, Timestamp=03/16/2017 12:01:39.9918819 sum: 1244734 positions: 0,20,0,202538,183948,0,0,10036,0
+      Entry 2: count: 10000 hasNull: false min: Random=1000481115, RandomInRange=-18885, Incrementing=25943, SetNumber=2, Dec=2594300, Timestamp=03/16/2017 12:01:40.0481115 max: Random=99996518, RandomInRange=-13482, Incrementing=25852, SetNumber=2, Dec=2585200, Timestamp=03/16/2017 12:00:09.9996518 sum: 1234760 positions: 0,40,0,454249,117962,0,0,20070,0
+      Entry 3: count: 10000 hasNull: false min: Random=1000050663, RandomInRange=-9337, Incrementing=32554, SetNumber=3, Dec=325540, Timestamp=03/16/2017 12:01:40.0050663 max: Random=999597406, RandomInRange=-2594, Incrementing=36598, SetNumber=3, Dec=365980, Timestamp=03/16/2017 12:01:39.9597406 sum: 1213706 positions: 0,60,0,707441,42002,0,0,30106,0
+      Entry 4: count: 10000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4, Dec=47447, Timestamp=03/16/2017 12:01:40.0014068 max: Random=999912852, RandomInRange=2852, Incrementing=49769, SetNumber=4, Dec=49769, Timestamp=03/16/2017 12:01:39.9912852 sum: 1193668 positions: 0,80,0,911691,207132,0,0,40144,0
+      Entry 5: count: 10000 hasNull: false min: Random=1000330550, RandomInRange=10550, Incrementing=50391, SetNumber=5, Dec=5039.1, Timestamp=03/16/2017 12:01:40.0330550 max: Random=999616830, RandomInRange=16830, Incrementing=54984, SetNumber=5, Dec=5498.4, Timestamp=03/16/2017 12:01:39.9616830 sum: 1212850 positions: 0,100,0,1147703,90080,0,0,50171,0
+      Entry 6: count: 10000 hasNull: false min: Random=1000201140, RandomInRange=21140, Incrementing=65315, SetNumber=6, Dec=653.15, Timestamp=03/16/2017 12:01:40.0201140 max: Random=999691465, RandomInRange=21465, Incrementing=66790, SetNumber=6, Dec=667.9, Timestamp=03/16/2017 12:01:39.9691465 sum: 1213687 positions: 0,120,0,1329515,254354,0,0,60208,0
+      Entry 7: count: 10000 hasNull: false min: Random=1000063230, RandomInRange=33230, Incrementing=77837, SetNumber=7, Dec=77.837, Timestamp=03/16/2017 12:01:40.0063230 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Dec=71.035, Timestamp=03/16/2017 12:01:39.9972874 sum: 1213724 positions: 0,140,0,1556835,157321,0,0,70242,0
 
-File length: 3059350 bytes
+File length: 3295856 bytes
 Padding length: 0 bytes
 Padding ratio: 0%
 ________________________________________________________________________________________________________________________
