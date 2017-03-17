@@ -15,6 +15,11 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "ApacheOrcDotNet.Test", "tes
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "ApacheOrcDotNet.Test.App", "src\ApacheOrcDotNet.Test.App\ApacheOrcDotNet.Test.App.xproj", "{DC542C06-BC21-4623-8752-977CE28C478F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E64233AB-9609-4FE2-81C9-206ABF07AB43}"
+	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
