@@ -8,16 +8,16 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-    public class DoubleWriter : ColumnWriter<double?>
-    {
+	public class DoubleWriter : IColumnWriter<double?>
+	{
 		readonly bool _isNullable;
 		readonly OrcCompressedBuffer _presentBuffer;
 		readonly OrcCompressedBuffer _dataBuffer;
 
 		public DoubleWriter(bool isNullable, OrcCompressedBufferFactory bufferFactory, uint columnId)
-			: base(bufferFactory, columnId)
 		{
 			_isNullable = isNullable;
+			ColumnId = columnId;
 
 			if (_isNullable)
 			{
@@ -27,26 +27,33 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_dataBuffer = bufferFactory.CreateBuffer(StreamKind.Data);
 		}
 
-		protected override ColumnEncodingKind DetectEncodingKind(IList<double?> values)
+		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
+		public long CompressedLength => Buffers.Sum(s => s.Length);
+		public uint ColumnId { get; }
+		public IEnumerable<OrcCompressedBuffer> Buffers => _isNullable ? new[] { _presentBuffer, _dataBuffer } : new[] { _dataBuffer };
+		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.Direct;
+
+		public void FlushBuffers()
 		{
-			return ColumnEncodingKind.Direct;
+			foreach (var buffer in Buffers)
+				buffer.Flush();
 		}
 
-		protected override void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, ColumnEncodingKind encodingKind)
+		public void Reset()
 		{
-			if (encodingKind != ColumnEncodingKind.Direct)
-				throw new NotSupportedException($"Only Direct encoding is supported for {nameof(DoubleWriter)}");
-
+			foreach (var buffer in Buffers)
+				buffer.Reset();
 			if (_isNullable)
-				buffers.Add(_presentBuffer);
-			buffers.Add(_dataBuffer);
+				_presentBuffer.MustBeIncluded = false;
+			Statistics.Clear();
 		}
 
-		protected override IStatistics CreateStatistics() => new DoubleWriterStatistics();
-
-		protected override void EncodeValues(IList<double?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
+		public void AddBlock(IList<double?> values)
 		{
-			var stats = (DoubleWriterStatistics)statistics;
+			var stats = new DoubleWriterStatistics();
+			Statistics.Add(stats);
+			foreach (var buffer in Buffers)
+				buffer.AnnotatePosition(stats, 0);
 
 			var valList = new List<double>(values.Count);
 
@@ -69,14 +76,14 @@ namespace ApacheOrcDotNet.ColumnTypes
 			}
 			else
 			{
-				foreach(var value in values)
+				foreach (var value in values)
 				{
 					stats.AddValue(value);
 					valList.Add(value.Value);
 				}
 			}
 
-			foreach(var value in valList)
+			foreach (var value in valList)
 			{
 				_dataBuffer.WriteDoubleBE(value);
 			}

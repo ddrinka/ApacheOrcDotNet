@@ -9,12 +9,12 @@ namespace ApacheOrcDotNet.Infrastructure
 {
     public static class OrcCompressedBufferFactoryExtensions
     {
-		public static MemoryStream SerializeAndCompress(this OrcCompressedBufferFactory bufferFactory, object instance)
+		public static void SerializeAndCompressTo(this OrcCompressedBufferFactory bufferFactory, Stream outputStream, object instance, out long length)
 		{
 			var buffer = bufferFactory.CreateBuffer();
 			StaticProtoBuf.Serializer.Serialize(buffer, instance);
-			buffer.WritingCompleted();
-			return buffer.CompressedBuffer;
+			buffer.CopyTo(outputStream);
+			length = buffer.Length;
 		}
 	}
 }

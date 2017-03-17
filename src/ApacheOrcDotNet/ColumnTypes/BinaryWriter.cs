@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-    public class BinaryWriter : ColumnWriter<byte[]>
-    {
+	public class BinaryWriter : IColumnWriter<byte[]>
+	{
 		readonly bool _shouldAlignLengths;
 		readonly OrcCompressedBuffer _presentBuffer;
 		readonly OrcCompressedBuffer _dataBuffer;
 		readonly OrcCompressedBuffer _lengthBuffer;
 
 		public BinaryWriter(bool shouldAlignLengths, OrcCompressedBufferFactory bufferFactory, uint columnId)
-			: base(bufferFactory, columnId)
 		{
 			_shouldAlignLengths = shouldAlignLengths;
+			ColumnId = columnId;
 
 			_presentBuffer = bufferFactory.CreateBuffer(StreamKind.Present);
 			_presentBuffer.MustBeIncluded = false;
@@ -26,35 +26,41 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_lengthBuffer = bufferFactory.CreateBuffer(StreamKind.Length);
 		}
 
-		protected override ColumnEncodingKind DetectEncodingKind(IList<byte[]> values)
+		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
+		public long CompressedLength => Buffers.Sum(s => s.Length);
+		public uint ColumnId { get; }
+		public IEnumerable<OrcCompressedBuffer> Buffers => new[] { _presentBuffer, _dataBuffer, _lengthBuffer };
+		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.DirectV2;
+
+		public void FlushBuffers()
 		{
-			return ColumnEncodingKind.DirectV2;
+			foreach (var buffer in Buffers)
+				buffer.Flush();
 		}
 
-		protected override void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, ColumnEncodingKind encodingKind)
+		public void Reset()
 		{
-			if (encodingKind != ColumnEncodingKind.DirectV2)
-				throw new NotSupportedException($"Only DirectV2 encoding is supported for {nameof(BinaryWriter)}");
-
-			buffers.Add(_presentBuffer);
-			buffers.Add(_dataBuffer);
-			buffers.Add(_lengthBuffer);
+			foreach (var buffer in Buffers)
+				buffer.Reset();
+			_presentBuffer.MustBeIncluded = false;
+			Statistics.Clear();
 		}
 
-		protected override IStatistics CreateStatistics() => new BinaryWriterStatistics();
-
-		protected override void EncodeValues(IList<byte[]> values, ColumnEncodingKind encodingKind, IStatistics statistics)
+		public void AddBlock(IList<byte[]> values)
 		{
-			var stats = (BinaryWriterStatistics)statistics;
+			var stats = new BinaryWriterStatistics();
+			Statistics.Add(stats);
+			foreach (var buffer in Buffers)
+				buffer.AnnotatePosition(stats, 0);
 
 			var bytesList = new List<byte[]>(values.Count);
 			var presentList = new List<bool>(values.Count);
 			var lengthList = new List<long>(values.Count);
 
-			foreach(var bytes in values)
+			foreach (var bytes in values)
 			{
 				stats.AddValue(bytes);
-				if(values!=null)
+				if (values != null)
 				{
 					bytesList.Add(bytes);
 					lengthList.Add(bytes.Length);

@@ -9,7 +9,7 @@ using ApacheOrcDotNet.Protocol;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-	public class LongWriter : ColumnWriter<long?>
+	public class LongWriter : IColumnWriter<long?>
 	{
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;
@@ -17,10 +17,10 @@ namespace ApacheOrcDotNet.ColumnTypes
 		readonly OrcCompressedBuffer _dataBuffer;
 
 		public LongWriter(bool isNullable, bool shouldAlignEncodedValues, OrcCompressedBufferFactory bufferFactory, uint columnId)
-			: base(bufferFactory, columnId)
 		{
 			_isNullable = isNullable;
 			_shouldAlignEncodedValues = shouldAlignEncodedValues;
+			ColumnId = columnId;
 
 			if (_isNullable)
 			{
@@ -30,26 +30,33 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_dataBuffer = bufferFactory.CreateBuffer(StreamKind.Data);
 		}
 
-		protected override ColumnEncodingKind DetectEncodingKind(IList<long?> values)
+		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
+		public long CompressedLength => Buffers.Sum(s => s.Length);
+		public uint ColumnId { get; }
+		public IEnumerable<OrcCompressedBuffer> Buffers => _isNullable ? new[] { _presentBuffer, _dataBuffer } : new[] { _dataBuffer };
+		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.DirectV2;
+
+		public void FlushBuffers()
 		{
-			return ColumnEncodingKind.DirectV2;
+			foreach (var buffer in Buffers)
+				buffer.Flush();
 		}
 
-		protected override void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, ColumnEncodingKind encodingKind)
+		public void Reset()
 		{
-			if (encodingKind != ColumnEncodingKind.DirectV2)
-				throw new NotSupportedException($"Only DirectV2 encoding is supported for {nameof(LongWriter)}");
-
+			foreach (var buffer in Buffers)
+				buffer.Reset();
 			if (_isNullable)
-				buffers.Add(_presentBuffer);
-			buffers.Add(_dataBuffer);
+				_presentBuffer.MustBeIncluded = false;
+			Statistics.Clear();
 		}
 
-		protected override IStatistics CreateStatistics() => new LongWriterStatistics();
-
-		protected override void EncodeValues(IList<long?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
+		public void AddBlock(IList<long?> values)
 		{
-			var stats = (LongWriterStatistics)statistics;
+			var stats = new LongWriterStatistics();
+			Statistics.Add(stats);
+			foreach (var buffer in Buffers)
+				buffer.AnnotatePosition(stats, 0);
 
 			var valList = new List<long>(values.Count);
 

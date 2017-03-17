@@ -8,18 +8,18 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-    public class ByteWriter : ColumnWriter<byte?>
-    {
+	public class ByteWriter : IColumnWriter<byte?>
+	{
 		readonly bool _isNullable;
 		readonly OrcCompressedBuffer _presentBuffer;
 		readonly OrcCompressedBuffer _dataBuffer;
 
 		public ByteWriter(bool isNullable, OrcCompressedBufferFactory bufferFactory, uint columnId)
-			:base(bufferFactory, columnId)
 		{
 			_isNullable = isNullable;
+			ColumnId = columnId;
 
-			if(_isNullable)
+			if (_isNullable)
 			{
 				_presentBuffer = bufferFactory.CreateBuffer(StreamKind.Present);
 				_presentBuffer.MustBeIncluded = false;
@@ -27,34 +27,41 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_dataBuffer = bufferFactory.CreateBuffer(StreamKind.Data);
 		}
 
-		protected override ColumnEncodingKind DetectEncodingKind(IList<byte?> values)
+		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
+		public long CompressedLength => Buffers.Sum(s => s.Length);
+		public uint ColumnId { get; }
+		public IEnumerable<OrcCompressedBuffer> Buffers => _isNullable ? new[] { _presentBuffer, _dataBuffer } : new[] { _dataBuffer };
+		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.Direct;
+
+		public void FlushBuffers()
 		{
-			return ColumnEncodingKind.Direct;
+			foreach (var buffer in Buffers)
+				buffer.Flush();
 		}
 
-		protected override void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, ColumnEncodingKind encodingKind)
+		public void Reset()
 		{
-			if (encodingKind != ColumnEncodingKind.Direct)
-				throw new NotSupportedException($"Only Direct encoding is supported for {nameof(ByteWriter)}");
-
+			foreach (var buffer in Buffers)
+				buffer.Reset();
 			if (_isNullable)
-				buffers.Add(_presentBuffer);
-			buffers.Add(_dataBuffer);
+				_presentBuffer.MustBeIncluded = false;
+			Statistics.Clear();
 		}
 
-		protected override IStatistics CreateStatistics() => new LongWriterStatistics();
-
-		protected override void EncodeValues(IList<byte?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
+		public void AddBlock(IList<byte?> values)
 		{
-			var stats = (LongWriterStatistics)statistics;
+			var stats = new LongWriterStatistics();
+			Statistics.Add(stats);
+			foreach (var buffer in Buffers)
+				buffer.AnnotatePosition(stats, 0);
 
 			var valList = new List<byte>(values.Count);
 
-			if(_isNullable)
+			if (_isNullable)
 			{
 				var presentList = new List<bool>(values.Count);
 
-				foreach(var value in values)
+				foreach (var value in values)
 				{
 					stats.AddValue(value);
 					if (value.HasValue)
@@ -69,7 +76,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			}
 			else
 			{
-				foreach(var value in values)
+				foreach (var value in values)
 				{
 					stats.AddValue(value);
 					valList.Add(value.Value);

@@ -6,11 +6,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-    public class StringWriter : ColumnWriter<string>
-    {
+	public class StringWriter : IColumnWriter<string>
+	{
 		readonly bool _shouldAlignLengths;
 		readonly bool _shouldAlignDictionaryLookup;
 		readonly double _uniqueStringThresholdRatio;
@@ -20,57 +21,79 @@ namespace ApacheOrcDotNet.ColumnTypes
 		readonly OrcCompressedBuffer _dictionaryDataBuffer;
 
 		public StringWriter(bool shouldAlignLengths, bool shouldAlignDictionaryLookup, double uniqueStringThresholdRatio, OrcCompressedBufferFactory bufferFactory, uint columnId)
-			:base(bufferFactory, columnId)
 		{
 			_shouldAlignLengths = shouldAlignLengths;
 			_shouldAlignDictionaryLookup = shouldAlignDictionaryLookup;
 			_uniqueStringThresholdRatio = uniqueStringThresholdRatio;
+			ColumnId = columnId;
 
 			_presentBuffer = bufferFactory.CreateBuffer(StreamKind.Present);
 			_presentBuffer.MustBeIncluded = false;
-			_dataBuffer=bufferFactory.CreateBuffer(StreamKind.Data);
+			_dataBuffer = bufferFactory.CreateBuffer(StreamKind.Data);
 			_lengthBuffer = bufferFactory.CreateBuffer(StreamKind.Length);
 			_dictionaryDataBuffer = bufferFactory.CreateBuffer(StreamKind.DictionaryData);
 		}
 
-		protected override ColumnEncodingKind DetectEncodingKind(IList<string> values)
+		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
+		public long CompressedLength => Buffers.Sum(s => s.Length);
+		public uint ColumnId { get; }
+		public IEnumerable<OrcCompressedBuffer> Buffers
 		{
+			get
+			{
+				switch (ColumnEncoding)
+				{
+					case ColumnEncodingKind.DirectV2:
+						return new[] { _presentBuffer, _dataBuffer, _lengthBuffer };
+					case ColumnEncodingKind.DictionaryV2:
+						return new[] { _presentBuffer, _dataBuffer, _lengthBuffer, _dictionaryDataBuffer };
+					default:
+						throw new NotSupportedException($"Only DirectV2 and DictionaryV2 encodings are supported for {nameof(StringWriter)}");
+				}
+			}
+		}
+		public uint DictionaryLength => (uint)_dictionaryDataBuffer.Length;
+		public ColumnEncodingKind ColumnEncoding { get; set; } = ColumnEncodingKind.Direct;    //Until we have a block of data to analyze, return the default
+
+		void EnsureEncodingKindIsSet(IList<string> values)
+		{
+			if (ColumnEncoding == ColumnEncodingKind.DictionaryV2 || ColumnEncoding == ColumnEncodingKind.DirectV2)
+				return;
+
+			//Detect the encoding type
 			var nonNullValues = values.Where(v => v != null);
 			var uniqueValues = nonNullValues.Distinct().Count();
 			var totalValues = nonNullValues.Count();
 			if ((double)uniqueValues / (double)totalValues <= _uniqueStringThresholdRatio)
-				return ColumnEncodingKind.DictionaryV2;
+				ColumnEncoding = ColumnEncodingKind.DictionaryV2;
 			else
-				return ColumnEncodingKind.DirectV2;
+				ColumnEncoding = ColumnEncodingKind.DirectV2;
 		}
 
-		protected override void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, ColumnEncodingKind encodingKind)
+		public void FlushBuffers()
 		{
-			switch (encodingKind)
-			{
-				case ColumnEncodingKind.DirectV2:
-					buffers.Add(_presentBuffer);
-					buffers.Add(_dataBuffer);
-					buffers.Add(_lengthBuffer);
-					break;
-				case ColumnEncodingKind.DictionaryV2:
-					buffers.Add(_presentBuffer);
-					buffers.Add(_dataBuffer);
-					buffers.Add(_lengthBuffer);
-					buffers.Add(_dictionaryDataBuffer);
-					break;
-				default:
-					throw new NotSupportedException($"Only DirectV2 and DictionaryV2 encodings are supported for {nameof(StringWriter)}");
-			}
+			foreach (var buffer in Buffers)
+				buffer.Flush();
 		}
 
-		protected override IStatistics CreateStatistics() => new StringWriterStatistics();
-
-		protected override void EncodeValues(IList<string> values, ColumnEncodingKind encodingKind, IStatistics statistics)
+		public void Reset()
 		{
-			var stats = (StringWriterStatistics)statistics;
+			foreach (var buffer in Buffers)
+				buffer.Reset();
+			_presentBuffer.MustBeIncluded = false;
+			Statistics.Clear();
+		}
 
-			if (encodingKind == ColumnEncodingKind.DirectV2)
+		public void AddBlock(IList<string> values)
+		{
+			EnsureEncodingKindIsSet(values);
+
+			var stats = new StringWriterStatistics();
+			Statistics.Add(stats);
+			foreach (var buffer in Buffers)
+				buffer.AnnotatePosition(stats, 0);      //Our implementation always ends the RLE at the stride
+
+			if (ColumnEncoding == ColumnEncodingKind.DirectV2)
 			{
 				var bytesList = new List<byte[]>(values.Count);
 				var presentList = new List<bool>(values.Count);
@@ -99,7 +122,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 				var lengthEncoder = new IntegerRunLengthEncodingV2Writer(_lengthBuffer);
 				lengthEncoder.Write(lengthList, false, _shouldAlignLengths);
 			}
-			else if (encodingKind == ColumnEncodingKind.DictionaryV2)
+			else if (ColumnEncoding == ColumnEncodingKind.DictionaryV2)
 			{
 				var dictionaryBytesList = new List<byte[]>();
 				var dictionaryLengthList = new List<long>();

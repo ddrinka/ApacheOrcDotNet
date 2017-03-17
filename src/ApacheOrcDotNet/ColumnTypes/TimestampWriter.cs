@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-	public class TimestampWriter : ColumnWriter<DateTime?>
+	public class TimestampWriter : IColumnWriter<DateTime?>
 	{
 		readonly static DateTime _orcEpoch = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 		readonly static DateTime _unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -20,10 +20,10 @@ namespace ApacheOrcDotNet.ColumnTypes
 		readonly OrcCompressedBuffer _secondaryBuffer;
 
 		public TimestampWriter(bool isNullable, bool shouldAlignEncodedValues, OrcCompressedBufferFactory bufferFactory, uint columnId)
-			:base(bufferFactory, columnId)
 		{
 			_isNullable = isNullable;
 			_shouldAlignEncodedValues = shouldAlignEncodedValues;
+			ColumnId = columnId;
 
 			if (_isNullable)
 			{
@@ -34,27 +34,33 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_secondaryBuffer = bufferFactory.CreateBuffer(StreamKind.Secondary);
 		}
 
-		protected override ColumnEncodingKind DetectEncodingKind(IList<DateTime?> values)
+		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
+		public long CompressedLength => Buffers.Sum(s => s.Length);
+		public uint ColumnId { get; }
+		public IEnumerable<OrcCompressedBuffer> Buffers => _isNullable ? new[] { _presentBuffer, _dataBuffer, _secondaryBuffer } : new[] { _dataBuffer, _secondaryBuffer };
+		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.DirectV2;
+
+		public void FlushBuffers()
 		{
-			return ColumnEncodingKind.DirectV2;
+			foreach (var buffer in Buffers)
+				buffer.Flush();
 		}
 
-		protected override void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, ColumnEncodingKind encodingKind)
+		public void Reset()
 		{
-			if (encodingKind != ColumnEncodingKind.DirectV2)
-				throw new NotSupportedException($"Only DirectV2 encoding is supported for {nameof(TimestampWriter)}");
-
+			foreach (var buffer in Buffers)
+				buffer.Reset();
 			if (_isNullable)
-				buffers.Add(_presentBuffer);
-			buffers.Add(_dataBuffer);
-			buffers.Add(_secondaryBuffer);
+				_presentBuffer.MustBeIncluded = false;
+			Statistics.Clear();
 		}
 
-		protected override IStatistics CreateStatistics() => new TimestampWriterStatistics();
-
-		protected override void EncodeValues(IList<DateTime?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
+		public void AddBlock(IList<DateTime?> values)
 		{
-			var stats = (TimestampWriterStatistics)statistics;
+			var stats = new TimestampWriterStatistics();
+			Statistics.Add(stats);
+			foreach (var buffer in Buffers)
+				buffer.AnnotatePosition(stats, 0);
 
 			var secondsList = new List<long>(values.Count);
 			var fractionsList = new List<long>(values.Count);
@@ -63,7 +69,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			{
 				var presentList = new List<bool>(values.Count);
 
-				foreach(var value in values)
+				foreach (var value in values)
 				{
 					if (!value.HasValue)
 					{
@@ -89,7 +95,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			}
 			else
 			{
-				foreach(var value in values)
+				foreach (var value in values)
 				{
 					long millisecondsSinceUnixEpoch;
 					long fraction;

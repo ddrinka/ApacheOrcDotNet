@@ -8,18 +8,18 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-    public class BooleanWriter : ColumnWriter<bool?>
+    public class BooleanWriter : IColumnWriter<bool?>
     {
 		readonly bool _isNullable;
 		readonly OrcCompressedBuffer _presentBuffer;
 		readonly OrcCompressedBuffer _dataBuffer;
 
 		public BooleanWriter(bool isNullable, OrcCompressedBufferFactory bufferFactory, uint columnId)
-			:base(bufferFactory, columnId)
 		{
 			_isNullable = isNullable;
+			ColumnId = columnId;
 
-			if(_isNullable)
+			if (_isNullable)
 			{
 				_presentBuffer = bufferFactory.CreateBuffer(StreamKind.Present);
 				_presentBuffer.MustBeIncluded = false;
@@ -27,26 +27,33 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_dataBuffer = bufferFactory.CreateBuffer(StreamKind.Data);
 		}
 
-		protected override ColumnEncodingKind DetectEncodingKind(IList<bool?> values)
+		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
+		public long CompressedLength => Buffers.Sum(s => s.Length);
+		public uint ColumnId { get; }
+		public IEnumerable<OrcCompressedBuffer> Buffers => _isNullable ? new[] { _presentBuffer, _dataBuffer } : new[] { _dataBuffer };
+		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.Direct;
+
+		public void FlushBuffers()
 		{
-			return ColumnEncodingKind.Direct;
+			foreach (var buffer in Buffers)
+				buffer.Flush();
 		}
 
-		protected override void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, ColumnEncodingKind encodingKind)
+		public void Reset()
 		{
-			if (encodingKind != ColumnEncodingKind.Direct)
-				throw new NotSupportedException($"Only Direct encoding is supported for {nameof(BooleanWriter)}");
-
-			if (_isNullable)
-				buffers.Add(_presentBuffer);
-			buffers.Add(_dataBuffer);
+			foreach (var buffer in Buffers)
+				buffer.Reset();
+			if(_isNullable)
+				_presentBuffer.MustBeIncluded = false;
+			Statistics.Clear();
 		}
 
-		protected override IStatistics CreateStatistics() => new BooleanWriterStatistics();
-
-		protected override void EncodeValues(IList<bool?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
+		public void AddBlock(IList<bool?> values)
 		{
-			var stats = (BooleanWriterStatistics)statistics;
+			var stats = new BooleanWriterStatistics();
+			Statistics.Add(stats);
+			foreach (var buffer in Buffers)
+				buffer.AnnotatePosition(stats, 0);
 
 			var valList = new List<bool>(values.Count);
 

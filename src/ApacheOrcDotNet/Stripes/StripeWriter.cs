@@ -108,7 +108,7 @@ namespace ApacheOrcDotNet.Stripes
 				columnWriter.WriteValuesFromState();
 			}
 
-			var totalStripeLength = _columnWriters.Sum(writer => writer.ColumnWriter.CompressedLengths.Sum());
+			var totalStripeLength = _columnWriters.Sum(writer => writer.ColumnWriter.CompressedLength);
 			if (totalStripeLength > _stripeLength)
 				CompleteStripe();
 
@@ -121,16 +121,30 @@ namespace ApacheOrcDotNet.Stripes
 			var stripeFooter = new Protocol.StripeFooter();
 			var stripeStats = new Protocol.StripeStatistics();
 
+			//Columns
 			foreach(var writer in _columnWriters)
 			{
-				writer.ColumnWriter.CompleteAddingBlocks();
-				writer.ColumnWriter.FillColumnToStripeFooter(stripeFooter);
+				writer.ColumnWriter.FlushBuffers();
+				var dictionaryLength = (writer.ColumnWriter as ColumnTypes.StringWriter)?.DictionaryLength ?? 0;	//DictionaryLength is only used by StringWriter
+				stripeFooter.AddColumn(writer.ColumnWriter.ColumnEncoding, dictionaryLength);
 			}
 
-			foreach(var writer in _columnWriters)
-			{
-				writer.ColumnWriter.FillIndexToStripeFooter(stripeFooter);
+			var stripeInformation = new Protocol.StripeInformation();
+			stripeInformation.Offset = (ulong)_outputStream.Position;
+			stripeInformation.NumberOfRows = (ulong)_rowsInStripe;
 
+			//Indexes
+			foreach (var writer in _columnWriters)
+			{
+				//Write the index buffer
+				var indexBuffer = _bufferFactory.CreateBuffer(Protocol.StreamKind.RowIndex);
+				writer.ColumnWriter.Statistics.WriteToBuffer(indexBuffer);
+				indexBuffer.CopyTo(_outputStream);
+
+				//Add the index to the footer
+				stripeFooter.AddDataStream(writer.ColumnWriter.ColumnId, indexBuffer);
+
+				//Collect summary statistics
 				var columnStats = new ColumnStatistics();
 				foreach (var stats in writer.ColumnWriter.Statistics)
 				{
@@ -141,33 +155,26 @@ namespace ApacheOrcDotNet.Stripes
 			}
 			_stripeStats.Add(stripeStats);
 
-			foreach (var writer in _columnWriters)
-			{
-				writer.ColumnWriter.FillDataToStripeFooter(stripeFooter);
-			}
-
-			var stripeInformation = new Protocol.StripeInformation();
-			stripeInformation.Offset = (ulong)_outputStream.Position;
-			stripeInformation.NumberOfRows = (ulong)_rowsInStripe;
-
-			//Indexes
-			foreach (var writer in _columnWriters)
-			{
-				writer.ColumnWriter.CopyIndexBufferTo(_outputStream);
-			}
 			stripeInformation.IndexLength = (ulong)_outputStream.Position - stripeInformation.Offset;
 
-			//Streams
-			foreach(var writer in _columnWriters)
+			//Data streams
+			foreach (var writer in _columnWriters)
 			{
-				writer.ColumnWriter.CopyDataBuffersTo(_outputStream);
+				foreach (var buffer in writer.ColumnWriter.Buffers)
+				{
+					if (!buffer.MustBeIncluded)
+						continue;
+					buffer.CopyTo(_outputStream);
+					stripeFooter.AddDataStream(writer.ColumnWriter.ColumnId, buffer);
+				}
 			}
+
 			stripeInformation.DataLength = (ulong)_outputStream.Position - stripeInformation.IndexLength - stripeInformation.Offset;
 
 			//Footer
-			var stripeFooterStream = _bufferFactory.SerializeAndCompress(stripeFooter);
-			stripeFooterStream.CopyTo(_outputStream);
-			stripeInformation.FooterLength = (ulong)_outputStream.Position - stripeInformation.DataLength - stripeInformation.IndexLength - stripeInformation.Offset;
+			long footerLength;
+			_bufferFactory.SerializeAndCompressTo(_outputStream, stripeFooter, out footerLength);
+			stripeInformation.FooterLength = (ulong)footerLength;
 
 			_stripeInformations.Add(stripeInformation);
 
@@ -323,7 +330,7 @@ namespace ApacheOrcDotNet.Stripes
 			};
 		}
 
-		ColumnWriterDetails GetColumnWriterDetails<T>(ColumnWriter<T> columnWriter, PropertyInfo propertyInfo, Func<object, T> valueGetter, Protocol.ColumnTypeKind columnKind)
+		ColumnWriterDetails GetColumnWriterDetails<T>(IColumnWriter<T> columnWriter, PropertyInfo propertyInfo, Func<object, T> valueGetter, Protocol.ColumnTypeKind columnKind)
 		{
 			var state = new List<T>();
 			return new ColumnWriterDetails
@@ -378,42 +385,42 @@ namespace ApacheOrcDotNet.Stripes
 			};
 		}
 
-		ColumnWriter<long?> GetLongColumnWriter(bool isNullable, uint columnId)
+		IColumnWriter<long?> GetLongColumnWriter(bool isNullable, uint columnId)
 		{
 			return new LongWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
 		}
 
-		ColumnWriter<byte?> GetByteColumnWriter(bool isNullable, uint columnId)
+		IColumnWriter<byte?> GetByteColumnWriter(bool isNullable, uint columnId)
 		{
 			return new ByteWriter(isNullable, _bufferFactory, columnId);
 		}
 
-		ColumnWriter<bool?> GetBooleanColumnWriter(bool isNullable, uint columnId)
+		IColumnWriter<bool?> GetBooleanColumnWriter(bool isNullable, uint columnId)
 		{
 			return new BooleanWriter(isNullable, _bufferFactory, columnId);
 		}
 
-		ColumnWriter<float?> GetFloatColumnWriter(bool isNullable, uint columnId)
+		IColumnWriter<float?> GetFloatColumnWriter(bool isNullable, uint columnId)
 		{
 			return new FloatWriter(isNullable, _bufferFactory, columnId);
 		}
 
-		ColumnWriter<double?> GetDoubleColumnWriter(bool isNullable, uint columnId)
+		IColumnWriter<double?> GetDoubleColumnWriter(bool isNullable, uint columnId)
 		{
 			return new DoubleWriter(isNullable, _bufferFactory, columnId);
 		}
 
-		ColumnWriter<byte[]> GetBinaryColumnWriter(uint columnId)
+		IColumnWriter<byte[]> GetBinaryColumnWriter(uint columnId)
 		{
 			return new ColumnTypes.BinaryWriter(_shouldAlignNumericValues, _bufferFactory, columnId);
 		}
 
-		ColumnWriter<DateTime?> GetTimestampColumnWriter(bool isNullable, uint columnId)
+		IColumnWriter<DateTime?> GetTimestampColumnWriter(bool isNullable, uint columnId)
 		{
 			return new TimestampWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
 		}
 
-		ColumnWriter<string> GetStringColumnWriter(uint columnId)
+		IColumnWriter<string> GetStringColumnWriter(uint columnId)
 		{
 			//TODO consider if we need separate configuration options for aligning lengths vs lookup values
 			return new ColumnTypes.StringWriter(_shouldAlignNumericValues, _shouldAlignNumericValues, _uniqueStringThresholdRatio, _bufferFactory, columnId);

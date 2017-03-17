@@ -68,12 +68,11 @@ namespace ApacheOrcDotNet
 			var footer = _stripeWriter.GetFooter();
 			footer.HeaderLength = (ulong)_magic.Length;
 
-			var metadataStream = _bufferFactory.SerializeAndCompress(metadata);
-			var footerStream = _bufferFactory.SerializeAndCompress(footer);
-			metadataStream.CopyTo(_outputStream);
-			footerStream.CopyTo(_outputStream);
+			long metadataLength, footerLength;
+			_bufferFactory.SerializeAndCompressTo(_outputStream, metadata, out metadataLength);
+			_bufferFactory.SerializeAndCompressTo(_outputStream, footer, out footerLength);
 
-			var postScript = GetPostscript((ulong)footerStream.Length, (ulong)metadataStream.Length);
+			var postScript = GetPostscript((ulong)footerLength, (ulong)metadataLength);
 			var postScriptStream = new MemoryStream();
 			StaticProtoBuf.Serializer.Serialize(postScriptStream, postScript);
 			postScriptStream.Seek(0, SeekOrigin.Begin);

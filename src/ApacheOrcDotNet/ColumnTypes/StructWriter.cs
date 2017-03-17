@@ -7,28 +7,36 @@ using ApacheOrcDotNet.Protocol;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-    public class StructWriter : ColumnWriter<object>
-    {
+	public class StructWriter : IColumnWriter<object>
+	{
 		//Assume all root values are present
 		public StructWriter(OrcCompressedBufferFactory bufferFactory, uint columnId)
-			:base(bufferFactory, columnId)
+		{
+			ColumnId = columnId;
+		}
+
+		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
+		public long CompressedLength => 0;
+		public uint ColumnId { get; }
+		public IEnumerable<OrcCompressedBuffer> Buffers => new OrcCompressedBuffer[] { };
+		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.Direct;
+
+		public void FlushBuffers()
 		{
 		}
 
-		protected override ColumnEncodingKind DetectEncodingKind(IList<object> values)
+		public void Reset()
 		{
-			return ColumnEncodingKind.Direct;
+			Statistics.Clear();
 		}
 
-		protected override void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, ColumnEncodingKind encodingKind)
+		public void AddBlock(IList<object> values)
 		{
-		}
+			var stats = new BooleanWriterStatistics();
+			Statistics.Add(stats);
+			foreach (var buffer in Buffers)
+				buffer.AnnotatePosition(stats, 0);
 
-		protected override IStatistics CreateStatistics() => new StructWriterStatistics();
-
-		protected override void EncodeValues(IList<object> values, ColumnEncodingKind encodingKind, IStatistics statistics)
-		{
-			var stats = (StructWriterStatistics)statistics;
 			stats.NumValues += (uint)values.Count;
 		}
 	}

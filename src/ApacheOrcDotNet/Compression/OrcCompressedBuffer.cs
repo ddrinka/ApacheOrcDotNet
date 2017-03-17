@@ -13,8 +13,7 @@ namespace ApacheOrcDotNet.Compression
 		readonly Protocol.CompressionKind _compressionKind;
 		readonly CompressionStrategy _compressionStrategy;
 		readonly MemoryStream _currentBlock = new MemoryStream();
-
-		bool _doneWriting = false;
+		readonly MemoryStream _compressedBuffer = new MemoryStream();
 
 		public OrcCompressedBuffer(int compressionBlockSize, Protocol.CompressionKind compressionKind, CompressionStrategy compressionStrategy)
 		{
@@ -23,17 +22,18 @@ namespace ApacheOrcDotNet.Compression
 			_compressionStrategy = compressionStrategy;
 		}
 
-		public MemoryStream CompressedBuffer { get; } = new MemoryStream();
-		public long CurrentBlockLength => _currentBlock.Length;
-		public Protocol.StreamKind StreamKind { get; set; }
-		public bool AreCompressing => _compressionKind != Protocol.CompressionKind.None;
+		public OrcCompressedBuffer(int compressionBlockSize, Protocol.CompressionKind compressionKind, CompressionStrategy compressionStrategy, Protocol.StreamKind streamKind)
+		: this(compressionBlockSize, compressionKind, compressionStrategy)
+		{
+			StreamKind = streamKind;
+		}
+
+		public Protocol.StreamKind StreamKind { get; }
 		public bool MustBeIncluded { get; set; } = true;
 
+		public override long Length => _compressedBuffer.Length;
 		public override void Write(byte[] buffer, int offset, int count)
 		{
-			if (_doneWriting)
-				throw new InvalidOperationException("Tried to write after WritingCompleted()");
-
 			var spaceRemaining = _compressionBlockSize - (int)_currentBlock.Length;
 			if (spaceRemaining < 0)
 				throw new ArithmeticException("A code error has led to negative space remaining");
@@ -41,39 +41,46 @@ namespace ApacheOrcDotNet.Compression
 			if(count >= spaceRemaining)
 			{
 				_currentBlock.Write(buffer, offset, spaceRemaining);
-				CompressCurrentBlockAndReset();
+				Flush();
 				count -= spaceRemaining;
 				offset += spaceRemaining;
 			}
 			if (count > 0)
 				_currentBlock.Write(buffer, offset, count);
 		}
-
-		public void WritingCompleted()
+		public override void Flush()
 		{
-			CompressCurrentBlockAndReset();
-			CompressedBuffer.Seek(0, SeekOrigin.Begin);
-			_doneWriting = true;
-		}
+			if (_currentBlock.Length == 0)
+				return;
 
-		void CompressCurrentBlockAndReset()
-		{
 			//Compress the encoded block and write it to the CompressedBuffer
-			OrcCompressedStream.CompressCopyTo(_currentBlock, CompressedBuffer, _compressionKind, _compressionStrategy);
+			OrcCompressedStream.CompressCopyTo(_currentBlock, _compressedBuffer, _compressionKind, _compressionStrategy);
 			_currentBlock.SetLength(0);
 		}
+		public new void CopyTo(Stream destination)
+		{
+			Flush();
+			_compressedBuffer.Seek(0, SeekOrigin.Begin);
+			_compressedBuffer.CopyTo(destination);
+		}
+		public void AnnotatePosition(IStatistics statistics, long rleValuesToConsume)
+		{
+			if (_compressionKind == Protocol.CompressionKind.None)
+				statistics.AnnotatePosition(Length + _currentBlock.Length, rleValuesToConsume);      //If we're not compressing, output the total length as a single value
+			else
+				statistics.AnnotatePosition(Length, _currentBlock.Length, rleValuesToConsume);
+		}
+		public void Reset()
+		{
+			_compressedBuffer.SetLength(0);
+			_currentBlock.SetLength(0);
+		}
+
 
 		#region Stream Implementation
 		public override bool CanRead => false;
 		public override bool CanSeek => false;
 		public override bool CanWrite => true;
-		public override long Length
-		{
-			get
-			{
-				throw new NotImplementedException();
-			}
-		}
 		public override long Position
 		{
 			get
@@ -86,10 +93,7 @@ namespace ApacheOrcDotNet.Compression
 				throw new NotImplementedException();
 			}
 		}
-		public override void Flush()
-		{
-			throw new NotImplementedException();
-		}
+
 		public override int Read(byte[] buffer, int offset, int count)
 		{
 			throw new NotImplementedException();

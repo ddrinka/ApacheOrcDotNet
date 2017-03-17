@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.ColumnTypes
 {
-	public class DecimalWriter : ColumnWriter<decimal?>
+	public class DecimalWriter : IColumnWriter<decimal?>
 	{
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;
@@ -19,11 +19,11 @@ namespace ApacheOrcDotNet.ColumnTypes
 		readonly OrcCompressedBuffer _secondaryBuffer;
 
 		public DecimalWriter(bool isNullable, bool shouldAlignEncodedValues, int precision, int scale, OrcCompressedBufferFactory bufferFactory, uint columnId)
-			: base(bufferFactory, columnId)
 		{
 			_isNullable = isNullable;
 			_shouldAlignEncodedValues = shouldAlignEncodedValues;
 			_scale = scale;
+			ColumnId = columnId;
 
 			if (precision > 18)
 				throw new NotSupportedException("This implementation of DecimalWriter does not support precision greater than 18 digits (2^63)");
@@ -37,27 +37,33 @@ namespace ApacheOrcDotNet.ColumnTypes
 			_secondaryBuffer = bufferFactory.CreateBuffer(StreamKind.Secondary);
 		}
 
-		protected override ColumnEncodingKind DetectEncodingKind(IList<decimal?> values)
+		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
+		public long CompressedLength => Buffers.Sum(s => s.Length);
+		public uint ColumnId { get; }
+		public IEnumerable<OrcCompressedBuffer> Buffers => _isNullable ? new[] { _presentBuffer, _dataBuffer, _secondaryBuffer } : new[] { _dataBuffer, _secondaryBuffer };
+		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.DirectV2;
+
+		public void FlushBuffers()
 		{
-			return ColumnEncodingKind.DirectV2;
+			foreach (var buffer in Buffers)
+				buffer.Flush();
 		}
 
-		protected override void AddDataStreamBuffers(IList<OrcCompressedBuffer> buffers, ColumnEncodingKind encodingKind)
+		public void Reset()
 		{
-			if (encodingKind != ColumnEncodingKind.DirectV2)
-				throw new NotSupportedException($"Only DirectV2 encoding is supported for {nameof(DecimalWriter)}");
-
+			foreach (var buffer in Buffers)
+				buffer.Reset();
 			if (_isNullable)
-				buffers.Add(_presentBuffer);
-			buffers.Add(_dataBuffer);
-			buffers.Add(_secondaryBuffer);
+				_presentBuffer.MustBeIncluded = false;
+			Statistics.Clear();
 		}
 
-		protected override IStatistics CreateStatistics() => new DecimalWriterStatistics();
-
-		protected override void EncodeValues(IList<decimal?> values, ColumnEncodingKind encodingKind, IStatistics statistics)
+		public void AddBlock(IList<decimal?> values)
 		{
-			var stats = (DecimalWriterStatistics)statistics;
+			var stats = new DecimalWriterStatistics();
+			Statistics.Add(stats);
+			foreach (var buffer in Buffers)
+				buffer.AnnotatePosition(stats, 0);
 
 			var wholePartsList = new List<long>(values.Count);
 			var scaleList = new List<long>(values.Count);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ApacheOrcDotNet.Compression;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,14 +10,11 @@ namespace ApacheOrcDotNet.ColumnTypes
     public interface IColumnWriter
     {
 		List<IStatistics> Statistics { get; }
-		IList<long> CompressedLengths { get; }
+		Protocol.ColumnEncodingKind ColumnEncoding { get; }
+		IEnumerable<OrcCompressedBuffer> Buffers { get; }
+		long CompressedLength { get; }
 		uint ColumnId { get; }
-		void CompleteAddingBlocks();
-		void CopyDataBuffersTo(Stream outputStream);
-		void CopyIndexBufferTo(Stream outputStream);
-		void FillColumnToStripeFooter(Protocol.StripeFooter footer);
-		void FillIndexToStripeFooter(Protocol.StripeFooter footer);
-		void FillDataToStripeFooter(Protocol.StripeFooter footer);
+		void FlushBuffers();
 		void Reset();
 	}
 }

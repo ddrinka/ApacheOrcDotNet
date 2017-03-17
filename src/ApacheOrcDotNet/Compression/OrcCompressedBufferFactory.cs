@@ -29,10 +29,7 @@ namespace ApacheOrcDotNet.Compression
 
 		public OrcCompressedBuffer CreateBuffer(Protocol.StreamKind streamKind)
 		{
-			return new OrcCompressedBuffer(CompressionBlockSize, CompressionKind, CompressionStrategy)
-			{
-				StreamKind = streamKind
-			};
+			return new OrcCompressedBuffer(CompressionBlockSize, CompressionKind, CompressionStrategy, streamKind);
 		}
 
 		public OrcCompressedBuffer CreateBuffer()
