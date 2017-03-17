@@ -58,10 +58,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		long EncodedNanosToTicks(long encodedNanos)
 		{
-			var scale = (byte)(encodedNanos & 0x7);
+			var scale = (int)(encodedNanos & 0x7);
 			var nanos = encodedNanos >> 3;
 
-			while (scale-- != 0)
+			if (scale == 0)
+				return nanos;
+
+			while (scale-- >= 0)
 				nanos *= 10;
 
 			return nanos / 100;		//100 nanoseconds per tick
