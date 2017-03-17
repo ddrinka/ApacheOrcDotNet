@@ -99,7 +99,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			varIntEncoder.Write(wholePartsList);
 
 			var scaleEncoder = new IntegerRunLengthEncodingV2Writer(_secondaryBuffer);
-			scaleEncoder.Write(scaleList, false, _shouldAlignEncodedValues);
+			scaleEncoder.Write(scaleList, true, _shouldAlignEncodedValues);
 		}
 	}
 }
