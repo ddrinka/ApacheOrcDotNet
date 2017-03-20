@@ -30,7 +30,8 @@ namespace ApacheOrcDotNet.Test.App
 					Float = (float)i / (set + 1),
 					Dec = dec,
 					Timestamp = timestamp,
-					Str = $"Random={random}, RandomInRange={randomInRange}, Incrementing={i}, SetNumber={set}, Dec={dec}, Timestamp={timestamp:MM/dd/yyyy hh:mm:ss.fffffff}"
+					Str = $"Random={random}, RandomInRange={randomInRange}, Incrementing={i}, SetNumber={set}, Dec={dec}, Timestamp={timestamp:MM/dd/yyyy hh:mm:ss.fffffff}",
+					DictionaryStr = $"SetNumber={set}"
 				};
 				testElements.Add(element);
 			}
@@ -54,5 +55,6 @@ namespace ApacheOrcDotNet.Test.App
 		public decimal Dec { get; set; }
 		public DateTime Timestamp { get; set; }
 		public string Str { get; set; }
+		public string DictionaryStr { get; set; }
 	}
 }

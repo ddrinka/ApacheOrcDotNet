@@ -423,7 +423,7 @@ namespace ApacheOrcDotNet.Stripes
 		IColumnWriter<string> GetStringColumnWriter(uint columnId)
 		{
 			//TODO consider if we need separate configuration options for aligning lengths vs lookup values
-			return new ColumnTypes.StringWriter(_shouldAlignNumericValues, _shouldAlignNumericValues, _uniqueStringThresholdRatio, _bufferFactory, columnId);
+			return new ColumnTypes.StringWriter(_shouldAlignNumericValues, _shouldAlignNumericValues, _uniqueStringThresholdRatio, _strideLength, _bufferFactory, columnId);
 		}
 	}
 

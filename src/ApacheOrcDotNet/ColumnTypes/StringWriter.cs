@@ -15,16 +15,21 @@ namespace ApacheOrcDotNet.ColumnTypes
 		readonly bool _shouldAlignLengths;
 		readonly bool _shouldAlignDictionaryLookup;
 		readonly double _uniqueStringThresholdRatio;
+		readonly long _strideLength;
 		readonly OrcCompressedBuffer _presentBuffer;
 		readonly OrcCompressedBuffer _dataBuffer;
 		readonly OrcCompressedBuffer _lengthBuffer;
 		readonly OrcCompressedBuffer _dictionaryDataBuffer;
+		readonly Dictionary<string, DictionaryEntry> _unsortedDictionary = new Dictionary<string, DictionaryEntry>();
+		readonly List<DictionaryEntry> _dictionaryLookupValues = new List<DictionaryEntry>();
 
-		public StringWriter(bool shouldAlignLengths, bool shouldAlignDictionaryLookup, double uniqueStringThresholdRatio, OrcCompressedBufferFactory bufferFactory, uint columnId)
+
+		public StringWriter(bool shouldAlignLengths, bool shouldAlignDictionaryLookup, double uniqueStringThresholdRatio, long strideLength, OrcCompressedBufferFactory bufferFactory, uint columnId)
 		{
 			_shouldAlignLengths = shouldAlignLengths;
 			_shouldAlignDictionaryLookup = shouldAlignDictionaryLookup;
 			_uniqueStringThresholdRatio = uniqueStringThresholdRatio;
+			_strideLength = strideLength;
 			ColumnId = columnId;
 
 			_presentBuffer = bufferFactory.CreateBuffer(StreamKind.Present);
@@ -35,7 +40,26 @@ namespace ApacheOrcDotNet.ColumnTypes
 		}
 
 		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
-		public long CompressedLength => Buffers.Sum(s => s.Length);
+		public long CompressedLength
+		{
+			get
+			{
+				if (!ColumnEncodingIsValid())
+					return 0;										//We haven't decided on an encoding yet
+				else if (ColumnEncoding == ColumnEncodingKind.DirectV2)
+					return Buffers.Sum(s => s.Length);				//We encode these as we go.  The buffer lengths are valid
+				else if (ColumnEncoding == ColumnEncodingKind.DictionaryV2)
+				{
+					//Dictionary encoding doesn't flush to the buffers until a stripe is complete, but we don't know a stripe is complete without a sense of its compressed length
+					if (_dictionaryDataBuffer.Length != 0)
+						return Buffers.Sum(s => s.Length);			//The stripe is complete, we've flushed data, return the true size
+					else
+						return _dictionaryLookupValues.Count * 2;	//Make a wild approximation about how much data storage will be required for X values
+				}
+				else
+					throw new InvalidOperationException();
+			}
+		}
 		public uint ColumnId { get; }
 		public IEnumerable<OrcCompressedBuffer> Buffers
 		{
@@ -52,12 +76,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 				}
 			}
 		}
-		public uint DictionaryLength => (uint)_dictionaryDataBuffer.Length;
+		public uint DictionaryLength => (uint)_unsortedDictionary.Count;
 		public ColumnEncodingKind ColumnEncoding { get; set; } = ColumnEncodingKind.Direct;    //Until we have a block of data to analyze, return the default
+		bool ColumnEncodingIsValid() => ColumnEncoding == ColumnEncodingKind.DictionaryV2 || ColumnEncoding == ColumnEncodingKind.DirectV2;
 
 		void EnsureEncodingKindIsSet(IList<string> values)
 		{
-			if (ColumnEncoding == ColumnEncodingKind.DictionaryV2 || ColumnEncoding == ColumnEncodingKind.DirectV2)
+			if (ColumnEncodingIsValid())
 				return;
 
 			//Detect the encoding type
@@ -72,12 +97,16 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		public void FlushBuffers()
 		{
+			if (ColumnEncoding == ColumnEncodingKind.DictionaryV2)
+				WriteDictionaryEncodedData();
 			foreach (var buffer in Buffers)
 				buffer.Flush();
 		}
 
 		public void Reset()
 		{
+			_unsortedDictionary.Clear();
+			_dictionaryLookupValues.Clear();
 			foreach (var buffer in Buffers)
 				buffer.Reset();
 			_presentBuffer.MustBeIncluded = false;
@@ -88,13 +117,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			EnsureEncodingKindIsSet(values);
 
-			var stats = new StringWriterStatistics();
-			Statistics.Add(stats);
-			foreach (var buffer in Buffers)
-				buffer.AnnotatePosition(stats, 0);      //Our implementation always ends the RLE at the stride
-
 			if (ColumnEncoding == ColumnEncodingKind.DirectV2)
 			{
+				var stats = new StringWriterStatistics();
+				Statistics.Add(stats);
+				foreach (var buffer in Buffers)
+					buffer.AnnotatePosition(stats, 0);      //Our implementation always ends the RLE at the stride
+
 				var bytesList = new List<byte[]>(values.Count);
 				var presentList = new List<bool>(values.Count);
 				var lengthList = new List<long>(values.Count);
@@ -124,65 +153,90 @@ namespace ApacheOrcDotNet.ColumnTypes
 			}
 			else if (ColumnEncoding == ColumnEncodingKind.DictionaryV2)
 			{
-				var dictionaryBytesList = new List<byte[]>();
-				var dictionaryLengthList = new List<long>();
-				var presentList = new List<bool>(values.Count);
-				var dictionaryLookupDataList = new List<long>(values.Count);
-
-				//Generate the dictionary
-				var unsortedDictionary = new Dictionary<string, DictionaryEntry>();     //We need a reference type to be able to set its value
-				foreach (var str in values)
+				foreach (var value in values)
 				{
-					if (str != null)
-						unsortedDictionary[str] = new DictionaryEntry();
-				}
-
-				//Sort the dictionary
-				var sortedDictionary = new List<string>();
-				int i = 0;
-				foreach (var dictEntry in unsortedDictionary.OrderBy(d => d.Key, StringComparer.Ordinal))
-				{
-					sortedDictionary.Add(dictEntry.Key);
-					dictEntry.Value.Id = i++;
-				}
-
-				//Generate the lookup list
-				foreach (var str in values)
-				{
-					stats.AddValue(str);
-					if (str != null)
+					if (value == null)
+						_dictionaryLookupValues.Add(null);
+					else
 					{
-						var id = unsortedDictionary[str].Id;
-						dictionaryLookupDataList.Add(id);
+						DictionaryEntry entry;
+						if (!_unsortedDictionary.TryGetValue(value, out entry))
+						{
+							entry = new DictionaryEntry();
+							_unsortedDictionary.Add(value, entry);
+						}
+						_dictionaryLookupValues.Add(entry);
 					}
-					presentList.Add(str != null);
 				}
-
-				//Prepare the dictionary values
-				foreach (var dictEntry in sortedDictionary)
-				{
-					var bytes = Encoding.UTF8.GetBytes(dictEntry);
-					dictionaryBytesList.Add(bytes);
-					dictionaryLengthList.Add(bytes.Length);
-				}
-
-				//Write to the buffers
-				var presentEncoder = new BitWriter(_presentBuffer);
-				presentEncoder.Write(presentList);
-				if (stats.HasNull)
-					_presentBuffer.MustBeIncluded = true;
-
-				var lookupEncoder = new IntegerRunLengthEncodingV2Writer(_dataBuffer);
-				lookupEncoder.Write(dictionaryLookupDataList, false, _shouldAlignDictionaryLookup);
-
-				foreach (var bytes in dictionaryBytesList)
-					_dictionaryDataBuffer.Write(bytes, 0, bytes.Length);
-
-				var dictionaryLengthEncoder = new IntegerRunLengthEncodingV2Writer(_lengthBuffer);
-				dictionaryLengthEncoder.Write(dictionaryLengthList, false, _shouldAlignLengths);
 			}
 			else
 				throw new ArgumentException();
+		}
+
+		void WriteDictionaryEncodedData()
+		{
+			//Sort the dictionary
+			var sortedDictionary = new List<string>();
+			int i = 0;
+			foreach (var dictEntry in _unsortedDictionary.OrderBy(d => d.Key, StringComparer.Ordinal))
+			{
+				sortedDictionary.Add(dictEntry.Key);
+				dictEntry.Value.Id = i++;
+			}
+
+			//Write the dictionary
+			var dictionaryLengthList = new List<long>();
+			foreach (var dictEntry in sortedDictionary)
+			{
+				var bytes = Encoding.UTF8.GetBytes(dictEntry);
+				dictionaryLengthList.Add(bytes.Length);                 //Save the length
+				_dictionaryDataBuffer.Write(bytes, 0, bytes.Length);    //Write to the buffer
+			}
+
+			//Write the dictionary lengths
+			var dictionaryLengthEncoder = new IntegerRunLengthEncodingV2Writer(_lengthBuffer);
+			dictionaryLengthEncoder.Write(dictionaryLengthList, false, _shouldAlignLengths);
+
+			//Write the lookup values
+			var presentList = new List<bool>(_dictionaryLookupValues.Count);
+			var presentEncoder = new BitWriter(_presentBuffer);
+			var lookupList = new List<long>(_dictionaryLookupValues.Count);
+			var lookupEncoder = new IntegerRunLengthEncodingV2Writer(_dataBuffer);
+			bool hasNull = false;
+			int strideCount = 0;
+			StringWriterStatistics stats = null;
+			foreach (var value in _dictionaryLookupValues)
+			{
+				if(stats==null)
+				{
+					stats = new StringWriterStatistics();
+					Statistics.Add(stats);
+					foreach (var buffer in Buffers)
+						buffer.AnnotatePosition(stats, 0);
+				}
+
+				var stringValue = sortedDictionary[value.Id];   //Look up the string value for this Id so we can notate statistics
+				stats.AddValue(stringValue);
+				presentList.Add(value != null);
+				if (value != null)
+					lookupList.Add(value.Id);
+				else
+					hasNull = true;
+
+				if (++strideCount == _strideLength)                  //If it's time for new statistics
+				{
+					//Flush to the buffers
+					presentEncoder.Write(presentList);
+					presentList.Clear();
+					if (hasNull)
+						_presentBuffer.MustBeIncluded = true;
+					lookupEncoder.Write(lookupList, false, _shouldAlignDictionaryLookup);
+					lookupList.Clear();
+
+					strideCount = 0;
+					stats = null;
+				}
+			}
 		}
 
 		class DictionaryEntry

@@ -7,7 +7,8 @@
   `Float` float,
   `Dec` decimal(18,6),
   `Timestamp` timestamp,
-  `Str` string 
+  `Str` string,
+  `DictionaryStr` string
 )
 ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.orc.OrcSerde'
 WITH SERDEPROPERTIES (
