@@ -7,8 +7,6 @@ init:
 - ps: $env:LABEL = "CI" + $env:APPVEYOR_BUILD_NUMBER.PadLeft(5, "0")
 - ps: $env:CORRECTED_BUILD_VERSION = $env:APPVEYOR_BUILD_VERSION -replace "-CI[0-9]*$","-$env:LABEL"
 - ps: Update-AppveyorBuild -Version $env:CORRECTED_BUILD_VERSION
-nuget:
-  account_feed: true
 before_build:
 - msbuild.exe /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Version=%CORRECTED_BUILD_VERSION% /v:minimal /t:restore
 build_script:
