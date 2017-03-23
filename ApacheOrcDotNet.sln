@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{58463841-CD45-4229-9E70-A0B74E70ADD7}"
 EndProject
@@ -9,18 +9,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{40D373E1-A
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{9E68D2AB-3D6A-468E-99A1-BF6DFE2E290C}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "ApacheOrcDotNet", "src\ApacheOrcDotNet\ApacheOrcDotNet.xproj", "{88CBE7A5-B70E-4801-8FA4-A83A7CDD0B10}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "ApacheOrcDotNet.Test", "test\ApacheOrcDotNet.Test\ApacheOrcDotNet.Test.xproj", "{D43761A7-6270-4C43-A2CE-2C244117F30A}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "ApacheOrcDotNet.Test.App", "src\ApacheOrcDotNet.Test.App\ApacheOrcDotNet.Test.App.xproj", "{DC542C06-BC21-4623-8752-977CE28C478F}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E64233AB-9609-4FE2-81C9-206ABF07AB43}"
 	ProjectSection(SolutionItems) = preProject
 		appveyor.yml = appveyor.yml
-		global.json = global.json
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApacheOrcDotNet", "src\ApacheOrcDotNet\ApacheOrcDotNet.csproj", "{88CBE7A5-B70E-4801-8FA4-A83A7CDD0B10}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApacheOrcDotNet.Test", "test\ApacheOrcDotNet.Test\ApacheOrcDotNet.Test.csproj", "{D43761A7-6270-4C43-A2CE-2C244117F30A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApacheOrcDotNet.Test.App", "src\ApacheOrcDotNet.Test.App\ApacheOrcDotNet.Test.App.csproj", "{DC542C06-BC21-4623-8752-977CE28C478F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
