@@ -25,7 +25,7 @@ namespace ApacheOrcDotNet.Test.Protocol
 			var footer = Serializer.Deserialize<Footer>(footerStream);
 
 			Assert.Equal(1920800ul, footer.NumberOfRows);
-			Assert.Equal(1, footer.Stripes.Count);
+			Assert.Single(footer.Stripes);
 			Assert.Equal(45592ul, footer.ContentLength);
 			Assert.Equal(10000u, footer.RowIndexStride);
 

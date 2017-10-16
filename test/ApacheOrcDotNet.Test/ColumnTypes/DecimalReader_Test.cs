@@ -17,7 +17,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 			var stream = dataFile.GetStream();
 			var fileTail = new FileTail(stream);
 			var stripes = fileTail.GetStripeCollection();
-			Assert.Equal(1, stripes.Count);
+			Assert.Single(stripes);
 			return stripes[0].GetStripeStreamCollection();
 		}
 

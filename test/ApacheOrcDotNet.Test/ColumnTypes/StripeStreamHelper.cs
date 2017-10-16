@@ -26,7 +26,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		public static StripeStreamReaderCollection GetStripeStreams(System.IO.Stream inputStream, Footer footer)
 		{
 			var stripes = new StripeReaderCollection(inputStream, footer, CompressionKind.Zlib);
-			Assert.Equal(1, stripes.Count);
+			Assert.Single(stripes);
 			return stripes[0].GetStripeStreamCollection();
 		}
 	}

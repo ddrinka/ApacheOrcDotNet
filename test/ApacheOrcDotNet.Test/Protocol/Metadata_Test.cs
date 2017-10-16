@@ -26,7 +26,7 @@ namespace ApacheOrcDotNet.Test.Protocol
 			var metadataStream = OrcCompressedStream.GetDecompressingStream(metadataStreamCompressed, CompressionKind.Zlib);
 			var metadata = Serializer.Deserialize<Metadata>(metadataStream);
 
-			Assert.Equal(1, metadata.StripeStats.Count);
+			Assert.Single(metadata.StripeStats);
 			Assert.Equal(10, metadata.StripeStats[0].ColStats.Count);
 		}
 	}
