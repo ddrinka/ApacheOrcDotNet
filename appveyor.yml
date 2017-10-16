@@ -20,7 +20,7 @@ build:
 test:
   categories:
     except:
-      - UNSAFE
+#      - UNSAFE
 deploy:
 - provider: NuGet
   server: https://www.myget.org/F/johnny/api/v2/package
