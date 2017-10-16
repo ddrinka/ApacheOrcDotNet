@@ -1,23 +1,31 @@
-version: 1.0.0-CI{build}
-configuration: Release
+version: 1.1.{build}
+configuration:
+  - Debug
+  - Release
 image: Visual Studio 2017
-environment:
-  DOTNET_CLI_TELEMETRY_OPTOUT: 1
-init:
-- ps: $env:LABEL = "CI" + $env:APPVEYOR_BUILD_NUMBER.PadLeft(5, "0")
-- ps: $env:CORRECTED_BUILD_VERSION = $env:APPVEYOR_BUILD_VERSION -replace "-CI[0-9]*$","-$env:LABEL"
-- ps: Update-AppveyorBuild -Version $env:CORRECTED_BUILD_VERSION
+clone_folder: 'c:\s'
+dotnet_csproj:
+  patch: true
+  file: '**\*.csproj'
+  version: '{version}'
+  package_version: '{version}'
+nuget:
+  account_feed: true
 before_build:
-- msbuild.exe /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Version=%CORRECTED_BUILD_VERSION% /v:minimal /t:restore
-build_script:
-- msbuild.exe /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Version=%CORRECTED_BUILD_VERSION% /v:minimal /t:build
-after_build:
-- msbuild.exe /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Version=%CORRECTED_BUILD_VERSION%;IncludeSymbols=true;IncludeSource=true /v:minimal /t:pack
+- dotnet restore
+build:
+  publish_nuget: true
+  publish_nuget_symbols: true
+  verbosity: minimal
 test:
   categories:
     except:
       - UNSAFE
-artifacts:
-- path: '**\*.nupkg'
-cache:
-- '%USERPROFILE%\.nuget\packages'
+deploy:
+- provider: NuGet
+  server: https://www.myget.org/F/johnny/api/v2/package
+  api_key:
+    secure: dDkFXGebDfxU/8RsHY0P+9sLSGhYL/zFl3mNb+4MYY0Ozbc9WKsCF2g6uGRXjDuh
+  symbol_server: https://www.myget.org/F/johnny/symbols/api/v2/package
+  on:
+    configuration: Debug
