@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="protobuf-net" Version="2.1.0" />
     <PackageReference Include="System.Runtime.Numerics" Version="4.3.0" />
+    <PackageReference Include="System.IO.Compression" Version="4.3.0" />
   </ItemGroup>
 
 </Project>
