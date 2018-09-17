@@ -215,13 +215,19 @@ namespace ApacheOrcDotNet.ColumnTypes
 						buffer.AnnotatePosition(stats, 0);
 				}
 
-				var stringValue = sortedDictionary[value.Id];   //Look up the string value for this Id so we can notate statistics
-				stats.AddValue(stringValue);
-				presentList.Add(value != null);
-				if (value != null)
-					lookupList.Add(value.Id);
-				else
+				if (value == null)
+				{
+					stats.AddValue(null);
+					presentList.Add(false);
 					hasNull = true;
+				}
+				else
+				{
+					var stringValue = sortedDictionary[value.Id];   //Look up the string value for this Id so we can notate statistics
+					stats.AddValue(stringValue);
+					presentList.Add(true);
+					lookupList.Add(value.Id);
+				}
 
 				if (++strideCount == _strideLength)                  //If it's time for new statistics
 				{
