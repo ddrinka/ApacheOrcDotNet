@@ -13,10 +13,21 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
     public class StringColumn_Test
     {
 		[Fact]
-		public void RoundTrip_StringColumn()
+		public void RoundTrip_StringColumn_Direct()
 		{
 			RoundTripSingleValue_Direct(70000);
+		}
+
+		[Fact]
+		public void RoundTrip_StringColumn_Dictionary()
+		{
 			RoundTripSingleValue_Dictionary(70000);
+		}
+
+		[Fact]
+		public void RoundTrip_StringColumn_Dictionary_WithNulls()
+		{
+			RoundTripSingleValue_Dictionary_WithNulls(70000);
 		}
 
 		void RoundTripSingleValue_Direct(int numValues)
@@ -38,7 +49,17 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 				Assert.Equal(pocos[i].Value, results[i]);
 		}
 
-		IEnumerable<string> GenerateRandomStrings(Random rnd, int count, int uniqueCount)
+		void RoundTripSingleValue_Dictionary_WithNulls(int numValues)
+		{
+			var random = new Random(123);
+			var pocos = GenerateRandomStrings(random, numValues, 100, includeNulls: true).Select(s => new SingleValuePoco { Value = s }).ToList();
+			var results = RoundTripSingleValue(pocos);
+
+			for (int i = 0; i < numValues; i++)
+				Assert.Equal(pocos[i].Value, results[i]);
+		}
+
+		IEnumerable<string> GenerateRandomStrings(Random rnd, int count, int uniqueCount, bool includeNulls = false)
 		{
 			var strings = new List<string>(uniqueCount);
 			for (int i = 0; i < uniqueCount; i++)
@@ -47,7 +68,10 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 			for (int i = 0; i < count; i++)
 			{
 				var id = rnd.Next() % uniqueCount;
-				yield return strings[id];
+				if (includeNulls && id == 0)
+					yield return null;
+				else
+					yield return strings[id];
 			}
 		}
 
