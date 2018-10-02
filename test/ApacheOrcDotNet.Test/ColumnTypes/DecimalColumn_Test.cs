@@ -17,6 +17,13 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 			RoundTripSingleValue(70000);
 		}
 
+
+		[Fact]
+		public void RoundTrip_DecimalAllNulls()
+		{
+			RoundTripNulls(70000);
+		}
+
 		void RoundTripSingleValue(int numValues)
 		{
 			var pocos = new List<SingleValuePoco>();
@@ -38,6 +45,28 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		class SingleValuePoco
 		{
 			public decimal Value { get; set; }
+		}
+
+		void RoundTripNulls(int numValues)
+		{
+			var pocos = new List<NullableSingleValuePoco>();
+			for (int i = 0; i < numValues; i++)
+				pocos.Add(new NullableSingleValuePoco());
+
+			var stream = new MemoryStream();
+			Footer footer;
+			StripeStreamHelper.Write(stream, pocos, out footer);
+			var stripeStreams = StripeStreamHelper.GetStripeStreams(stream, footer);
+			var reader = new DecimalReader(stripeStreams, 1);
+			var results = reader.Read().ToArray();
+
+			for (int i = 0; i < numValues; i++)
+				Assert.Equal(pocos[i].Value, results[i]);
+		}
+
+		class NullableSingleValuePoco
+		{
+			public decimal? Value { get; set; }
 		}
     }
 }
