@@ -199,15 +199,12 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 			//Write the lookup values
 			var presentList = new List<bool>(_dictionaryLookupValues.Count);
-			var presentEncoder = new BitWriter(_presentBuffer);
 			var lookupList = new List<long>(_dictionaryLookupValues.Count);
-			var lookupEncoder = new IntegerRunLengthEncodingV2Writer(_dataBuffer);
-			bool hasNull = false;
-			int strideCount = 0;
+			int count = 0;
 			StringWriterStatistics stats = null;
 			foreach (var value in _dictionaryLookupValues)
 			{
-				if(stats==null)
+				if(stats == null)
 				{
 					stats = new StringWriterStatistics();
 					Statistics.Add(stats);
@@ -219,7 +216,6 @@ namespace ApacheOrcDotNet.ColumnTypes
 				{
 					stats.AddValue(null);
 					presentList.Add(false);
-					hasNull = true;
 				}
 				else
 				{
@@ -229,17 +225,21 @@ namespace ApacheOrcDotNet.ColumnTypes
 					lookupList.Add(value.Id);
 				}
 
-				if (++strideCount == _strideLength)                  //If it's time for new statistics
+				count++;
+
+				if (count % _strideLength == 0 || count == _dictionaryLookupValues.Count)                  //If it's time for new statistics
 				{
 					//Flush to the buffers
+					var presentEncoder = new BitWriter(_presentBuffer);
 					presentEncoder.Write(presentList);
 					presentList.Clear();
-					if (hasNull)
+					if (stats.HasNull)
 						_presentBuffer.MustBeIncluded = true;
+
+					var lookupEncoder = new IntegerRunLengthEncodingV2Writer(_dataBuffer);
 					lookupEncoder.Write(lookupList, false, _shouldAlignDictionaryLookup);
 					lookupList.Clear();
 
-					strideCount = 0;
 					stats = null;
 				}
 			}
