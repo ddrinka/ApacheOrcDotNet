@@ -74,6 +74,9 @@ namespace ApacheOrcDotNet.ColumnTypes
 					}
 					else
 					{
+						if (value.Value.Kind != DateTimeKind.Utc)
+							throw new NotSupportedException("Only UTC DateTimes are supported in Date columns");
+
 						var daysSinceEpoch = (int)(value.Value - _unixEpoch).TotalDays;
 						stats.AddValue(daysSinceEpoch);
 						presentList.Add(true);
@@ -90,6 +93,9 @@ namespace ApacheOrcDotNet.ColumnTypes
 			{
 				foreach (var value in values)
 				{
+					if (value.Value.Kind != DateTimeKind.Utc)
+						throw new NotSupportedException("Only UTC DateTimes are supported in Date columns");
+
 					var daysSinceEpoch = (int)(value.Value - _unixEpoch).TotalDays;
 					stats.AddValue(daysSinceEpoch);
 					datesList.Add(daysSinceEpoch);
