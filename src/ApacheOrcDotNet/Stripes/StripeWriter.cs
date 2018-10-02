@@ -234,7 +234,7 @@ namespace ApacheOrcDotNet.Stripes
 			var propertyType = propertyInfo.PropertyType;
 
 			//TODO move this to a pattern match switch
-			if(propertyType==typeof(int))
+			if(propertyType == typeof(int))
 				return GetColumnWriterDetails(GetLongColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<int>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Int);
 			if (propertyType == typeof(long))
 				return GetColumnWriterDetails(GetLongColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<long>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Long);
@@ -280,19 +280,23 @@ namespace ApacheOrcDotNet.Stripes
 				return GetColumnWriterDetails(GetDoubleColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<double?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Double);
 			if (propertyType == typeof(byte[]))
 				return GetColumnWriterDetails(GetBinaryColumnWriter(columnId), propertyInfo, classInstance => GetValue<byte[]>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Binary);
-			if(propertyType==typeof(decimal))
+			if (propertyType == typeof(decimal))
 				return GetDecimalColumnWriterDetails(false, columnId, propertyInfo, classInstance => GetValue<decimal>(classInstance, propertyInfo));
 			if (propertyType == typeof(decimal?))
 				return GetDecimalColumnWriterDetails(true, columnId, propertyInfo, classInstance => GetValue<decimal?>(classInstance, propertyInfo));
-			if(propertyType==typeof(DateTime))
+			if (propertyType == typeof(DateTime) && propertyInfo.GetCustomAttribute<DateAttribute>() != null)
+				return GetColumnWriterDetails(GetDateColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTime>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Date);
+			if (propertyType == typeof(DateTime))
 				return GetColumnWriterDetails(GetTimestampColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTime>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Timestamp);
+			if (propertyType == typeof(DateTime?) && propertyInfo.GetCustomAttribute<DateAttribute>() != null)
+				return GetColumnWriterDetails(GetDateColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<DateTime?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Date);
 			if (propertyType == typeof(DateTime?))
 				return GetColumnWriterDetails(GetTimestampColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<DateTime?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Timestamp);
 			if (propertyType == typeof(DateTimeOffset))
 				return GetColumnWriterDetails(GetTimestampColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTimeOffset>(classInstance, propertyInfo).UtcDateTime, Protocol.ColumnTypeKind.Timestamp);
 			if (propertyType == typeof(DateTimeOffset?))
 				return GetColumnWriterDetails(GetTimestampColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTimeOffset?>(classInstance, propertyInfo)?.UtcDateTime, Protocol.ColumnTypeKind.Timestamp);
-			if(propertyType==typeof(string))
+			if (propertyType == typeof(string))
 				return GetColumnWriterDetails(GetStringColumnWriter(columnId), propertyInfo, classInstance => GetValue<string>(classInstance, propertyInfo), Protocol.ColumnTypeKind.String);
 
 			throw new NotImplementedException($"Only basic types are supported. Unable to handle type {propertyType}");
@@ -419,6 +423,11 @@ namespace ApacheOrcDotNet.Stripes
 		IColumnWriter<DateTime?> GetTimestampColumnWriter(bool isNullable, uint columnId)
 		{
 			return new TimestampWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
+		}
+
+		IColumnWriter<DateTime?> GetDateColumnWriter(bool isNullable, uint columnId)
+		{
+			return new DateWriter(isNullable, _shouldAlignNumericValues, _bufferFactory, columnId);
 		}
 
 		IColumnWriter<string> GetStringColumnWriter(uint columnId)
