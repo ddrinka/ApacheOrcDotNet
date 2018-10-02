@@ -35,17 +35,17 @@ namespace ApacheOrcDotNet.ColumnTypes
 			{
 				columnStatistics.DecimalStatistics = new DecimalStatistics
 				{
-					Minimum = Min.ToString(),
-					Maximum = Max.ToString(),
+					Minimum = Min == decimal.MaxValue ? "" : Min.ToString(),
+					Maximum = Max == decimal.MinValue ? "" : Max.ToString(),
 					Sum = Sum.HasValue ? Sum.Value.ToString() : ""
 				};
 			}
 			else
 			{
-				if (Min < Decimal.Parse(columnStatistics.DecimalStatistics.Minimum))
-					columnStatistics.DecimalStatistics.Minimum = Min.ToString();
-				if (Max > decimal.Parse(columnStatistics.DecimalStatistics.Maximum))
-					columnStatistics.DecimalStatistics.Maximum = Max.ToString();
+				if (columnStatistics.DecimalStatistics.Minimum == "" || Min < Decimal.Parse(columnStatistics.DecimalStatistics.Minimum))
+					columnStatistics.DecimalStatistics.Minimum = Min == decimal.MaxValue ? "" : Min.ToString();
+				if (columnStatistics.DecimalStatistics.Maximum == "" || Max > decimal.Parse(columnStatistics.DecimalStatistics.Maximum))
+					columnStatistics.DecimalStatistics.Maximum = Max == decimal.MinValue ? "" : Max.ToString();
 				if (!Sum.HasValue)
 					columnStatistics.DecimalStatistics.Sum = "";
 				else
