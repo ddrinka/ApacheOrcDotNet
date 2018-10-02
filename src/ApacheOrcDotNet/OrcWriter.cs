@@ -1,16 +1,13 @@
-﻿using ApacheOrcDotNet.Compression;
-using ApacheOrcDotNet.Infrastructure;
-using ApacheOrcDotNet.Stripes;
-using ProtoBuf.Meta;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Infrastructure;
+using ApacheOrcDotNet.Stripes;
 
 namespace ApacheOrcDotNet
 {
-	public class OrcWriter<T> : IOrcWriter<T>
+	public class OrcWriter : IOrcWriter
 	{
 		readonly Stream _outputStream;
 		readonly OrcCompressedBufferFactory _bufferFactory;
@@ -20,13 +17,13 @@ namespace ApacheOrcDotNet
 		readonly uint _writerVersion = 5;
 		readonly string _magic = "ORC";
 
-		public OrcWriter(Stream outputStream, WriterConfiguration configuration)
+		public OrcWriter(Type type, Stream outputStream, WriterConfiguration configuration)
 		{
 			_outputStream = outputStream;
 
 			_bufferFactory = new OrcCompressedBufferFactory(configuration);
 			_stripeWriter = new StripeWriter(
-				typeof(T),
+				type,
 				outputStream,
 				configuration.EncodingStrategy == EncodingStrategy.Speed,
 				configuration.DictionaryKeySizeThreshold,
@@ -40,14 +37,14 @@ namespace ApacheOrcDotNet
 			WriteHeader();
 		}
 
-		public void AddRow(T row)
+		public void AddRow(object row)
 		{
-			_stripeWriter.AddRows(new object[] { row });
+			_stripeWriter.AddRows(new[] { row });
 		}
 
-		public void AddRows(IEnumerable<T> rows)
+		public void AddRows(IEnumerable<object> rows)
 		{
-			_stripeWriter.AddRows((IEnumerable<object>)rows);
+			_stripeWriter.AddRows(rows);
 		}
 
 		public void AddUserMetadata(string key, byte[] value)

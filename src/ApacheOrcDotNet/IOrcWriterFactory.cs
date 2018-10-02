@@ -16,5 +16,6 @@ namespace ApacheOrcDotNet
 		/// <param name="configuration">Configuration for writer</param>
 		/// <returns></returns>
 		IOrcWriter<T> CreateWriter<T>(Stream outputStream, WriterConfiguration configuration);
+		IOrcWriter CreateWriter(Type type, Stream outputStream, WriterConfiguration configuration);
     }
 }
