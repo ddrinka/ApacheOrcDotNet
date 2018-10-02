@@ -258,7 +258,7 @@ namespace ApacheOrcDotNet.Encodings
 
 		void ShortRepeatEncode(long value, int repeatCount)
 		{
-			var bits = BitManipulation.NumBits((ulong)value);
+			var bits = BitManipulation.FindNearestDirectWidth(BitManipulation.NumBits((ulong)value));
 			var width = bits / 8;
 			if (bits % 8 != 0)
 				width++;      //Some remainder
