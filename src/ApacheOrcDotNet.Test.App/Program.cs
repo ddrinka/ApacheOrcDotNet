@@ -18,7 +18,7 @@ namespace ApacheOrcDotNet.Test.App
 				var random = rand.Next();
 				var set = i / 10000;
 				var randomInRange = (random % 10000) + set * 10000 - 40000;
-				var dec = i / (decimal)Math.Pow(10, set - 4);
+				var dec = (DateTime.Now - DateTime.Today).Ticks / (decimal)TimeSpan.TicksPerSecond;
 				var timestamp = baseTime.AddTicks(random);
 				var element = new TestClass
 				{
@@ -53,6 +53,7 @@ namespace ApacheOrcDotNet.Test.App
 		public int? AllNulls { get; set; }
 		public double Double { get; set; }
 		public float Float { get; set; }
+		[DecimalOptions(14,9)]
 		public decimal Dec { get; set; }
 		public decimal? AllNullsDec { get; set; }
 		public DateTime Timestamp { get; set; }

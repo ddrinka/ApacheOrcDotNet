@@ -44,6 +44,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 
 		class SingleValuePoco
 		{
+			[DecimalOptions(14,9)]
 			public decimal Value { get; set; }
 		}
 

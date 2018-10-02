@@ -35,7 +35,9 @@ namespace ApacheOrcDotNet.Infrastructure
 			var bits = decimal.GetBits(value);
 			if (bits[2] != 0 || (bits[1] & 0x80000000) != 0)
 				throw new OverflowException("Attempted to convert a decimal with greater than 63 bits of precision to a long");
-			var m = (long)bits[0] | (long)(bits[1] << 32);
+			var high = (ulong)(uint)bits[1] << 32;
+			var low = (uint)bits[0];
+			long m = (long)high | low;
 			var e = (byte)((bits[3] >> 16) & 0x7F);
 			var isNeg = (bits[3] & 0x80000000) != 0;
 			if (isNeg)
