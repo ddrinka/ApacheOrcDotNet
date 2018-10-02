@@ -1,14 +1,14 @@
-﻿root@e7009d3d0cdd:~# java -jar orc-tools-1.4.0-SNAPSHOT-uber.jar meta -r 0,1,2,3,4,5,6,7,8,9,10 user/test.orc
-log4j:WARN No appenders could be found for logger (org.apache.hadoop.metrics2.lib.MutableMetricsFactory).
+﻿root@e7009d3d0cdd:~# java -jar orc-tools-1.4.0-SNAPSHOT-uber.jar meta -r 0,1,2,3,4,5,6,7,8,9,10,11,12 user/test.orc
+log4j:WARN No appenders could be found for logger (org.apache.hadoop.util.Shell).
 log4j:WARN Please initialize the log4j system properly.
 log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
-Processing data file user/test.orc [length: 3296176]
+Processing data file user/test.orc [length: 3296547]
 Structure for user/test.orc
 File Version: 0.12 with ORC_101
 Rows: 80000
 Compression: ZLIB
 Compression size: 262144
-Type: struct<Random:int,RandomInRange:int,Incrementing:int,SetNumber:int,Double:double,Float:float,Dec:decimal(18,6),Timestamp:timestamp,Str:string,DictionaryStr:string>
+Type: struct<Random:int,RandomInRange:int,Incrementing:int,SetNumber:int,AllNulls:int,Double:double,Float:float,Dec:decimal(18,6),AllNullsDec:decimal(18,6),Timestamp:timestamp,Str:string,DictionaryStr:string>
 
 Stripe Statistics:
   Stripe 1:
@@ -17,12 +17,14 @@ Stripe Statistics:
     Column 2: count: 80000 hasNull: false min: -40000 max: 39997 sum: -2164507
     Column 3: count: 80000 hasNull: false min: 0 max: 79999 sum: 3199960000
     Column 4: count: 80000 hasNull: false min: 0 max: 7 sum: 280000
-    Column 5: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535714285E8
-    Column 6: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535708008E8
-    Column 7: count: 80000 hasNull: false min: 0 max: 99990000 sum: 678956694445
-    Column 8: count: 80000 hasNull: false min: 2017-03-16 00:00:00.004 max: 2017-03-16 00:03:34.746
-    Column 9: count: 80000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4, Dec=47447, Timestamp=03/16/2017 12:01:40.0014068 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Dec=71.035, Timestamp=03/16/2017 12:01:39.9972874 sum: 9759653
-    Column 10: count: 80000 hasNull: false min: SetNumber=0 max: SetNumber=7 sum: 880000
+    Column 5: count: 80000 hasNull: true min: 9223372036854775807 max: -9223372036854775808 sum: 0
+    Column 6: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535714285E8
+    Column 7: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535708008E8
+    Column 8: count: 80000 hasNull: false min: 0 max: 99990000 sum: 678956694445
+    Column 9: count: 80000 hasNull: true min: 79228162514264337593543950335 max: -79228162514264337593543950335 sum: 0
+    Column 10: count: 80000 hasNull: false min: 2017-03-15 19:00:00.004 max: 2017-03-15 19:03:34.746
+    Column 11: count: 80000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4, Dec=47447, Timestamp=03/16/2017 12:01:40.0014068 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Dec=71.035, Timestamp=03/16/2017 12:01:39.9972874 sum: 9759653
+    Column 12: count: 80000 hasNull: false min: SetNumber=0 max: SetNumber=7 sum: 880000
 
 File Statistics:
   Column 0: count: 80000 hasNull: false true: 0
@@ -30,52 +32,63 @@ File Statistics:
   Column 2: count: 80000 hasNull: false min: -40000 max: 39997 sum: -2164507
   Column 3: count: 80000 hasNull: false min: 0 max: 79999 sum: 3199960000
   Column 4: count: 80000 hasNull: false min: 0 max: 7 sum: 280000
-  Column 5: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535714285E8
-  Column 6: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535708008E8
-  Column 7: count: 80000 hasNull: false min: 0 max: 99990000 sum: 678956694445
-  Column 8: count: 80000 hasNull: false min: 2017-03-16 00:00:00.004 max: 2017-03-16 00:03:34.746
-  Column 9: count: 80000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4, Dec=47447, Timestamp=03/16/2017 12:01:40.0014068 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Dec=71.035, Timestamp=03/16/2017 12:01:39.9972874 sum: 9759653
-  Column 10: count: 80000 hasNull: false min: SetNumber=0 max: SetNumber=7 sum: 880000
+  Column 5: count: 80000 hasNull: true min: 9223372036854775807 max: -9223372036854775808 sum: 0
+  Column 6: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535714285E8
+  Column 7: count: 80000 hasNull: false min: 0.0 max: 9999.875 sum: 6.640935535708008E8
+  Column 8: count: 80000 hasNull: false min: 0 max: 99990000 sum: 678956694445
+  Column 9: count: 80000 hasNull: true min: 79228162514264337593543950335 max: -79228162514264337593543950335 sum: 0
+  Column 10: count: 80000 hasNull: false min: 2017-03-15 19:00:00.004 max: 2017-03-15 19:03:34.746
+  Column 11: count: 80000 hasNull: false min: Random=1000014068, RandomInRange=4068, Incrementing=47447, SetNumber=4, Dec=47447, Timestamp=03/16/2017 12:01:40.0014068 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Dec=71.035, Timestamp=03/16/2017 12:01:39.9972874 sum: 9759653
+  Column 12: count: 80000 hasNull: false min: SetNumber=0 max: SetNumber=7 sum: 880000
 
 Stripes:
-  Stripe: offset: 3 data: 3292550 rows: 80000 tail: 184 index: 2517
+  Stripe: offset: 3 data: 3292584 rows: 80000 tail: 215 index: 2679
     Stream: column 0 section ROW_INDEX start: 3 length 25
     Stream: column 1 section ROW_INDEX start: 28 length 221
     Stream: column 2 section ROW_INDEX start: 249 length 186
     Stream: column 3 section ROW_INDEX start: 435 length 183
     Stream: column 4 section ROW_INDEX start: 618 length 125
-    Stream: column 5 section ROW_INDEX start: 743 length 223
-    Stream: column 6 section ROW_INDEX start: 966 length 200
-    Stream: column 7 section ROW_INDEX start: 1166 length 253
-    Stream: column 8 section ROW_INDEX start: 1419 length 152
-    Stream: column 9 section ROW_INDEX start: 1571 length 797
-    Stream: column 10 section ROW_INDEX start: 2368 length 152
-    Stream: column 1 section DATA start: 2520 length 320326
-    Stream: column 2 section DATA start: 322846 length 159064
-    Stream: column 3 section DATA start: 481910 length 350
-    Stream: column 4 section DATA start: 482260 length 52
-    Stream: column 5 section DATA start: 482312 length 181659
-    Stream: column 6 section DATA start: 663971 length 201846
-    Stream: column 7 section DATA start: 865817 length 201595
-    Stream: column 7 section SECONDARY start: 1067412 length 429
-    Stream: column 8 section DATA start: 1067841 length 124126
-    Stream: column 8 section SECONDARY start: 1191967 length 284306
-    Stream: column 9 section DATA start: 1476273 length 1795185
-    Stream: column 9 section LENGTH start: 3271458 length 23521
-    Stream: column 10 section DATA start: 3294979 length 50
-    Stream: column 10 section LENGTH start: 3295029 length 5
-    Stream: column 10 section DICTIONARY_DATA start: 3295034 length 36
+    Stream: column 5 section ROW_INDEX start: 743 length 67
+    Stream: column 6 section ROW_INDEX start: 810 length 223
+    Stream: column 7 section ROW_INDEX start: 1033 length 200
+    Stream: column 8 section ROW_INDEX start: 1233 length 253
+    Stream: column 9 section ROW_INDEX start: 1486 length 95
+    Stream: column 10 section ROW_INDEX start: 1581 length 152
+    Stream: column 11 section ROW_INDEX start: 1733 length 797
+    Stream: column 12 section ROW_INDEX start: 2530 length 152
+    Stream: column 1 section DATA start: 2682 length 320326
+    Stream: column 2 section DATA start: 323008 length 159064
+    Stream: column 3 section DATA start: 482072 length 350
+    Stream: column 4 section DATA start: 482422 length 52
+    Stream: column 5 section PRESENT start: 482474 length 17
+    Stream: column 5 section DATA start: 482491 length 0
+    Stream: column 6 section DATA start: 482491 length 181659
+    Stream: column 7 section DATA start: 664150 length 201846
+    Stream: column 8 section DATA start: 865996 length 201595
+    Stream: column 8 section SECONDARY start: 1067591 length 429
+    Stream: column 9 section PRESENT start: 1068020 length 17
+    Stream: column 9 section DATA start: 1068037 length 0
+    Stream: column 9 section SECONDARY start: 1068037 length 0
+    Stream: column 10 section DATA start: 1068037 length 124126
+    Stream: column 10 section SECONDARY start: 1192163 length 284306
+    Stream: column 11 section DATA start: 1476469 length 1795185
+    Stream: column 11 section LENGTH start: 3271654 length 23521
+    Stream: column 12 section DATA start: 3295175 length 50
+    Stream: column 12 section LENGTH start: 3295225 length 5
+    Stream: column 12 section DICTIONARY_DATA start: 3295230 length 36
     Encoding column 0: DIRECT
     Encoding column 1: DIRECT_V2
     Encoding column 2: DIRECT_V2
     Encoding column 3: DIRECT_V2
     Encoding column 4: DIRECT_V2
-    Encoding column 5: DIRECT
+    Encoding column 5: DIRECT_V2
     Encoding column 6: DIRECT
-    Encoding column 7: DIRECT_V2
+    Encoding column 7: DIRECT
     Encoding column 8: DIRECT_V2
     Encoding column 9: DIRECT_V2
-    Encoding column 10: DICTIONARY_V2[8]
+    Encoding column 10: DIRECT_V2
+    Encoding column 11: DIRECT_V2
+    Encoding column 12: DICTIONARY_V2[8]
     Row group indices for column 0:
       Entry 0: count: 10000 hasNull: false true: 0 positions:
       Entry 1: count: 10000 hasNull: false true: 0 positions:
@@ -122,6 +135,15 @@ Stripes:
       Entry 6: count: 10000 hasNull: false min: 6 max: 6 sum: 60000 positions: 0,480,0
       Entry 7: count: 10000 hasNull: false min: 7 max: 7 sum: 70000 positions: 0,560,0
     Row group indices for column 5:
+      Entry 0: count: 10000 hasNull: true min: 9223372036854775807 max: -9223372036854775808 sum: 0 positions: 0,0,0,0,0,0
+      Entry 1: count: 10000 hasNull: true min: 9223372036854775807 max: -9223372036854775808 sum: 0 positions: 0,20,0,0,0,0
+      Entry 2: count: 10000 hasNull: true min: 9223372036854775807 max: -9223372036854775808 sum: 0 positions: 0,40,0,0,0,0
+      Entry 3: count: 10000 hasNull: true min: 9223372036854775807 max: -9223372036854775808 sum: 0 positions: 0,60,0,0,0,0
+      Entry 4: count: 10000 hasNull: true min: 9223372036854775807 max: -9223372036854775808 sum: 0 positions: 0,80,0,0,0,0
+      Entry 5: count: 10000 hasNull: true min: 9223372036854775807 max: -9223372036854775808 sum: 0 positions: 0,100,0,0,0,0
+      Entry 6: count: 10000 hasNull: true min: 9223372036854775807 max: -9223372036854775808 sum: 0 positions: 0,120,0,0,0,0
+      Entry 7: count: 10000 hasNull: true min: 9223372036854775807 max: -9223372036854775808 sum: 0 positions: 0,140,0,0,0,0
+    Row group indices for column 6:
       Entry 0: count: 10000 hasNull: false min: 0.0 max: 9999.0 sum: 4.9995E7 positions: 0,0,0
       Entry 1: count: 10000 hasNull: false min: 5000.0 max: 9999.5 sum: 7.49975E7 positions: 0,80000,0
       Entry 2: count: 10000 hasNull: false min: 6666.666666666667 max: 9999.666666666666 sum: 8.333166666666667E7 positions: 0,160000,0
@@ -130,7 +152,7 @@ Stripes:
       Entry 5: count: 10000 hasNull: false min: 8333.333333333334 max: 9999.833333333334 sum: 9.166583333333333E7 positions: 75254,137856,0
       Entry 6: count: 10000 hasNull: false min: 8571.42857142857 max: 9999.857142857143 sum: 9.285642857142857E7 positions: 75254,217856,0
       Entry 7: count: 10000 hasNull: false min: 8750.0 max: 9999.875 sum: 9.3749375E7 positions: 151330,35712,0
-    Row group indices for column 6:
+    Row group indices for column 7:
       Entry 0: count: 10000 hasNull: false min: 0.0 max: 9999.0 sum: 4.9995E7 positions: 0,0,0
       Entry 1: count: 10000 hasNull: false min: 5000.0 max: 9999.5 sum: 7.49975E7 positions: 0,40000,0
       Entry 2: count: 10000 hasNull: false min: 6666.66650390625 max: 9999.6669921875 sum: 8.33316666665039E7 positions: 0,80000,0
@@ -139,25 +161,34 @@ Stripes:
       Entry 5: count: 10000 hasNull: false min: 8333.3330078125 max: 9999.8330078125 sum: 9.166583333300781E7 positions: 0,200000,0
       Entry 6: count: 10000 hasNull: false min: 8571.4287109375 max: 9999.857421875 sum: 9.285642857128906E7 positions: 0,240000,0
       Entry 7: count: 10000 hasNull: false min: 8750.0 max: 9999.875 sum: 9.3749375E7 positions: 164910,17856,0
-    Row group indices for column 7:
-      Entry 0: count: 10000 hasNull: false min: 0 max: 99990000 sum: 499950000000 positions: 0,0,0,0,0,0
-      Entry 1: count: 10000 hasNull: false min: 10000000 max: 19999000 sum: 149995000000 positions: 0,39893,0,0,80,0
-      Entry 2: count: 10000 hasNull: false min: 2000000 max: 2999900 sum: 24999500000 positions: 0,79893,0,0,160,0
-      Entry 3: count: 10000 hasNull: false min: 300000 max: 399990 sum: 3499950000 positions: 0,119893,0,0,240,0
-      Entry 4: count: 10000 hasNull: false min: 40000 max: 49999 sum: 449995000 positions: 0,149893,0,0,320,0
-      Entry 5: count: 10000 hasNull: false min: 5000 max: 5999.9 sum: 54999500 positions: 0,179893,0,0,400,0
-      Entry 6: count: 10000 hasNull: false min: 600 max: 699.99 sum: 6499950 positions: 0,208893,0,0,2940,0
-      Entry 7: count: 10000 hasNull: false min: 70 max: 79.999 sum: 749995 positions: 0,237893,0,0,7942,0
     Row group indices for column 8:
-      Entry 0: count: 10000 hasNull: false min: 2017-03-16 00:00:00.012 max: 2017-03-16 00:03:34.731 positions: 0,0,0,0,0,0
-      Entry 1: count: 10000 hasNull: false min: 2017-03-16 00:00:00.021 max: 2017-03-16 00:03:34.744 positions: 0,40040,0,0,40040,0
-      Entry 2: count: 10000 hasNull: false min: 2017-03-16 00:00:00.04 max: 2017-03-16 00:03:34.745 positions: 0,80080,0,0,80080,0
-      Entry 3: count: 10000 hasNull: false min: 2017-03-16 00:00:00.006 max: 2017-03-16 00:03:34.713 positions: 0,120120,0,0,120120,0
-      Entry 4: count: 10000 hasNull: false min: 2017-03-16 00:00:00.004 max: 2017-03-16 00:03:34.744 positions: 0,160160,0,0,160160,0
-      Entry 5: count: 10000 hasNull: false min: 2017-03-16 00:00:00.017 max: 2017-03-16 00:03:34.746 positions: 0,200200,0,0,200200,0
-      Entry 6: count: 10000 hasNull: false min: 2017-03-16 00:00:00.038 max: 2017-03-16 00:03:34.733 positions: 0,240240,0,0,240240,0
-      Entry 7: count: 10000 hasNull: false min: 2017-03-16 00:00:00.041 max: 2017-03-16 00:03:34.739 positions: 101415,18136,0,232631,18136,0
+      Entry 0: count: 10000 hasNull: false min: 0 max: 99990000000000 sum: 499950000000000000 positions: 0,0,0,0,0,0
+      Entry 1: count: 10000 hasNull: false min: 10000000000000 max: 19999000000000 sum: 149995000000000000 positions: 0,39893,0,0,80,0
+      Entry 2: count: 10000 hasNull: false min: 2000000000000 max: 2999900000000 sum: 24999500000000000 positions: 0,79893,0,0,160,0
+      Entry 3: count: 10000 hasNull: false min: 300000000000 max: 399990000000 sum: 3499950000000000 positions: 0,119893,0,0,240,0
+      Entry 4: count: 10000 hasNull: false min: 40000000000 max: 49999000000 sum: 449995000000000 positions: 0,149893,0,0,320,0
+      Entry 5: count: 10000 hasNull: false min: 5000000000 max: 5999900000 sum: 54999500000000 positions: 0,179893,0,0,400,0
+      Entry 6: count: 10000 hasNull: false min: 600000000 max: 699990000 sum: 6499950000000 positions: 0,208893,0,0,2940,0
+      Entry 7: count: 10000 hasNull: false min: 70000000 max: 79999000 sum: 749995000000 positions: 0,237893,0,0,7942,0
     Row group indices for column 9:
+      Entry 0: count: 10000 hasNull: true min: -1000000 max: 1000000 sum: 0 positions: 0,0,0,0,0,0,0,0,0
+      Entry 1: count: 10000 hasNull: true min: -1000000 max: 1000000 sum: 0 positions: 0,20,0,0,0,0,0,0,0
+      Entry 2: count: 10000 hasNull: true min: -1000000 max: 1000000 sum: 0 positions: 0,40,0,0,0,0,0,0,0
+      Entry 3: count: 10000 hasNull: true min: -1000000 max: 1000000 sum: 0 positions: 0,60,0,0,0,0,0,0,0
+      Entry 4: count: 10000 hasNull: true min: -1000000 max: 1000000 sum: 0 positions: 0,80,0,0,0,0,0,0,0
+      Entry 5: count: 10000 hasNull: true min: -1000000 max: 1000000 sum: 0 positions: 0,100,0,0,0,0,0,0,0
+      Entry 6: count: 10000 hasNull: true min: -1000000 max: 1000000 sum: 0 positions: 0,120,0,0,0,0,0,0,0
+      Entry 7: count: 10000 hasNull: true min: -1000000 max: 1000000 sum: 0 positions: 0,140,0,0,0,0,0,0,0
+    Row group indices for column 10:
+      Entry 0: count: 10000 hasNull: false min: 2017-03-15 19:00:00.012 max: 2017-03-15 19:03:34.731 positions: 0,0,0,0,0,0
+      Entry 1: count: 10000 hasNull: false min: 2017-03-15 19:00:00.021 max: 2017-03-15 19:03:34.744 positions: 0,40040,0,0,40040,0
+      Entry 2: count: 10000 hasNull: false min: 2017-03-15 19:00:00.04 max: 2017-03-15 19:03:34.745 positions: 0,80080,0,0,80080,0
+      Entry 3: count: 10000 hasNull: false min: 2017-03-15 19:00:00.006 max: 2017-03-15 19:03:34.713 positions: 0,120120,0,0,120120,0
+      Entry 4: count: 10000 hasNull: false min: 2017-03-15 19:00:00.004 max: 2017-03-15 19:03:34.744 positions: 0,160160,0,0,160160,0
+      Entry 5: count: 10000 hasNull: false min: 2017-03-15 19:00:00.017 max: 2017-03-15 19:03:34.746 positions: 0,200200,0,0,200200,0
+      Entry 6: count: 10000 hasNull: false min: 2017-03-15 19:00:00.038 max: 2017-03-15 19:03:34.733 positions: 0,240240,0,0,240240,0
+      Entry 7: count: 10000 hasNull: false min: 2017-03-15 19:00:00.041 max: 2017-03-15 19:03:34.739 positions: 101415,18136,0,232631,18136,0
+    Row group indices for column 11:
       Entry 0: count: 10000 hasNull: false min: Random=1000151936, RandomInRange=-38064, Incrementing=3544, SetNumber=0, Dec=35440000, Timestamp=03/16/2017 12:01:40.0151936 max: Random=999761293, RandomInRange=-38707, Incrementing=6480, SetNumber=0, Dec=64800000, Timestamp=03/16/2017 12:01:39.9761293 sum: 1232524 positions: 0,0,0,0,0,0,0,0,0
       Entry 1: count: 10000 hasNull: false min: Random=1000282624, RandomInRange=-27376, Incrementing=15417, SetNumber=1, Dec=15417000, Timestamp=03/16/2017 12:01:40.0282624 max: Random=999918819, RandomInRange=-21181, Incrementing=16436, SetNumber=1, Dec=16436000, Timestamp=03/16/2017 12:01:39.9918819 sum: 1244734 positions: 0,20,0,202538,183948,0,0,10036,0
       Entry 2: count: 10000 hasNull: false min: Random=1000481115, RandomInRange=-18885, Incrementing=25943, SetNumber=2, Dec=2594300, Timestamp=03/16/2017 12:01:40.0481115 max: Random=99996518, RandomInRange=-13482, Incrementing=25852, SetNumber=2, Dec=2585200, Timestamp=03/16/2017 12:00:09.9996518 sum: 1234760 positions: 0,40,0,454249,117962,0,0,20070,0
@@ -166,7 +197,7 @@ Stripes:
       Entry 5: count: 10000 hasNull: false min: Random=1000330550, RandomInRange=10550, Incrementing=50391, SetNumber=5, Dec=5039.1, Timestamp=03/16/2017 12:01:40.0330550 max: Random=999616830, RandomInRange=16830, Incrementing=54984, SetNumber=5, Dec=5498.4, Timestamp=03/16/2017 12:01:39.9616830 sum: 1212850 positions: 0,100,0,1147703,90080,0,0,50171,0
       Entry 6: count: 10000 hasNull: false min: Random=1000201140, RandomInRange=21140, Incrementing=65315, SetNumber=6, Dec=653.15, Timestamp=03/16/2017 12:01:40.0201140 max: Random=999691465, RandomInRange=21465, Incrementing=66790, SetNumber=6, Dec=667.9, Timestamp=03/16/2017 12:01:39.9691465 sum: 1213687 positions: 0,120,0,1329515,254354,0,0,60208,0
       Entry 7: count: 10000 hasNull: false min: Random=1000063230, RandomInRange=33230, Incrementing=77837, SetNumber=7, Dec=77.837, Timestamp=03/16/2017 12:01:40.0063230 max: Random=999972874, RandomInRange=32874, Incrementing=71035, SetNumber=7, Dec=71.035, Timestamp=03/16/2017 12:01:39.9972874 sum: 1213724 positions: 0,140,0,1556835,157321,0,0,70242,0
-    Row group indices for column 10:
+    Row group indices for column 12:
       Entry 0: count: 10000 hasNull: false min: SetNumber=0 max: SetNumber=0 sum: 110000 positions: 0,0,0,0,0,0,0,2,0,0,88,0
       Entry 1: count: 10000 hasNull: false min: SetNumber=1 max: SetNumber=1 sum: 110000 positions: 0,20,0,0,80,0,0,2,0,0,88,0
       Entry 2: count: 10000 hasNull: false min: SetNumber=2 max: SetNumber=2 sum: 110000 positions: 0,40,0,0,160,0,0,2,0,0,88,0
@@ -176,7 +207,7 @@ Stripes:
       Entry 6: count: 10000 hasNull: false min: SetNumber=6 max: SetNumber=6 sum: 110000 positions: 0,120,0,0,480,0,0,2,0,0,88,0
       Entry 7: count: 10000 hasNull: false min: SetNumber=7 max: SetNumber=7 sum: 110000 positions: 0,140,0,0,560,0,0,2,0,0,88,0
 
-File length: 3296176 bytes
+File length: 3296547 bytes
 Padding length: 0 bytes
 Padding ratio: 0%
 ________________________________________________________________________________________________________________________

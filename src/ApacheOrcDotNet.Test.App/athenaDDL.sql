@@ -3,9 +3,11 @@
   `RandomInRange` int,
   `Incrementing` int,
   `SetNumber` int,
+  `AllNulls` int,
   `Double` double,
   `Float` float,
   `Dec` decimal(18,6),
+  `AllNullsDec` decimal(18,6),
   `Timestamp` timestamp,
   `Str` string,
   `DictionaryStr` string

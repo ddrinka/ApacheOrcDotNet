@@ -50,9 +50,11 @@ namespace ApacheOrcDotNet.Test.App
 		public int RandomInRange { get; set; }
 		public int Incrementing { get; set; }
 		public int SetNumber { get; set; }
+		public int? AllNulls { get; set; }
 		public double Double { get; set; }
 		public float Float { get; set; }
 		public decimal Dec { get; set; }
+		public decimal? AllNullsDec { get; set; }
 		public DateTime Timestamp { get; set; }
 		public string Str { get; set; }
 		public string DictionaryStr { get; set; }
