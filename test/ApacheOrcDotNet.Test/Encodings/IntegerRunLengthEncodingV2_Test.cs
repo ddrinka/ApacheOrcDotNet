@@ -54,12 +54,10 @@ namespace ApacheOrcDotNet.Test.Encodings
 		[Fact]
 		public void ReadWrite_PatchedBase()
 		{
-			/*
 			var longs = new long[] { 2030, 2000, 2020, 1000000, 2040, 2050, 2060, 2070, 2080, 2090, 2100, 2110, 2120, 2130, 2140, 2150, 2160, 2170, 2180, 2190 };
 			var bytes = new byte[] { 0x8e, 0x13, 0x2b, 0x21, 0x07, 0xd0, 0x1e, 0x00, 0x14, 0x70, 0x28, 0x32, 0x3c, 0x46, 0x50, 0x5a, 0x64, 0x6e, 0x78, 0x82, 0x8c, 0x96, 0xa0, 0xaa, 0xb4, 0xbe, 0xfc, 0xe8 };
 			TestRead(longs, bytes, false);
 			TestWrite(bytes, longs, false, false);
-			*/
 		}
 
 		[Fact]
@@ -223,14 +221,12 @@ namespace ApacheOrcDotNet.Test.Encodings
 		[Fact]
 		public void RoundTrip_PatchedBase()
 		{
-			/*
 			var longs = new List<long>();
 			var random = new Random(123);
 			longs.Add(10000000);
 			for (int i = 0; i < 511; i++)
 				longs.Add(random.Next() % (i + 1));
 			TestRoundTrip(longs.ToArray(), true, false, 583);
-			*/
 		}
 
 		[Fact]

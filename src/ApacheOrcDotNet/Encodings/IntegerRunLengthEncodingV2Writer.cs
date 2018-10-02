@@ -74,11 +74,10 @@ namespace ApacheOrcDotNet.Encodings
 			//At this point we must zigzag
 			var zigZaggedValues = areSigned ? values.ZigzagEncode() : values;
 
-			/*
 			if (TryPatchEncoding(zigZaggedValues, values, minValue, ref fixedBitWidth, out length))
 			{
 				return length;
-			}*/
+			}
 
 			//If all else fails, DIRECT encode
 			DirectEncode(zigZaggedValues, values.Count, aligned, fixedBitWidth);
