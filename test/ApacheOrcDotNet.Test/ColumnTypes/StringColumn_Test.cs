@@ -59,15 +59,15 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		{
 			var random = new Random(123);
 			var pocos = GenerateRandomStrings(random, numValues / 10, 10)
-				.Union(GenerateRandomStrings(random, numValues / 10, 20))
-				.Union(GenerateRandomStrings(random, numValues / 10, 30))
-				.Union(GenerateRandomStrings(random, numValues / 10, 40))
-				.Union(GenerateRandomStrings(random, numValues / 10, 50))
-				.Union(GenerateRandomStrings(random, numValues / 10, 50))
-				.Union(GenerateRandomStrings(random, numValues / 10, 40))
-				.Union(GenerateRandomStrings(random, numValues / 10, 30))
-				.Union(GenerateRandomStrings(random, numValues / 10, 20))
-				.Union(GenerateRandomStrings(random, numValues / 10, 10))
+				.Concat(GenerateRandomStrings(random, numValues / 10, 20))
+				.Concat(GenerateRandomStrings(random, numValues / 10, 30))
+				.Concat(GenerateRandomStrings(random, numValues / 10, 40))
+				.Concat(GenerateRandomStrings(random, numValues / 10, 50))
+				.Concat(GenerateRandomStrings(random, numValues / 10, 50))
+				.Concat(GenerateRandomStrings(random, numValues / 10, 40))
+				.Concat(GenerateRandomStrings(random, numValues / 10, 30))
+				.Concat(GenerateRandomStrings(random, numValues / 10, 20))
+				.Concat(GenerateRandomStrings(random, numValues / 10, 10))
 				.Select(s => new SingleValuePoco { Value = s }).ToList();
 			var results = RoundTripSingleValue(pocos);
 
