@@ -25,6 +25,12 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		}
 
 		[Fact]
+		public void RoundTrip_StringColumn_Dictionary_VaryDictionarySize()
+		{
+			RoundTripSingleValue_Dictionary_VaryDictionarySize(70000);
+		}
+
+		[Fact]
 		public void RoundTrip_StringColumn_Dictionary_WithNulls()
 		{
 			RoundTripSingleValue_Dictionary_WithNulls(70000);
@@ -43,6 +49,26 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		{
 			var random = new Random(123);
 			var pocos = GenerateRandomStrings(random, numValues, 100).Select(s => new SingleValuePoco { Value = s }).ToList();
+			var results = RoundTripSingleValue(pocos);
+
+			for (int i = 0; i < numValues; i++)
+				Assert.Equal(pocos[i].Value, results[i]);
+		}
+
+		void RoundTripSingleValue_Dictionary_VaryDictionarySize(int numValues)
+		{
+			var random = new Random(123);
+			var pocos = GenerateRandomStrings(random, numValues / 10, 10)
+				.Union(GenerateRandomStrings(random, numValues / 10, 20))
+				.Union(GenerateRandomStrings(random, numValues / 10, 30))
+				.Union(GenerateRandomStrings(random, numValues / 10, 40))
+				.Union(GenerateRandomStrings(random, numValues / 10, 50))
+				.Union(GenerateRandomStrings(random, numValues / 10, 50))
+				.Union(GenerateRandomStrings(random, numValues / 10, 40))
+				.Union(GenerateRandomStrings(random, numValues / 10, 30))
+				.Union(GenerateRandomStrings(random, numValues / 10, 20))
+				.Union(GenerateRandomStrings(random, numValues / 10, 10))
+				.Select(s => new SingleValuePoco { Value = s }).ToList();
 			var results = RoundTripSingleValue(pocos);
 
 			for (int i = 0; i < numValues; i++)
