@@ -82,6 +82,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 						wholePartsList.Add(longAndScale.Item1);
 						scaleList.Add(longAndScale.Item2);
 					}
+					presentList.Add(value.HasValue);
 				}
 
 				var presentEncoder = new BitWriter(_presentBuffer);
