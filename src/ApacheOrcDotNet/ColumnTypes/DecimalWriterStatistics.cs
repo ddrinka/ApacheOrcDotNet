@@ -8,8 +8,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class DecimalWriterStatistics : ColumnWriterStatistics, IStatistics
     {
-		public decimal Min { get; set; } = decimal.MaxValue;
-		public decimal Max { get; set; } = decimal.MinValue;
+		public decimal? Min { get; set; } = decimal.MaxValue;
+		public decimal? Max { get; set; } = decimal.MinValue;
 		public decimal? Sum { get; set; } = 0;
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
@@ -20,44 +20,44 @@ namespace ApacheOrcDotNet.ColumnTypes
 				HasNull = true;
 			else
 			{
-				if (value > Max)
-					Max = value.Value;
-				if (value < Min)
+				if (!Min.HasValue || value.Value < Min.Value)
 					Min = value.Value;
+
+				if (!Max.HasValue || value.Value > Max.Value)
+					Max = value.Value;
+
 				Sum = CheckedAdd(Sum, value.Value);
+				NumValues++;
 			}
-			NumValues++;
 		}
 
 		public void FillColumnStatistics(ColumnStatistics columnStatistics)
 		{
 			if (columnStatistics.DecimalStatistics == null)
+				columnStatistics.DecimalStatistics = new DecimalStatistics() { Sum = "0" };		//null means overflow so start with zero
+
+			var ds = columnStatistics.DecimalStatistics;
+
+			if (Min.HasValue)
 			{
-				columnStatistics.DecimalStatistics = new DecimalStatistics
-				{
-					Minimum = Min.ToString(),
-					Maximum = Max.ToString(),
-					Sum = Sum.HasValue ? Sum.Value.ToString() : ""
-				};
+				if (String.IsNullOrEmpty(ds.Minimum) || Min.Value < Decimal.Parse(ds.Minimum))
+					ds.Minimum = Min.Value.ToString();
 			}
-			else
-			{
-				if (Min < Decimal.Parse(columnStatistics.DecimalStatistics.Minimum))
-					columnStatistics.DecimalStatistics.Minimum = Min.ToString();
-				if (Max > Decimal.Parse(columnStatistics.DecimalStatistics.Maximum))
-					columnStatistics.DecimalStatistics.Maximum = Max.ToString();
-				if (!Sum.HasValue)
-					columnStatistics.DecimalStatistics.Sum = "";
-				else
-					columnStatistics.DecimalStatistics.Sum = CheckedAdd(decimal.Parse(columnStatistics.DecimalStatistics.Sum), Sum.Value).ToString();
-			}
+
+			if(Max.HasValue)
+				if (String.IsNullOrEmpty(ds.Maximum) || Max.Value > Decimal.Parse(ds.Maximum))
+					ds.Maximum = Max.Value.ToString();
+
+
+			if (!String.IsNullOrEmpty(ds.Sum))
+				ds.Sum = CheckedAdd(decimal.Parse(ds.Sum), Sum.Value)?.ToString();
 
 			columnStatistics.NumberOfValues += NumValues;
 			if (HasNull)
 				columnStatistics.HasNull = true;
 		}
 
-		decimal? CheckedAdd(decimal? left, decimal right)
+		decimal? CheckedAdd(decimal? left, decimal? right)
 		{
 			if (!left.HasValue)
 				return null;

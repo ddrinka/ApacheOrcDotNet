@@ -8,8 +8,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class DoubleWriterStatistics : ColumnWriterStatistics, IStatistics
     {
-		public double Min { get; set; } = double.MaxValue;
-		public double Max { get; set; } = double.MinValue;
+		public double? Min { get; set; }
+		public double? Max { get; set; }
 		public double? Sum { get; set; } = 0;
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
@@ -20,46 +20,46 @@ namespace ApacheOrcDotNet.ColumnTypes
 				HasNull = true;
 			else
 			{
-				if (value > Max)
-					Max = value.Value;
-				if (value < Min)
+				if (!Min.HasValue || value.Value < Min.Value)
 					Min = value.Value;
+
+				if (!Max.HasValue || value.Value > Max.Value)
+					Max = value.Value;
+
 				Sum = CheckedAdd(Sum, value.Value);
+				NumValues++;
 			}
-			NumValues++;
 		}
 
 		public void FillColumnStatistics(ColumnStatistics columnStatistics)
 		{
-			if(columnStatistics.DoubleStatistics==null)
+			if (columnStatistics.DoubleStatistics == null)
+				columnStatistics.DoubleStatistics = new DoubleStatistics { Sum = 0 };
+
+			var ds = columnStatistics.DoubleStatistics;
+
+			if(Min.HasValue)
 			{
-				columnStatistics.DoubleStatistics = new DoubleStatistics
-				{
-					Minimum = Min,
-					Maximum = Max,
-					Sum = Sum
-				};
+				if (!ds.Minimum.HasValue || Min.Value < ds.Minimum.Value)
+					ds.Minimum = Min.Value;
 			}
-			else
+
+			if(Max.HasValue)
 			{
-				if (Min < columnStatistics.DoubleStatistics.Minimum)
-					columnStatistics.DoubleStatistics.Minimum = Min;
-				if (Max > columnStatistics.DoubleStatistics.Maximum)
-					columnStatistics.DoubleStatistics.Maximum = Max;
-				if (!Sum.HasValue)
-					columnStatistics.DoubleStatistics.Sum = null;
-				else
-					columnStatistics.DoubleStatistics.Sum = CheckedAdd(columnStatistics.DoubleStatistics.Sum, Sum.Value);
+				if (!ds.Maximum.HasValue || Max.Value > ds.Maximum.Value)
+					ds.Maximum = Max.Value;
 			}
+
+			ds.Sum = CheckedAdd(ds.Sum, Sum.Value);
 
 			columnStatistics.NumberOfValues += NumValues;
 			if (HasNull)
 				columnStatistics.HasNull = true;
 		}
 
-		double? CheckedAdd(double? left, double right)
+		double? CheckedAdd(double? left, double? right)
 		{
-			if (!left.HasValue)
+			if (!left.HasValue || !right.HasValue)
 				return null;
 
 			try

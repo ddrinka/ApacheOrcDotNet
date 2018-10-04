@@ -8,8 +8,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class DateWriterStatistics : ColumnWriterStatistics, IStatistics
     {
-		public int Min { get; set; } = int.MaxValue;
-		public int Max { get; set; } = int.MinValue;
+		public int? Min { get; set; }
+		public int? Max { get; set; }
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
 
@@ -19,30 +19,33 @@ namespace ApacheOrcDotNet.ColumnTypes
 				HasNull = true;
 			else
 			{
-				if (date > Max)
-					Max = date.Value;
-				if (date < Min)
+				if (!Min.HasValue || date.Value < Min.Value)
 					Min = date.Value;
+
+				if (!Max.HasValue || date.Value > Max.Value)
+					Max = date.Value;
+
+				NumValues++;
 			}
-			NumValues++;
 		}
 
 		public void FillColumnStatistics(ColumnStatistics columnStatistics)
 		{
-			if(columnStatistics.DateStatistics == null)
+			if (columnStatistics.DateStatistics == null)
+				columnStatistics.DateStatistics = new DateStatistics();
+
+			var ds = columnStatistics.DateStatistics;
+
+			if (Min.HasValue)
 			{
-				columnStatistics.DateStatistics = new DateStatistics
-				{
-					Minimum = Min,
-					Maximum = Max
-				};
+				if (!ds.Minimum.HasValue || Min.Value < ds.Minimum.Value)
+					ds.Minimum = Min.Value;
 			}
-			else
+
+			if (Max.HasValue)
 			{
-				if (Min < columnStatistics.DateStatistics.Minimum)
-					columnStatistics.DateStatistics.Minimum = Min;
-				if (Max > columnStatistics.DateStatistics.Maximum)
-					columnStatistics.DateStatistics.Maximum = Max;
+				if (!ds.Maximum.HasValue || Max.Value > ds.Maximum.Value)
+					ds.Maximum = Max.Value;
 			}
 
 			columnStatistics.NumberOfValues += NumValues;

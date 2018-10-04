@@ -8,8 +8,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class TimestampWriterStatistics : ColumnWriterStatistics, IStatistics
     {
-		public long Min { get; set; } = long.MaxValue;
-		public long Max { get; set; } = long.MinValue;
+		public long? Min { get; set; }
+		public long? Max { get; set; }
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
 
@@ -19,30 +19,32 @@ namespace ApacheOrcDotNet.ColumnTypes
 				HasNull = true;
 			else
 			{
-				if (millisecondsSinceUnixEpoch > Max)
-					Max = millisecondsSinceUnixEpoch.Value;
-				if (millisecondsSinceUnixEpoch < Min)
+				if (!Min.HasValue || millisecondsSinceUnixEpoch.Value < Min.Value)
 					Min = millisecondsSinceUnixEpoch.Value;
+
+				if (!Max.HasValue || millisecondsSinceUnixEpoch.Value > Max.Value)
+					Max = millisecondsSinceUnixEpoch.Value;
+				NumValues++;
 			}
-			NumValues++;
 		}
 
 		public void FillColumnStatistics(ColumnStatistics columnStatistics)
 		{
-			if(columnStatistics.TimestampStatistics==null)
+			if (columnStatistics.TimestampStatistics == null)
+				columnStatistics.TimestampStatistics = new TimestampStatistics();
+
+			var ds = columnStatistics.TimestampStatistics;
+
+			if (Min.HasValue)
 			{
-				columnStatistics.TimestampStatistics = new TimestampStatistics
-				{
-					Minimum = Min,
-					Maximum = Max
-				};
+				if (!ds.Minimum.HasValue || Min.Value < ds.Minimum.Value)
+					ds.Minimum = Min.Value;
 			}
-			else
+
+			if (Max.HasValue)
 			{
-				if (Min < columnStatistics.TimestampStatistics.Minimum)
-					columnStatistics.TimestampStatistics.Minimum = Min;
-				if (Max > columnStatistics.TimestampStatistics.Maximum)
-					columnStatistics.TimestampStatistics.Maximum = Max;
+				if (!ds.Maximum.HasValue || Max.Value > ds.Maximum)
+					ds.Maximum = Max.Value;
 			}
 
 			columnStatistics.NumberOfValues += NumValues;

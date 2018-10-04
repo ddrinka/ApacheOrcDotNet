@@ -8,7 +8,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class BinaryWriterStatistics : ColumnWriterStatistics, IStatistics
     {
-		public long Sum { get; set; }
+		public long? Sum { get; set; } = 0;
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
 
@@ -18,28 +18,41 @@ namespace ApacheOrcDotNet.ColumnTypes
 				HasNull = true;
 			else
 			{
-				Sum += data.Length;
+				Sum = CheckedAdd(Sum, data.Length);
+				NumValues++;
 			}
-			NumValues++;
 		}
 
 		public void FillColumnStatistics(ColumnStatistics columnStatistics)
 		{
-			if(columnStatistics.BinaryStatistics==null)
-			{
-				columnStatistics.BinaryStatistics = new BinaryStatistics
-				{
-					Sum = Sum
-				};
-			}
-			else
-			{
-				columnStatistics.BinaryStatistics.Sum += Sum;
-			}
+			if (columnStatistics.BinaryStatistics == null)
+				columnStatistics.BinaryStatistics = new BinaryStatistics { Sum = 0 };
+
+			var ds = columnStatistics.BinaryStatistics;
+
+			ds.Sum = CheckedAdd(ds.Sum, Sum.Value);
 
 			columnStatistics.NumberOfValues += NumValues;
 			if (HasNull)
 				columnStatistics.HasNull = true;
+		}
+
+		long? CheckedAdd(long? left, long? right)
+		{
+			if (!left.HasValue || !right.HasValue)
+				return null;
+
+			try
+			{
+				checked
+				{
+					return left.Value + right.Value;
+				}
+			}
+			catch (OverflowException)
+			{
+				return null;
+			}
 		}
 	}
 }

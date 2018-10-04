@@ -8,8 +8,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
 	public class LongWriterStatistics : ColumnWriterStatistics, IStatistics
 	{
-		public long Min { get; set; } = long.MaxValue;
-		public long Max { get; set; } = long.MinValue;
+		public long? Min { get; set; }
+		public long? Max { get; set; }
 		public long? Sum { get; set; } = 0;
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
@@ -20,46 +20,44 @@ namespace ApacheOrcDotNet.ColumnTypes
 				HasNull = true;
 			else
 			{
-				if (value > Max)
-					Max = value.Value;
-				if (value < Min)
+				if (!Min.HasValue || value.Value < Min.Value)
 					Min = value.Value;
+				if (!Max.HasValue || value.Value > Max.Value)
+					Max = value.Value;
 				Sum = CheckedAdd(Sum, value.Value);
+				NumValues++;
 			}
-			NumValues++;
 		}
 
 		public void FillColumnStatistics(ColumnStatistics columnStatistics)
 		{
 			if (columnStatistics.IntStatistics == null)
+				columnStatistics.IntStatistics = new IntegerStatistics { Sum = 0 };
+
+			var ds = columnStatistics.IntStatistics;
+
+			if (Min.HasValue)
 			{
-				columnStatistics.IntStatistics = new IntegerStatistics
-				{
-					Mimumum = Min,
-					Maximum = Max,
-					Sum = Sum
-				};
+				if (!ds.Minimum.HasValue || Min.Value < ds.Minimum.Value)
+					ds.Minimum = Min.Value;
 			}
-			else
+
+			if (Max.HasValue)
 			{
-				if (Min < columnStatistics.IntStatistics.Mimumum)
-					columnStatistics.IntStatistics.Mimumum = Min;
-				if (Max > columnStatistics.IntStatistics.Maximum)
-					columnStatistics.IntStatistics.Maximum = Max;
-				if (!Sum.HasValue)
-					columnStatistics.IntStatistics.Sum = null;
-				else
-					columnStatistics.IntStatistics.Sum = CheckedAdd(columnStatistics.IntStatistics.Sum, Sum.Value);
+				if (!ds.Maximum.HasValue || Max.Value > ds.Maximum.Value)
+					ds.Maximum = Max.Value;
 			}
+
+			ds.Sum = CheckedAdd(ds.Sum, Sum.Value);
 
 			columnStatistics.NumberOfValues += NumValues;
 			if (HasNull)
 				columnStatistics.HasNull = true;
 		}
 
-		long? CheckedAdd(long? left, long right)
+		long? CheckedAdd(long? left, long? right)
 		{
-			if (!left.HasValue)
+			if (!left.HasValue || !right.HasValue)
 				return null;
 
 			try

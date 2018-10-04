@@ -20,34 +20,37 @@ namespace ApacheOrcDotNet.ColumnTypes
 				HasNull = true;
 			else
 			{
-				if (Max == null || string.Compare(value, Max, StringComparison.Ordinal) > 0)
-					Max = value;
 				if (Min == null || string.Compare(value, Min, StringComparison.Ordinal) < 0)
 					Min = value;
+
+				if (Max == null || string.Compare(value, Max, StringComparison.Ordinal) > 0)
+					Max = value;
+
 				Sum += value.Length;
+				NumValues++;
 			}
-			NumValues++;
 		}
 
 		public void FillColumnStatistics(ColumnStatistics columnStatistics)
 		{
 			if (columnStatistics.StringStatistics == null)
+				columnStatistics.StringStatistics = new StringStatistics { Sum = 0 };
+
+			var ds = columnStatistics.StringStatistics;
+
+			if(Min!=null)
 			{
-				columnStatistics.StringStatistics = new StringStatistics
-				{
-					Minimum = Min,
-					Maximum = Max,
-					Sum = Sum
-				};
+				if (ds.Minimum == null || string.Compare(Min, ds.Minimum, StringComparison.Ordinal) < 0)
+					ds.Minimum = Min;
 			}
-			else
+
+			if (Max != null)
 			{
-				if (string.Compare(Min, columnStatistics.StringStatistics.Minimum, StringComparison.Ordinal) < 0)
-					columnStatistics.StringStatistics.Minimum = Min;
-				if (string.Compare(Max, columnStatistics.StringStatistics.Maximum, StringComparison.Ordinal) > 0)
-					columnStatistics.StringStatistics.Maximum = Max;
-				columnStatistics.StringStatistics.Sum += Sum;
+				if (ds.Maximum == null || string.Compare(Max, ds.Maximum, StringComparison.Ordinal) > 0)
+					ds.Maximum = Max;
 			}
+
+			columnStatistics.StringStatistics.Sum += Sum;
 
 			columnStatistics.NumberOfValues += NumValues;
 			if (HasNull)

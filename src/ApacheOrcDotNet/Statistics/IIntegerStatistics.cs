@@ -7,7 +7,7 @@ namespace ApacheOrcDotNet.Statistics
 {
     public interface IIntegerStatistics
     {
-		long? Mimumum { get; }
+		long? Minimum { get; }
 		long? Maximum { get; }
 
 		/// <summary>
