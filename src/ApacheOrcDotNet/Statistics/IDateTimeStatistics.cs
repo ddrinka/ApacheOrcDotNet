@@ -7,7 +7,7 @@ namespace ApacheOrcDotNet.Statistics
 {
     public interface IDateTimeStatistics
     {
-		DateTime Minimum { get; }
-		DateTime Maximum { get; }
+		DateTime? Minimum { get; }
+		DateTime? Maximum { get; }
     }
 }

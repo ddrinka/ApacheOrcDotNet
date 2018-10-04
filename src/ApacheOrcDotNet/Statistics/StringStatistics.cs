@@ -11,6 +11,6 @@ namespace ApacheOrcDotNet.Statistics
     {
 		[ProtoMember(1)] public string Minimum { get; set; }
 		[ProtoMember(2)] public string Maximum { get; set; }
-		[ProtoMember(3, DataFormat = DataFormat.ZigZag)] public long Sum { get; set; }
+		[ProtoMember(3, DataFormat = DataFormat.ZigZag)] public long? Sum { get; set; }
     }
 }

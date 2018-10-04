@@ -11,22 +11,26 @@ namespace ApacheOrcDotNet.Statistics
     {
 		DateTime Epoch { get; set; } = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-		[ProtoMember(1, DataFormat = DataFormat.ZigZag)] public int Minimum { get; set; }
-		[ProtoMember(2, DataFormat = DataFormat.ZigZag)] public int Maximum { get; set; }
+		[ProtoMember(1, DataFormat = DataFormat.ZigZag)] public int? Minimum { get; set; }
+		[ProtoMember(2, DataFormat = DataFormat.ZigZag)] public int? Maximum { get; set; }
 
-		DateTime IDateTimeStatistics.Minimum
+		DateTime? IDateTimeStatistics.Minimum
 		{
 			get
 			{
-				return Epoch.AddTicks(Minimum * TimeSpan.TicksPerDay);
+				if (!Minimum.HasValue)
+					return null;
+				return Epoch.AddTicks(Minimum.Value * TimeSpan.TicksPerDay);
 			}
 		}
 
-		DateTime IDateTimeStatistics.Maximum
+		DateTime? IDateTimeStatistics.Maximum
 		{
 			get
 			{
-				return Epoch.AddTicks(Maximum * TimeSpan.TicksPerDay);
+				if (!Maximum.HasValue)
+					return null;
+				return Epoch.AddTicks(Maximum.Value * TimeSpan.TicksPerDay);
 			}
 		}
 	}

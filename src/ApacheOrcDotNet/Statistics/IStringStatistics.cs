@@ -13,6 +13,6 @@ namespace ApacheOrcDotNet.Statistics
 		/// <summary>
 		/// Total length of all strings
 		/// </summary>
-		long Sum { get; }
+		long? Sum { get; }
     }
 }
