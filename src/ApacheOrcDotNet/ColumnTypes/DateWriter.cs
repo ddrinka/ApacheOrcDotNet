@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
 	public class DateWriter : IColumnWriter<DateTime?>
 	{
-		readonly static DateTime _unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+		readonly static DateTime _unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0);		//Here we'll use a Kind=Unspecified DateTime to avoid muddling the subtraction below
 
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;
@@ -74,9 +74,6 @@ namespace ApacheOrcDotNet.ColumnTypes
 					}
 					else
 					{
-						if (value.Value.Kind != DateTimeKind.Utc)
-							throw new NotSupportedException("Only UTC DateTimes are supported in Date columns");
-
 						var daysSinceEpoch = (int)(value.Value - _unixEpoch).TotalDays;
 						stats.AddValue(daysSinceEpoch);
 						presentList.Add(true);
@@ -93,9 +90,6 @@ namespace ApacheOrcDotNet.ColumnTypes
 			{
 				foreach (var value in values)
 				{
-					if (value.Value.Kind != DateTimeKind.Utc)
-						throw new NotSupportedException("Only UTC DateTimes are supported in Date columns");
-
 					var daysSinceEpoch = (int)(value.Value - _unixEpoch).TotalDays;
 					stats.AddValue(daysSinceEpoch);
 					datesList.Add(daysSinceEpoch);
