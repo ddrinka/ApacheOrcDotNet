@@ -191,6 +191,9 @@ namespace ApacheOrcDotNet.Stripes
 			uint columnId = 1;
 			foreach (var propertyInfo in GetPublicPropertiesFromPoco(type.GetTypeInfo()))
 			{
+				if (propertyInfo.GetCustomAttribute<ExcludeAttribute>() != null)
+					continue;
+
 				var columnWriterAndAction = GetColumnWriterDetails(propertyInfo, columnId++);
 				_columnWriters.Add(columnWriterAndAction);
 			}
