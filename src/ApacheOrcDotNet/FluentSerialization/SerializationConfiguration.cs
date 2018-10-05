@@ -14,7 +14,7 @@ namespace ApacheOrcDotNet.FluentSerialization
 		{
 			if(!_types.TryGetValue(typeof(T), out var typeConfiguration))
 			{
-				typeConfiguration = new SerializationTypeConfiguration<T>();
+				typeConfiguration = new SerializationTypeConfiguration<T>(this);
 				_types.Add(typeof(T), typeConfiguration);
 			}
 			return (SerializationTypeConfiguration<T>)typeConfiguration;

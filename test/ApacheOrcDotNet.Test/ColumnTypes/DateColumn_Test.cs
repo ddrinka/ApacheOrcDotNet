@@ -1,4 +1,5 @@
 ﻿using ApacheOrcDotNet.ColumnTypes;
+using ApacheOrcDotNet.FluentSerialization;
 using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
@@ -23,9 +24,14 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 			var random = new Random(123);
 			var pocos = GenerateRandomDates(random, numValues).Select(t => new SingleValuePoco { Value = t }).ToList();
 
+			var configuration = new SerializationConfiguration()
+								.ConfigureType<SingleValuePoco>()
+									.ConfigureProperty(x => x.Value, x => x.SerializeAsDate = true)
+									.Build();
+
 			var stream = new MemoryStream();
 			Footer footer;
-			StripeStreamHelper.Write(stream, pocos, out footer);
+			StripeStreamHelper.Write(stream, pocos, out footer, configuration);
 			var stripeStreams = StripeStreamHelper.GetStripeStreams(stream, footer);
 			var reader = new DateReader(stripeStreams, 1);
 			var results = reader.Read().ToArray();
@@ -45,7 +51,6 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 
 		class SingleValuePoco
 		{
-			[Date]
 			public DateTime Value { get; set; }
 		}
     }

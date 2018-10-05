@@ -1,4 +1,5 @@
 ﻿using ApacheOrcDotNet.ColumnTypes;
+using ApacheOrcDotNet.FluentSerialization;
 using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
@@ -31,9 +32,14 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 			for (int i = 0; i < numValues; i++)
 				pocos.Add(new SingleValuePoco { Value = (decimal)random.Next() / (decimal)Math.Pow(10, random.Next() % 10) });
 
+			var configuration = new SerializationConfiguration()
+					.ConfigureType<SingleValuePoco>()
+						.ConfigureProperty(x => x.Value, x => { x.DecimalPrecision = 14; x.DecimalScale = 9; })
+						.Build();
+
 			var stream = new MemoryStream();
 			Footer footer;
-			StripeStreamHelper.Write(stream, pocos, out footer);
+			StripeStreamHelper.Write(stream, pocos, out footer, configuration);
 			var stripeStreams = StripeStreamHelper.GetStripeStreams(stream, footer);
 			var reader = new DecimalReader(stripeStreams, 1);
 			var results = reader.Read().ToArray();
@@ -44,7 +50,6 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 
 		class SingleValuePoco
 		{
-			[DecimalOptions(14,9)]
 			public decimal Value { get; set; }
 		}
 

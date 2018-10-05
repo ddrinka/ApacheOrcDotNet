@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.FluentSerialization;
 using ApacheOrcDotNet.Infrastructure;
 using ApacheOrcDotNet.Stripes;
 
@@ -17,7 +18,7 @@ namespace ApacheOrcDotNet
 		readonly uint _writerVersion = 5;
 		readonly string _magic = "ORC";
 
-		public OrcWriter(Type type, Stream outputStream, WriterConfiguration configuration)
+		public OrcWriter(Type type, Stream outputStream, WriterConfiguration configuration, SerializationConfiguration serializationConfiguration = null)
 		{
 			_outputStream = outputStream;
 
@@ -31,7 +32,8 @@ namespace ApacheOrcDotNet
 				configuration.DefaultDecimalScale,
 				_bufferFactory,
 				configuration.RowIndexStride,
-				configuration.StripeSize
+				configuration.StripeSize,
+				serializationConfiguration
 				);
 
 			WriteHeader();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ApacheOrcDotNet.FluentSerialization;
 
 namespace ApacheOrcDotNet.Test.App
 {
@@ -36,8 +37,13 @@ namespace ApacheOrcDotNet.Test.App
 				testElements.Add(element);
 			}
 
+			var serializationConfiguration = new SerializationConfiguration()
+					.ConfigureType<TestClass>()
+						.ConfigureProperty(x => x.Dec, x => { x.DecimalPrecision = 14; x.DecimalScale = 9; })
+						.Build();
+
 			using (var fileStream = new FileStream("test.orc", FileMode.Create, FileAccess.Write))
-			using (var writer = new OrcWriter<TestClass>(fileStream, new WriterConfiguration())) //Use the default configuration
+			using (var writer = new OrcWriter<TestClass>(fileStream, new WriterConfiguration(), serializationConfiguration)) //Use the default configuration
 			{
 				writer.AddRows(testElements);
 			}
@@ -53,7 +59,6 @@ namespace ApacheOrcDotNet.Test.App
 		public int? AllNulls { get; set; }
 		public double Double { get; set; }
 		public float Float { get; set; }
-		[DecimalOptions(14,9)]
 		public decimal Dec { get; set; }
 		public decimal? AllNullsDec { get; set; }
 		public DateTime Timestamp { get; set; }

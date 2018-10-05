@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using ApacheOrcDotNet.FluentSerialization;
 
 namespace ApacheOrcDotNet
 {
@@ -7,9 +8,9 @@ namespace ApacheOrcDotNet
 	{
 		readonly OrcWriter _underlyingOrcWriter;
 
-		public OrcWriter(Stream outputStream, WriterConfiguration configuration)
+		public OrcWriter(Stream outputStream, WriterConfiguration configuration, SerializationConfiguration serializationConfiguration = null)
 		{
-			_underlyingOrcWriter = new OrcWriter(typeof(T), outputStream, configuration);
+			_underlyingOrcWriter = new OrcWriter(typeof(T), outputStream, configuration, serializationConfiguration);
 		}
 
 		public void AddRow(T row) => _underlyingOrcWriter.AddRow(row);

@@ -1,4 +1,5 @@
 ﻿using ApacheOrcDotNet.ColumnTypes;
+using ApacheOrcDotNet.FluentSerialization;
 using ApacheOrcDotNet.Infrastructure;
 using ApacheOrcDotNet.Statistics;
 using System;
@@ -21,6 +22,7 @@ namespace ApacheOrcDotNet.Stripes
 		readonly Compression.OrcCompressedBufferFactory _bufferFactory;
 		readonly int _strideLength;
 		readonly long _stripeLength;
+		readonly SerializationConfiguration _serializationConfiguration;
 		readonly List<ColumnWriterDetails> _columnWriters = new List<ColumnWriterDetails>();
 		readonly List<Protocol.StripeStatistics> _stripeStats = new List<Protocol.StripeStatistics>();
 
@@ -31,7 +33,7 @@ namespace ApacheOrcDotNet.Stripes
 		long _contentLength = 0;
 		List<Protocol.StripeInformation> _stripeInformations = new List<Protocol.StripeInformation>();
 
-		public StripeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, double uniqueStringThresholdRatio, int defaultDecimalPrecision, int defaultDecimalScale, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength, long stripeLength)
+		public StripeWriter(Type pocoType, Stream outputStream, bool shouldAlignNumericValues, double uniqueStringThresholdRatio, int defaultDecimalPrecision, int defaultDecimalScale, Compression.OrcCompressedBufferFactory bufferFactory, int strideLength, long stripeLength, SerializationConfiguration serializationConfiguration)
 		{
 			_typeName = pocoType.Name;
 			_outputStream = outputStream;
@@ -42,6 +44,7 @@ namespace ApacheOrcDotNet.Stripes
 			_bufferFactory = bufferFactory;
 			_strideLength = strideLength;
 			_stripeLength = stripeLength;
+			_serializationConfiguration = serializationConfiguration;
 
 			CreateColumnWriters(pocoType);
 		}
@@ -191,10 +194,11 @@ namespace ApacheOrcDotNet.Stripes
 			uint columnId = 1;
 			foreach (var propertyInfo in GetPublicPropertiesFromPoco(type.GetTypeInfo()))
 			{
-				if (propertyInfo.GetCustomAttribute<ExcludeAttribute>() != null)
+				var propertyConfiguration = GetPropertyConfiguration(type, propertyInfo);
+				if (propertyConfiguration != null && propertyConfiguration.ExcludeFromSerialization)
 					continue;
 
-				var columnWriterAndAction = GetColumnWriterDetails(propertyInfo, columnId++);
+				var columnWriterAndAction = GetColumnWriterDetails(propertyInfo, columnId++, propertyConfiguration);
 				_columnWriters.Add(columnWriterAndAction);
 			}
 			_columnWriters.Insert(0, GetStructColumnWriter());		//Add the struct column at the beginning
@@ -221,6 +225,17 @@ namespace ApacheOrcDotNet.Stripes
 			}
 		}
 
+		SerializationPropertyConfiguration GetPropertyConfiguration(Type objectType, PropertyInfo propertyType)
+		{
+			if (_serializationConfiguration == null)
+				return null;
+			if (!_serializationConfiguration.Types.TryGetValue(objectType, out var typeConfiguration))
+				return null;
+			if (!typeConfiguration.Properties.TryGetValue(propertyType, out var propertyConfiguration))
+				return null;
+			return propertyConfiguration;
+		}
+
 		static bool IsNullable(TypeInfo propertyTypeInfo)
 		{
 			return propertyTypeInfo.IsGenericType 
@@ -232,7 +247,7 @@ namespace ApacheOrcDotNet.Stripes
 			return (T)property.GetValue(classInstance);		//TODO make this emit IL to avoid the boxing of value-type T
 		}
 
-		ColumnWriterDetails GetColumnWriterDetails(PropertyInfo propertyInfo, uint columnId)
+		ColumnWriterDetails GetColumnWriterDetails(PropertyInfo propertyInfo, uint columnId, SerializationPropertyConfiguration propertyConfiguration)
 		{
 			var propertyType = propertyInfo.PropertyType;
 
@@ -284,14 +299,14 @@ namespace ApacheOrcDotNet.Stripes
 			if (propertyType == typeof(byte[]))
 				return GetColumnWriterDetails(GetBinaryColumnWriter(columnId), propertyInfo, classInstance => GetValue<byte[]>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Binary);
 			if (propertyType == typeof(decimal))
-				return GetDecimalColumnWriterDetails(false, columnId, propertyInfo, classInstance => GetValue<decimal>(classInstance, propertyInfo));
+				return GetDecimalColumnWriterDetails(false, columnId, propertyInfo, classInstance => GetValue<decimal>(classInstance, propertyInfo), propertyConfiguration);
 			if (propertyType == typeof(decimal?))
-				return GetDecimalColumnWriterDetails(true, columnId, propertyInfo, classInstance => GetValue<decimal?>(classInstance, propertyInfo));
-			if (propertyType == typeof(DateTime) && propertyInfo.GetCustomAttribute<DateAttribute>() != null)
+				return GetDecimalColumnWriterDetails(true, columnId, propertyInfo, classInstance => GetValue<decimal?>(classInstance, propertyInfo), propertyConfiguration);
+			if (propertyType == typeof(DateTime) && propertyConfiguration!=null && propertyConfiguration.SerializeAsDate)
 				return GetColumnWriterDetails(GetDateColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTime>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Date);
 			if (propertyType == typeof(DateTime))
 				return GetColumnWriterDetails(GetTimestampColumnWriter(false, columnId), propertyInfo, classInstance => GetValue<DateTime>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Timestamp);
-			if (propertyType == typeof(DateTime?) && propertyInfo.GetCustomAttribute<DateAttribute>() != null)
+			if (propertyType == typeof(DateTime?) && propertyConfiguration != null && propertyConfiguration.SerializeAsDate)
 				return GetColumnWriterDetails(GetDateColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<DateTime?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Date);
 			if (propertyType == typeof(DateTime?))
 				return GetColumnWriterDetails(GetTimestampColumnWriter(true, columnId), propertyInfo, classInstance => GetValue<DateTime?>(classInstance, propertyInfo), Protocol.ColumnTypeKind.Timestamp);
@@ -361,15 +376,13 @@ namespace ApacheOrcDotNet.Stripes
 			};
 		}
 
-		ColumnWriterDetails GetDecimalColumnWriterDetails(bool isNullable, uint columnId, PropertyInfo propertyInfo, Func<object, decimal?> valueGetter)
+		ColumnWriterDetails GetDecimalColumnWriterDetails(bool isNullable, uint columnId, PropertyInfo propertyInfo, Func<object, decimal?> valueGetter, SerializationPropertyConfiguration propertyConfiguration)
 		{
-			//TODO add an option to configure decimal columns via a fluent configuration source
-
-			var decimalOptions = propertyInfo.GetCustomAttribute<DecimalOptionsAttribute>() 
-								?? new DecimalOptionsAttribute(precision: _defaultDecimalPrecision, scale: _defaultDecimalScale);
+			var precision = propertyConfiguration?.DecimalPrecision ?? _defaultDecimalPrecision;
+			var scale = propertyConfiguration?.DecimalScale ?? _defaultDecimalScale;
 
 			var state = new List<decimal?>();
-			var columnWriter = new DecimalWriter(isNullable, _shouldAlignNumericValues, decimalOptions.Precision, decimalOptions.Scale, _bufferFactory, columnId);
+			var columnWriter = new DecimalWriter(isNullable, _shouldAlignNumericValues, precision, scale, _bufferFactory, columnId);
 			return new ColumnWriterDetails
 			{
 				PropertyName = propertyInfo.Name,
@@ -387,8 +400,8 @@ namespace ApacheOrcDotNet.Stripes
 				ColumnType = new Protocol.ColumnType
 				{
 					Kind = Protocol.ColumnTypeKind.Decimal,
-					Precision = (uint)decimalOptions.Precision,
-					Scale = (uint)decimalOptions.Scale
+					Precision = (uint)precision,
+					Scale = (uint)scale
 				}
 			};
 		}

@@ -9,11 +9,18 @@ namespace ApacheOrcDotNet.FluentSerialization
 {
     public class SerializationTypeConfiguration<T> : ISerializationTypeConfiguration
     {
+		readonly SerializationConfiguration _root;
 		readonly Dictionary<PropertyInfo, SerializationPropertyConfiguration> _properties = new Dictionary<PropertyInfo, SerializationPropertyConfiguration>();
+
+		public SerializationTypeConfiguration(SerializationConfiguration root)
+		{
+			_root = root;
+		}
 
 		public IReadOnlyDictionary<PropertyInfo, SerializationPropertyConfiguration> Properties { get => _properties; }
 
 		internal void AddConfiguration(PropertyInfo propertyInfo, SerializationPropertyConfiguration configuration) => _properties.Add(propertyInfo, configuration);
+		internal SerializationConfiguration Root { get => _root; }
 	}
 
 	public static class SerializationTypeConfigurationExtensions
@@ -25,6 +32,11 @@ namespace ApacheOrcDotNet.FluentSerialization
 			configBuilder(config);
 			typeConfiguration.AddConfiguration(propertyInfo, config);
 			return typeConfiguration;
+		}
+
+		public static SerializationConfiguration Build<T>(this SerializationTypeConfiguration<T> typeConfiguration)
+		{
+			return typeConfiguration.Root;
 		}
 
 		static PropertyInfo GetPropertyInfoFromExpression(LambdaExpression expr)
