@@ -8,8 +8,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class DecimalWriterStatistics : ColumnWriterStatistics, IStatistics
     {
-		public decimal? Min { get; set; } = decimal.MaxValue;
-		public decimal? Max { get; set; } = decimal.MinValue;
+		public decimal? Min { get; set; }
+		public decimal? Max { get; set; }
 		public decimal? Sum { get; set; } = 0;
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
