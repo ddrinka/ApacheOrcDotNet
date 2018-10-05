@@ -80,7 +80,7 @@ namespace ApacheOrcDotNet.Infrastructure
 				var newE = (byte)(e - scaleAdjustment);
 				if (!truncateIfNecessary)
 					if (newM * _scaleFactors[scaleAdjustment] != m)     //We lost information in the scaling
-						throw new ArithmeticException("Scaling would have rounded");
+						throw new ArithmeticException($"Scaling would have rounded: m={m} e={e} desiredScale={desiredScale} newM={newM} newE={newE} {newM * _scaleFactors[scaleAdjustment]}!={m}");
 				return Tuple.Create(newM, newE);
 			}
 		}
