@@ -78,9 +78,9 @@ namespace ApacheOrcDotNet.ColumnTypes
 					if (value.HasValue)
 					{
 						var longAndScale = value.Value.ToLongAndScale();
-						//var rescaled = longAndScale.Rescale(_scale, false);
-						wholePartsList.Add(longAndScale.Item1);
-						scaleList.Add(longAndScale.Item2);
+						var rescaled = longAndScale.Rescale(_scale, truncateIfNecessary: false);
+						wholePartsList.Add(rescaled.Item1);
+						scaleList.Add(rescaled.Item2);
 					}
 					presentList.Add(value.HasValue);
 				}
@@ -96,9 +96,9 @@ namespace ApacheOrcDotNet.ColumnTypes
 				{
 					stats.AddValue(value);
 					var longAndScale = value.Value.ToLongAndScale();
-					//var rescaled = longAndScale.Rescale(_scale, false);
-					wholePartsList.Add(longAndScale.Item1);
-					scaleList.Add(longAndScale.Item2);
+					var rescaled = longAndScale.Rescale(_scale, truncateIfNecessary: false);
+					wholePartsList.Add(rescaled.Item1);
+					scaleList.Add(rescaled.Item2);
 				}
 			}
 
