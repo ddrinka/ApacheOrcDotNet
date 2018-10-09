@@ -138,13 +138,10 @@ namespace ApacheOrcDotNet.Encodings
 				if (curDelta != initialDelta)
 					isConstantDelta = false;
 
-				if (i > 1)     //Don't rewrite the first value because it holds the sign of the remaining values
-				{
-					var absCurrDelta = Math.Abs(curDelta);
-					deltas[i - 1] = absCurrDelta;
-					if (absCurrDelta > deltaMax)
-						deltaMax = absCurrDelta;
-				}
+				var absCurrDelta = Math.Abs(curDelta);
+				deltas[i - 1] = absCurrDelta;
+				if (absCurrDelta > deltaMax)
+					deltaMax = absCurrDelta;
 
 				i++;
 				previousValue = value;

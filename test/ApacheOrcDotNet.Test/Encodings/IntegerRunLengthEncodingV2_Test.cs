@@ -153,6 +153,18 @@ namespace ApacheOrcDotNet.Test.Encodings
 			TestRoundTrip(longs, true, false);
 		}
 
+		[Fact]
+		public void RoundTrip_DeltaSingleNumberThenLotsOfADifferentNumber()
+		{
+			var longs = new List<long>();
+			longs.Add(8);
+			for (int i = 0; i < 511; i++)
+				longs.Add(22);
+			var longArray = longs.ToArray();
+			TestRoundTrip(longArray, false, true);
+			TestRoundTrip(longArray, false, false);
+		}
+
 		#region From Java Source
 		[Fact]
 		public void RoundTrip_FixedDeltaZero()
