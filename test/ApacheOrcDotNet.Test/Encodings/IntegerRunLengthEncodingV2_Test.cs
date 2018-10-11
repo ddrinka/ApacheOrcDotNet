@@ -165,6 +165,15 @@ namespace ApacheOrcDotNet.Test.Encodings
 			TestRoundTrip(longArray, false, false);
 		}
 
+
+		[Fact]
+		public void RoundTrip_DeltaOneBitRequired()
+		{
+			var longs = new long[] { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
 		[Fact]
 		public void RoundTrip_DeltaIncreasingOnly()
 		{
@@ -182,9 +191,25 @@ namespace ApacheOrcDotNet.Test.Encodings
 		}
 
 		[Fact]
+		public void RoundTrip_DeltaMonotonicDecrease()
+		{
+			var longs = new long[] { 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
 		public void RoundTrip_DeltaNonMonotonicDecrease()
 		{
-			var longs = new long[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
+			var longs = new long[] { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaMonotonicIncrease()
+		{
+			var longs = new long[] { 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
 			TestRoundTrip(longs, true, true);
 			TestRoundTrip(longs, true, false);
 		}
@@ -192,7 +217,15 @@ namespace ApacheOrcDotNet.Test.Encodings
 		[Fact]
 		public void RoundTrip_DeltaNonMonotonicIncrease()
 		{
-			var longs = new long[] { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+			var longs = new long[] { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaBigFirstDelta()
+		{
+			var longs = new long[] { 0, 99, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100 };
 			TestRoundTrip(longs, true, true);
 			TestRoundTrip(longs, true, false);
 		}

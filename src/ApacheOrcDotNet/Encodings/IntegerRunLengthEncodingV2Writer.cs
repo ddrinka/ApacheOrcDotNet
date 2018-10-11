@@ -118,11 +118,17 @@ namespace ApacheOrcDotNet.Encodings
 			bool isIncreasing = initialDelta > 0;
 			bool isDecreasing = initialDelta < 0;
 			bool isConstantDelta = true;
+
+			long previousValue = values[1];
+			if (values[1] < minValue)
+				minValue = values[1];
+			if (values[1] > maxValue)
+				maxValue = values[1];
+
 			deltas[0] = initialDelta;
 
-			long previousValue = initialValue;
-			int i = 1;
-			foreach (var value in values.Skip(1))
+			int i = 2;
+			foreach (var value in values.Skip(2))	//The first value is initialValue. The second value is initialDelta, already loaded. Start with the third value
 			{
 				curDelta = value - previousValue;
 				if (value < minValue)
@@ -132,7 +138,7 @@ namespace ApacheOrcDotNet.Encodings
 
 				if (value < previousValue)
 					isIncreasing = false;
-				if (previousValue > value)
+				if (value > previousValue)
 					isDecreasing = false;
 
 				if (curDelta != initialDelta)
@@ -153,7 +159,7 @@ namespace ApacheOrcDotNet.Encodings
 				return DeltaEncodingResult.Overflow;
 			}
 
-			if (maxValue == minValue)   //All values were identical
+			if (maxValue == minValue)   //All values after the first were identical
 			{
 				DeltaEncode(minValue, areSigned, values.Count);
 				length = values.Count;
