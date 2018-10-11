@@ -281,9 +281,10 @@ namespace ApacheOrcDotNet.Encodings
 
 		void DeltaEncode(long initialValue, bool areSigned, int numValues, long[] deltas, int deltaBitWidth)
 		{
-			int encodedBitWidth = 0;
-			if (deltaBitWidth > 0)
-				encodedBitWidth = deltaBitWidth.EncodeDirectWidth();
+			if (deltaBitWidth == 1)
+				deltaBitWidth = 2;      //encodedBitWidth of zero is reserved for constant runlengths. Allocate an extra bit to avoid triggering that logic.
+
+			int encodedBitWidth = deltaBitWidth > 1 ? deltaBitWidth.EncodeDirectWidth() : 0;
 
 			int byte1 = 0;
 			byte1 |= 0x3 << 6;                              //7..6 Encoding Type

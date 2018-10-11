@@ -165,6 +165,38 @@ namespace ApacheOrcDotNet.Test.Encodings
 			TestRoundTrip(longArray, false, false);
 		}
 
+		[Fact]
+		public void RoundTrip_DeltaIncreasingOnly()
+		{
+			var longs = new long[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaDecreasingOnly()
+		{
+			var longs = new long[] { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaNonMonotonicDecrease()
+		{
+			var longs = new long[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
+		[Fact]
+		public void RoundTrip_DeltaNonMonotonicIncrease()
+		{
+			var longs = new long[] { 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+			TestRoundTrip(longs, true, true);
+			TestRoundTrip(longs, true, false);
+		}
+
 		#region From Java Source
 		[Fact]
 		public void RoundTrip_FixedDeltaZero()
