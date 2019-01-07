@@ -17,7 +17,7 @@ namespace ApacheOrcDotNet
 
         public Protocol.PostScript PostScript { get; }
         public Protocol.Footer Footer { get; }
-        public StripeReaderCollection StripeReaderCollection { get; }
+        public StripeReaderCollection Stripes { get; }
 
 		public FileTail(Stream inputStream)
 		{
@@ -25,7 +25,7 @@ namespace ApacheOrcDotNet
 
             PostScript = ReadPostScript(out var postScriptLength);
             Footer = ReadFooter(PostScript, postScriptLength);
-            StripeReaderCollection = new StripeReaderCollection(_inputStream, Footer, PostScript.Compression);
+            Stripes = new StripeReaderCollection(_inputStream, Footer, PostScript.Compression);
         }
 
         Protocol.PostScript ReadPostScript(out byte postScriptLength)

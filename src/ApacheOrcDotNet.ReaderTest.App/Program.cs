@@ -20,7 +20,7 @@ namespace ApacheOrcDotNet.ReaderTest.App
             var stream = new FileStream(filename, FileMode.Open, FileAccess.Read);
             var fileTail = new FileTail(stream);
 
-            foreach (var stripe in fileTail.StripeReaderCollection)
+            foreach (var stripe in fileTail.Stripes)
             {
                 Console.WriteLine($"Reading stripe with {stripe.NumRows} rows");
                 var stripeStreamCollection = stripe.GetStripeStreamCollection();

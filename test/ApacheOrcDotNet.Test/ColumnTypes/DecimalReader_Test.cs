@@ -16,7 +16,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 			var dataFile = new DataFileHelper("decimal.orc");
 			var stream = dataFile.GetStream();
 			var fileTail = new FileTail(stream);
-            var stripes = fileTail.StripeReaderCollection;
+            var stripes = fileTail.Stripes;
 			Assert.Single(stripes);
 			return stripes[0].GetStripeStreamCollection();
 		}
