@@ -34,7 +34,7 @@ namespace ApacheOrcDotNet.Test
 			var dataFile = new DataFileHelper(memStream);
 			var stream = dataFile.GetStream();
 			var fileTail = new FileTail(stream);
-			var stripes = fileTail.GetStripeCollection();
+            var stripes = fileTail.StripeReaderCollection;
 
 			var expectedEnumerator = expectedResults.GetEnumerator();
 			foreach(var stripe in stripes)

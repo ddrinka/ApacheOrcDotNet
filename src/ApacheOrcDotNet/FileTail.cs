@@ -15,12 +15,20 @@ namespace ApacheOrcDotNet
     {
 		readonly Stream _inputStream;
 
+        public Protocol.PostScript PostScript { get; }
+        public Protocol.Footer Footer { get; }
+        public StripeReaderCollection StripeReaderCollection { get; }
+
 		public FileTail(Stream inputStream)
 		{
 			_inputStream = inputStream;
-		}
 
-		Protocol.PostScript ReadPostScript(out byte postScriptLength)
+            PostScript = ReadPostScript(out var postScriptLength);
+            Footer = ReadFooter(PostScript, postScriptLength);
+            StripeReaderCollection = new StripeReaderCollection(_inputStream, Footer, PostScript.Compression);
+        }
+
+        Protocol.PostScript ReadPostScript(out byte postScriptLength)
 		{
 			_inputStream.Seek(-1, SeekOrigin.End);
 			postScriptLength = _inputStream.CheckedReadByte();
@@ -43,15 +51,6 @@ namespace ApacheOrcDotNet
 			var footerStream = OrcCompressedStream.GetDecompressingStream(compressedStream, postScript.Compression);
 
 			return Serializer.Deserialize<Protocol.Footer>(footerStream);
-		}
-
-		public StripeReaderCollection GetStripeCollection()
-		{
-			byte postScriptLength;
-			var postScript = ReadPostScript(out postScriptLength);
-			var footer = ReadFooter(postScript, postScriptLength);
-
-			return new StripeReaderCollection(_inputStream, footer, postScript.Compression);
 		}
     }
 }
