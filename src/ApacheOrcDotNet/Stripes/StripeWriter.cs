@@ -111,12 +111,13 @@ namespace ApacheOrcDotNet.Stripes
 				columnWriter.WriteValuesFromState();
 			}
 
-			var totalStripeLength = _columnWriters.Sum(writer => writer.ColumnWriter.CompressedLength);
+            _rowsInStripe += _rowsInStride;
+
+            var totalStripeLength = _columnWriters.Sum(writer => writer.ColumnWriter.CompressedLength);
 			if (totalStripeLength > _stripeLength)
 				CompleteStripe();
 
-			_rowsInStripe += _rowsInStride;
-			_rowsInStride = 0;
+            _rowsInStride = 0;
 		}
 
 		void CompleteStripe()
