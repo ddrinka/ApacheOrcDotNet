@@ -40,24 +40,24 @@ namespace ApacheOrcDotNet.ReaderTest.App
                             {
                                 Console.WriteLine($"Reading longs from column {columnId} ({columnName})");
                                 var reader = new LongReader(stripeStreamCollection, (uint)columnId);
-                                reader.Read().ToList();
-                                Console.WriteLine("Done reading longs");
+                                var count = reader.Read().Count();
+                                Console.WriteLine($"Done reading {count} longs");
                                 break;
                             }
                         case ColumnTypeKind.String:
                             {
                                 Console.WriteLine($"Reading strings from column {columnId} ({columnName})");
                                 var reader = new ColumnTypes.StringReader(stripeStreamCollection, (uint)columnId);
-                                reader.Read().ToList();
-                                Console.WriteLine("Done reading strings");
+                                var count = reader.Read().Count();
+                                Console.WriteLine($"Done reading {count} strings");
                                 break;
                             }
                         case ColumnTypeKind.Decimal:
                             {
                                 Console.WriteLine($"Reading decimals from column {columnId} ({columnName})");
                                 var reader = new DecimalReader(stripeStreamCollection, (uint)columnId);
-                                reader.Read().ToList();
-                                Console.WriteLine("Done reading decimals");
+                                var count = reader.Read().Count();
+                                Console.WriteLine($"Done reading {count} decimals");
                                 break;
                             }
                         default:
