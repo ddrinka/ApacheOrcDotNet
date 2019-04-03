@@ -48,7 +48,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 					ds.Maximum = Max.Value;
 			}
 
-			ds.Sum = CheckedAdd(ds.Sum, Sum.Value);
+			ds.Sum = CheckedAdd(ds.Sum, Sum);
 
 			columnStatistics.NumberOfValues += NumValues;
 			if (HasNull)
