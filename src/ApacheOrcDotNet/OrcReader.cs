@@ -84,8 +84,63 @@ namespace ApacheOrcDotNet
                 return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (int)val).GetEnumerator();
             if (type == typeof(long))
                 return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (long)val).GetEnumerator();
+            if (type == typeof(short))
+                return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (short)val).GetEnumerator();
+            if (type == typeof(uint))
+                return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (uint)val).GetEnumerator();
+            if (type == typeof(ulong))
+                return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (ulong)val).GetEnumerator();
+            if (type == typeof(ushort))
+                return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (ushort)val).GetEnumerator();
+            if (type == typeof(int?))
+                return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (int?)val).GetEnumerator();
+            if (type == typeof(long?))
+                return new ColumnTypes.LongReader(stripeStreams, columnId).Read().GetEnumerator();
+            if (type == typeof(short?))
+                return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (short?)val).GetEnumerator();
+            if (type == typeof(uint?))
+                return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (uint?)val).GetEnumerator();
+            if (type == typeof(ulong?))
+                return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (ulong?)val).GetEnumerator();
+            if (type == typeof(ushort?))
+                return new ColumnTypes.LongReader(stripeStreams, columnId).Read().Select(val => (ushort?)val).GetEnumerator();
+            if (type == typeof(byte))
+                return new ColumnTypes.ByteReader(stripeStreams, columnId).Read().Select(val => (byte)val).GetEnumerator();
+            if (type == typeof(sbyte))
+                return new ColumnTypes.ByteReader(stripeStreams, columnId).Read().Select(val => (sbyte)val).GetEnumerator();
+            if (type == typeof(byte?))
+                return new ColumnTypes.ByteReader(stripeStreams, columnId).Read().GetEnumerator();
+            if (type == typeof(sbyte?))
+                return new ColumnTypes.ByteReader(stripeStreams, columnId).Read().Select(val => (sbyte?)val).GetEnumerator();
+            if (type == typeof(bool))
+                return new ColumnTypes.BooleanReader(stripeStreams, columnId).Read().Select(val => (bool)val).GetEnumerator();
+            if (type == typeof(bool?))
+                return new ColumnTypes.BooleanReader(stripeStreams, columnId).Read().GetEnumerator();
+            if (type == typeof(float))
+                return new ColumnTypes.FloatReader(stripeStreams, columnId).Read().Select(val => (float)val).GetEnumerator();
+            if (type == typeof(float?))
+                return new ColumnTypes.FloatReader(stripeStreams, columnId).Read().GetEnumerator();
+            if (type == typeof(double))
+                return new ColumnTypes.DoubleReader(stripeStreams, columnId).Read().Select(val => (double)val).GetEnumerator();
+            if (type == typeof(double?))
+                return new ColumnTypes.DoubleReader(stripeStreams, columnId).Read().GetEnumerator();
+            if (type == typeof(byte[]))
+                return new ColumnTypes.BinaryReader(stripeStreams, columnId).Read().GetEnumerator();
+            if (type == typeof(decimal))
+                return new ColumnTypes.DecimalReader(stripeStreams, columnId).Read().Select(val => (decimal)val).GetEnumerator();
+            if (type == typeof(decimal?))
+                return new ColumnTypes.DecimalReader(stripeStreams, columnId).Read().GetEnumerator();
 
-            throw new NotSupportedException("Only basic types are supported. Unable to handle type {type}");
+            //Handle DateTime--based on the ORC column type, read TimeStamp or Date
+
+            if (type == typeof(DateTimeOffset))
+                return new ColumnTypes.TimestampReader(stripeStreams, columnId).Read().Select(val => (DateTimeOffset)val).GetEnumerator();
+            if (type == typeof(DateTimeOffset?))
+                return new ColumnTypes.TimestampReader(stripeStreams, columnId).Read().Select(val => (DateTimeOffset?)val).GetEnumerator();
+            if (type == typeof(string))
+                return new ColumnTypes.StringReader(stripeStreams, columnId).Read().Select(val => val).GetEnumerator();
+
+            throw new NotSupportedException($"Only basic types are supported. Unable to handle type {type}");
         }
     }
 }
