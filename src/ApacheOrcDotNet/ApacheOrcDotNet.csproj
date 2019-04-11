@@ -10,6 +10,7 @@
     <PackageReference Include="protobuf-net" Version="2.3.2" />
     <PackageReference Include="System.Runtime.Numerics" Version="4.3.0" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 
 </Project>
