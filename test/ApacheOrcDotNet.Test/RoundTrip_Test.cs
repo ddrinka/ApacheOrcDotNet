@@ -12,27 +12,27 @@ namespace ApacheOrcDotNet.Test
     public class RoundTrip_Test
     {
 		[Fact]
-		public void CompleteStream_IntColumn_SingleStripe_RoundTrip()
+		public void SingleStripe_RoundTrip()
 		{
-			var testElements = new List<IntColumnTest>();
+			var testElements = new List<RoundTripTestObject>();
 			var random = new Random(123);
 			for (int i = 0; i < 10000; i++)
-				testElements.Add(IntColumnTest.Random(random));
-			TestRoundTripLongColumn(testElements);
+				testElements.Add(RoundTripTestObject.Random(random));
+			TestRoundTrip(testElements);
 		}
 
 
         [Fact]
-        public void CompleteStream_IntColumn_MultipleStripe_RoundTrip()
+        public void MultipleStripe_RoundTrip()
         {
-            var testElements = new List<IntColumnTest>();
+            var testElements = new List<RoundTripTestObject>();
             var random = new Random(123);
             for (int i = 0; i < 2000000; i++)
-                testElements.Add(IntColumnTest.Random(random));
-            TestRoundTripLongColumn(testElements);
+                testElements.Add(RoundTripTestObject.Random(random));
+            TestRoundTrip(testElements);
         }
 
-        void TestRoundTripLongColumn<T>(List<T> expected) where T : new()
+        void TestRoundTrip<T>(List<T> expected) where T : new()
         {
             var memStream = new MemoryStream();
             using (var writer = new OrcWriter<T>(memStream, new WriterConfiguration())) //Use the default configuration
@@ -51,7 +51,7 @@ namespace ApacheOrcDotNet.Test
         }
 	}
 
-	class IntColumnTest
+	class RoundTripTestObject
 	{
         readonly static DateTime _dateBase = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -73,9 +73,9 @@ namespace ApacheOrcDotNet.Test
         public string String { get; set; }
 
 
-        public static IntColumnTest Random(Random r)
+        public static RoundTripTestObject Random(Random r)
         {
-            var result = new IntColumnTest
+            var result = new RoundTripTestObject
             {
                 Int = r.Next(),
                 Long = r.Next() * 0xFFFFFFL,
@@ -102,7 +102,7 @@ namespace ApacheOrcDotNet.Test
 
         public override bool Equals(object obj)
         {
-            var test = obj as IntColumnTest;
+            var test = obj as RoundTripTestObject;
             return test != null &&
                    Int == test.Int &&
                    Long == test.Long &&
