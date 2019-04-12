@@ -16,7 +16,7 @@ namespace ApacheOrcDotNet.Test
 		{
 			var testElements = new List<IntColumnTest>();
 			var random = new Random(123);
-			for (int i = 0; i < 70000; i++)
+			for (int i = 0; i < 10000; i++)
 				testElements.Add(IntColumnTest.Random(random));
 			TestRoundTripLongColumn(testElements);
 		}
@@ -27,7 +27,7 @@ namespace ApacheOrcDotNet.Test
         {
             var testElements = new List<IntColumnTest>();
             var random = new Random(123);
-            for (int i = 0; i < 32000000; i++)
+            for (int i = 0; i < 2000000; i++)
                 testElements.Add(IntColumnTest.Random(random));
             TestRoundTripLongColumn(testElements);
         }
@@ -53,6 +53,8 @@ namespace ApacheOrcDotNet.Test
 
 	class IntColumnTest
 	{
+        readonly static DateTime _dateBase = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
 		public int Int { get; set; }
         public long Long { get; set; }
         public short Short { get; set; }
@@ -67,7 +69,7 @@ namespace ApacheOrcDotNet.Test
         public double Double { get; set; }
         public byte[] ByteArray { get; set; }
         public decimal Decimal { get; set; }
-        //public DateTime DateTime { get; set; }
+        public DateTime DateTime { get; set; }
         public string String { get; set; }
 
 
@@ -89,6 +91,7 @@ namespace ApacheOrcDotNet.Test
                 Double = r.NextDouble(),
                 ByteArray = new byte[10],
                 Decimal = r.Next() / 1000m,
+                DateTime = _dateBase.AddSeconds(r.Next()),
                 String = r.Next().ToString()
             };
 
@@ -115,6 +118,7 @@ namespace ApacheOrcDotNet.Test
                    Double == test.Double &&
                    ByteArray.SequenceEqual(test.ByteArray) &&
                    Decimal == test.Decimal &&
+                   DateTime == test.DateTime &&
                    String == test.String;
         }
 
@@ -135,6 +139,7 @@ namespace ApacheOrcDotNet.Test
             hashCode = hashCode * -1521134295 + Double.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(ByteArray);
             hashCode = hashCode * -1521134295 + Decimal.GetHashCode();
+            hashCode = hashCode * -1521134295 + DateTime.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(String);
             return hashCode;
         }
