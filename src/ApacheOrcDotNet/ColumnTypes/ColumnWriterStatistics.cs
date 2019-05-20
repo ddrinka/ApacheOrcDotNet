@@ -24,12 +24,15 @@ namespace ApacheOrcDotNet.ColumnTypes
 			RleValuesToConsume.Add(rleValuesToConsume);
 		}
 
-		public void FillPositionList(List<ulong> positions)
+		public void FillPositionList(List<ulong> positions, Func<int,bool> bufferIndexMustBeIncluded)
 		{
 			//If we weren't dealing with compressed data, only two values are written rather than three
 			bool haveSecondValues = DecompressedOffsets.Count != 0;
 			for (int i = 0; i < CompressedBufferOffsets.Count; i++)
 			{
+                if (!bufferIndexMustBeIncluded(i))
+                    continue;
+
 				positions.Add((ulong)CompressedBufferOffsets[i]);
 				if (haveSecondValues)
 					positions.Add((ulong)DecompressedOffsets[i]);

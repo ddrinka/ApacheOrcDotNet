@@ -61,7 +61,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			}
 		}
 		public uint ColumnId { get; }
-		public IEnumerable<OrcCompressedBuffer> Buffers
+		public OrcCompressedBuffer[] Buffers
 		{
 			get
 			{

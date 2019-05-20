@@ -10,13 +10,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
 	public static class ColumnExtensions
 	{
-		public static void WriteToBuffer(this IEnumerable<IStatistics> statistics, Stream outputStream)
+		public static void WriteToBuffer(this IEnumerable<IStatistics> statistics, Stream outputStream, Func<int,bool> bufferIndexMustBeIncluded)
 		{
 			var indexes = new Protocol.RowIndex();
 			foreach (var stats in statistics)
 			{
 				var indexEntry = new Protocol.RowIndexEntry();
-				stats.FillPositionList(indexEntry.Positions);
+				stats.FillPositionList(indexEntry.Positions, bufferIndexMustBeIncluded);
 				stats.FillColumnStatistics(indexEntry.Statistics);
 				indexes.Entry.Add(indexEntry);
 			}

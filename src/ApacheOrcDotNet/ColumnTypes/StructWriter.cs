@@ -18,7 +18,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
 		public long CompressedLength => 0;
 		public uint ColumnId { get; }
-		public IEnumerable<OrcCompressedBuffer> Buffers => new OrcCompressedBuffer[] { };
+		public OrcCompressedBuffer[] Buffers => new OrcCompressedBuffer[] { };
 		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.Direct;
 
 		public void FlushBuffers()

@@ -11,6 +11,6 @@ namespace ApacheOrcDotNet
 		void AnnotatePosition(long compressedBufferOffset, long decompressedOffset, long rleValuesToConsume);
 		void AnnotatePosition(long uncompressedOffset, long rleValuesToConsume);
 		void FillColumnStatistics(ColumnStatistics columnStatistics);
-		void FillPositionList(List<ulong> positions);
+		void FillPositionList(List<ulong> positions, Func<int,bool> bufferIndexMustBeIncluded);
 	}
 }

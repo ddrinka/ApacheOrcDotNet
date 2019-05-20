@@ -142,7 +142,7 @@ namespace ApacheOrcDotNet.Stripes
 			{
 				//Write the index buffer
 				var indexBuffer = _bufferFactory.CreateBuffer(Protocol.StreamKind.RowIndex);
-				writer.ColumnWriter.Statistics.WriteToBuffer(indexBuffer);
+                writer.ColumnWriter.Statistics.WriteToBuffer(indexBuffer, i => writer.ColumnWriter.Buffers[i].MustBeIncluded);
 				indexBuffer.CopyTo(_outputStream);
 
 				//Add the index to the footer

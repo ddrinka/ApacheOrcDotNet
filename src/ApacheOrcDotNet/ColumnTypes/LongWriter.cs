@@ -33,7 +33,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
 		public long CompressedLength => Buffers.Sum(s => s.Length);
 		public uint ColumnId { get; }
-		public IEnumerable<OrcCompressedBuffer> Buffers => _isNullable ? new[] { _presentBuffer, _dataBuffer } : new[] { _dataBuffer };
+		public OrcCompressedBuffer[] Buffers => _isNullable ? new[] { _presentBuffer, _dataBuffer } : new[] { _dataBuffer };
 		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.DirectV2;
 
 		public void FlushBuffers()
