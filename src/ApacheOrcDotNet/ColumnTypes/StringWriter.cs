@@ -175,8 +175,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 		void WriteDictionaryEncodedData()
 		{
-			//Sort the dictionary
-			var sortedDictionary = new List<string>();
+            var stats = new StringWriterStatistics();
+            Statistics.Add(stats);
+            foreach (var buffer in Buffers)
+                buffer.AnnotatePosition(stats, 0);
+
+            //Sort the dictionary
+            var sortedDictionary = new List<string>();
 			int i = 0;
 			foreach (var dictEntry in _unsortedDictionary.OrderBy(d => d.Key, StringComparer.Ordinal))
 			{
@@ -201,17 +206,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 			var presentList = new List<bool>(_dictionaryLookupValues.Count);
 			var lookupList = new List<long>(_dictionaryLookupValues.Count);
 			int count = 0;
-			StringWriterStatistics stats = null;
 			foreach (var value in _dictionaryLookupValues)
 			{
-				if(stats == null)
-				{
-					stats = new StringWriterStatistics();
-					Statistics.Add(stats);
-					foreach (var buffer in Buffers)
-						buffer.AnnotatePosition(stats, 0);
-				}
-
 				if (value == null)
 				{
 					stats.AddValue(null);
@@ -240,7 +236,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 					lookupEncoder.Write(lookupList, false, _shouldAlignDictionaryLookup);
 					lookupList.Clear();
 
-					stats = null;
+                    if (count != _dictionaryLookupValues.Count)     //More values remain
+                    {
+                        stats = new StringWriterStatistics();
+                        Statistics.Add(stats);
+                        foreach (var buffer in Buffers)
+                            buffer.AnnotatePosition(stats, 0);
+                    }
 				}
 			}
 		}
