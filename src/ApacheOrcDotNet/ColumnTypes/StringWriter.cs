@@ -241,8 +241,8 @@ namespace ApacheOrcDotNet.ColumnTypes
                     {
                         stats = new StringWriterStatistics();
                         Statistics.Add(stats);
-                        foreach (var buffer in Buffers)
-                            buffer.AnnotatePosition(stats, 0);
+                        _presentBuffer.AnnotatePosition(stats, rleValuesToConsume: 0, bitsToConsume: 0);
+                        _dataBuffer.AnnotatePosition(stats, rleValuesToConsume: 0);
                     }
 				}
 			}
