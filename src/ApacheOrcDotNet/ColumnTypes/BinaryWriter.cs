@@ -50,8 +50,9 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			var stats = new BinaryWriterStatistics();
 			Statistics.Add(stats);
-			foreach (var buffer in Buffers)
-				buffer.AnnotatePosition(stats, 0);
+            _presentBuffer.AnnotatePosition(stats, rleValuesToConsume: 0, bitsToConsume: 0);
+            _dataBuffer.AnnotatePosition(stats);
+            _lengthBuffer.AnnotatePosition(stats, rleValuesToConsume: 0);
 
 			var bytesList = new List<byte[]>(values.Count);
 			var presentList = new List<bool>(values.Count);

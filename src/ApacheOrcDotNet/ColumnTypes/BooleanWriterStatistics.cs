@@ -13,7 +13,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
 
-		public void AddValue(bool? value)
+        public void AddValue(bool? value)
 		{
 			if (!value.HasValue)
 				HasNull = true;

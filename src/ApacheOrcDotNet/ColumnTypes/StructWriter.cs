@@ -34,8 +34,8 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			var stats = new BooleanWriterStatistics();
 			Statistics.Add(stats);
-			foreach (var buffer in Buffers)
-				buffer.AnnotatePosition(stats, 0);
+            foreach (var buffer in Buffers)
+                buffer.AnnotatePosition(stats, rleValuesToConsume: 0, bitsToConsume: 0);
 
 			stats.NumValues += (uint)values.Count;
 		}

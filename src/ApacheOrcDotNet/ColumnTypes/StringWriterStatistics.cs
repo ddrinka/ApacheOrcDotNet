@@ -8,13 +8,13 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class StringWriterStatistics : ColumnWriterStatistics, IStatistics
     {
-		public string Min { get; set; } = null;
+        public string Min { get; set; } = null;
 		public string Max { get; set; } = null;
 		public long Sum { get; set; } = 0;
 		public ulong NumValues { get; set; } = 0;
 		public bool HasNull { get; set; } = false;
 
-		public void AddValue(string value)
+        public void AddValue(string value)
 		{
 			if (value == null)
 				HasNull = true;

@@ -52,8 +52,9 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			var stats = new DoubleWriterStatistics();
 			Statistics.Add(stats);
-			foreach (var buffer in Buffers)
-				buffer.AnnotatePosition(stats, 0);
+            if (_isNullable)
+                _presentBuffer.AnnotatePosition(stats, rleValuesToConsume: 0, bitsToConsume: 0);
+            _dataBuffer.AnnotatePosition(stats);
 
 			var valList = new List<double>(values.Count);
 

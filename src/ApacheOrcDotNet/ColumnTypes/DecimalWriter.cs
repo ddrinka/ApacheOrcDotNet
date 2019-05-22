@@ -62,8 +62,10 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			var stats = new DecimalWriterStatistics();
 			Statistics.Add(stats);
-			foreach (var buffer in Buffers)
-				buffer.AnnotatePosition(stats, 0);
+            if (_isNullable)
+                _presentBuffer.AnnotatePosition(stats, rleValuesToConsume: 0, bitsToConsume: 0);
+            _dataBuffer.AnnotatePosition(stats);
+            _secondaryBuffer.AnnotatePosition(stats, rleValuesToConsume: 0);
 
 			var wholePartsList = new List<long>(values.Count);
 			var scaleList = new List<long>(values.Count);

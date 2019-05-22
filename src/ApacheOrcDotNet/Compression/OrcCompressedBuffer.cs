@@ -63,13 +63,13 @@ namespace ApacheOrcDotNet.Compression
 			_compressedBuffer.Seek(0, SeekOrigin.Begin);
 			_compressedBuffer.CopyTo(destination);
 		}
-		public void AnnotatePosition(IStatistics statistics, long rleValuesToConsume)
-		{
-			if (_compressionKind == Protocol.CompressionKind.None)
-				statistics.AnnotatePosition(Length + _currentBlock.Length, rleValuesToConsume);      //If we're not compressing, output the total length as a single value
-			else
-				statistics.AnnotatePosition(Length, _currentBlock.Length, rleValuesToConsume);
-		}
+        public void AnnotatePosition(IStatistics statistics, int? rleValuesToConsume = null, int? bitsToConsume = null)
+        {
+            if (_compressionKind == Protocol.CompressionKind.None)
+                statistics.AnnotatePosition(storedBufferOffset: Length + _currentBlock.Length, rleValuesToConsume: rleValuesToConsume, bitsToConsume: bitsToConsume);      //If we're not compressing, output the total length as a single value
+            else
+                statistics.AnnotatePosition(storedBufferOffset: Length, decompressedOffset: _currentBlock.Length, rleValuesToConsume: rleValuesToConsume, bitsToConsume: bitsToConsume);
+        }
 		public void Reset()
 		{
 			_compressedBuffer.SetLength(0);

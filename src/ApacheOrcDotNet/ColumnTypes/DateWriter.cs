@@ -56,8 +56,9 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			var stats = new DateWriterStatistics();
 			Statistics.Add(stats);
-			foreach (var buffer in Buffers)
-				buffer.AnnotatePosition(stats, 0);
+            if (_isNullable)
+                _presentBuffer.AnnotatePosition(stats, rleValuesToConsume: 0, bitsToConsume: 0);
+            _dataBuffer.AnnotatePosition(stats, rleValuesToConsume: 0);
 
 			var datesList = new List<long>(values.Count);
 
