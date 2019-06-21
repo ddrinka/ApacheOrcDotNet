@@ -37,6 +37,8 @@ namespace ApacheOrcDotNet.ReaderTest.App
                     switch (columnType.Kind)
                     {
                         case ColumnTypeKind.Long:
+                        case ColumnTypeKind.Int:
+                        case ColumnTypeKind.Short:
                             {
                                 Console.WriteLine($"Reading longs from column {columnId} ({columnName})");
                                 var reader = new LongReader(stripeStreamCollection, (uint)columnId);
@@ -44,12 +46,44 @@ namespace ApacheOrcDotNet.ReaderTest.App
                                 Console.WriteLine($"Done reading {count} longs");
                                 break;
                             }
-                        case ColumnTypeKind.String:
+                        case ColumnTypeKind.Byte:
                             {
-                                Console.WriteLine($"Reading strings from column {columnId} ({columnName})");
-                                var reader = new ColumnTypes.StringReader(stripeStreamCollection, (uint)columnId);
+                                Console.WriteLine($"Reading bytes from column {columnId} ({columnName})");
+                                var reader = new ByteReader(stripeStreamCollection, (uint)columnId);
                                 var count = reader.Read().Count();
-                                Console.WriteLine($"Done reading {count} strings");
+                                Console.WriteLine($"Done reading {count} bytes");
+                                break;
+                            }
+                        case ColumnTypeKind.Boolean:
+                            {
+                                Console.WriteLine($"Reading bools from column {columnId} ({columnName})");
+                                var reader = new BooleanReader(stripeStreamCollection, (uint)columnId);
+                                var count = reader.Read().Count();
+                                Console.WriteLine($"Done reading {count} bools");
+                                break;
+                            }
+                        case ColumnTypeKind.Float:
+                            {
+                                Console.WriteLine($"Reading floats from column {columnId} ({columnName})");
+                                var reader = new FloatReader(stripeStreamCollection, (uint)columnId);
+                                var count = reader.Read().Count();
+                                Console.WriteLine($"Done reading {count} floats");
+                                break;
+                            }
+                        case ColumnTypeKind.Double:
+                            {
+                                Console.WriteLine($"Reading doubles from column {columnId} ({columnName})");
+                                var reader = new DoubleReader(stripeStreamCollection, (uint)columnId);
+                                var count = reader.Read().Count();
+                                Console.WriteLine($"Done reading {count} doubles");
+                                break;
+                            }
+                        case ColumnTypeKind.Binary:
+                            {
+                                Console.WriteLine($"Reading binary from column {columnId} ({columnName})");
+                                var reader = new ColumnTypes.BinaryReader(stripeStreamCollection, (uint)columnId);
+                                var count = reader.Read().Count();
+                                Console.WriteLine($"Done reading {count} binaries");
                                 break;
                             }
                         case ColumnTypeKind.Decimal:
@@ -58,6 +92,30 @@ namespace ApacheOrcDotNet.ReaderTest.App
                                 var reader = new DecimalReader(stripeStreamCollection, (uint)columnId);
                                 var count = reader.Read().Count();
                                 Console.WriteLine($"Done reading {count} decimals");
+                                break;
+                            }
+                        case ColumnTypeKind.Timestamp:
+                            {
+                                Console.WriteLine($"Reading timestamps from column {columnId} ({columnName})");
+                                var reader = new TimestampReader(stripeStreamCollection, (uint)columnId);
+                                var count = reader.Read().Count();
+                                Console.WriteLine($"Done reading {count} timestamps");
+                                break;
+                            }
+                        case ColumnTypeKind.Date:
+                            {
+                                Console.WriteLine($"Reading dates from column {columnId} ({columnName})");
+                                var reader = new DateReader(stripeStreamCollection, (uint)columnId);
+                                var count = reader.Read().Count();
+                                Console.WriteLine($"Done reading {count} dates");
+                                break;
+                            }
+                        case ColumnTypeKind.String:
+                            {
+                                Console.WriteLine($"Reading strings from column {columnId} ({columnName})");
+                                var reader = new ColumnTypes.StringReader(stripeStreamCollection, (uint)columnId);
+                                var count = reader.Read().Count();
+                                Console.WriteLine($"Done reading {count} strings");
                                 break;
                             }
                         default:
