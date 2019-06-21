@@ -67,46 +67,46 @@ namespace ApacheOrcDotNet.ColumnTypes
 			var secondsList = new List<long>(values.Count);
 			var fractionsList = new List<long>(values.Count);
 
-			if (_isNullable)
-			{
-				var presentList = new List<bool>(values.Count);
+            if (_isNullable)
+            {
+                var presentList = new List<bool>(values.Count);
 
-				foreach (var value in values)
-				{
-					if (!value.HasValue)
-					{
-						stats.AddValue(null);
-						presentList.Add(false);
-					}
-					else
-					{
-						long millisecondsSinceUnixEpoch;
-						long fraction;
-						var seconds = GetValues(value.Value, out millisecondsSinceUnixEpoch, out fraction);
-						stats.AddValue(millisecondsSinceUnixEpoch);
-						presentList.Add(true);
-						secondsList.Add(seconds);
-						fractionsList.Add(fraction);
-					}
+                foreach (var value in values)
+                {
+                    if (!value.HasValue)
+                    {
+                        stats.AddValue(null);
+                        presentList.Add(false);
+                    }
+                    else
+                    {
+                        long millisecondsSinceUnixEpoch;
+                        long fraction;
+                        var seconds = GetValues(value.Value, out millisecondsSinceUnixEpoch, out fraction);
+                        stats.AddValue(millisecondsSinceUnixEpoch);
+                        presentList.Add(true);
+                        secondsList.Add(seconds);
+                        fractionsList.Add(fraction);
+                    }
+                }
 
-					var presentEncoder = new BitWriter(_presentBuffer);
-					presentEncoder.Write(presentList);
-					if (stats.HasNull)
-						_presentBuffer.MustBeIncluded = true;
-				}
-			}
-			else
-			{
-				foreach (var value in values)
-				{
-					long millisecondsSinceUnixEpoch;
-					long fraction;
-					var seconds = GetValues(value.Value, out millisecondsSinceUnixEpoch, out fraction);
-					stats.AddValue(millisecondsSinceUnixEpoch);
-					secondsList.Add(seconds);
-					fractionsList.Add(fraction);
-				}
-			}
+                var presentEncoder = new BitWriter(_presentBuffer);
+                presentEncoder.Write(presentList);
+                if (stats.HasNull)
+                    _presentBuffer.MustBeIncluded = true;
+            }
+            else
+            {
+                foreach (var value in values)
+                {
+                    long millisecondsSinceUnixEpoch;
+                    long fraction;
+                    var seconds = GetValues(value.Value, out millisecondsSinceUnixEpoch, out fraction);
+                    stats.AddValue(millisecondsSinceUnixEpoch);
+                    secondsList.Add(seconds);
+                    fractionsList.Add(fraction);
+                }
+            }
 
 			var secondsEncoder = new IntegerRunLengthEncodingV2Writer(_dataBuffer);
 			secondsEncoder.Write(secondsList, true, _shouldAlignEncodedValues);

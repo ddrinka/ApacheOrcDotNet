@@ -62,40 +62,40 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 			var datesList = new List<long>(values.Count);
 
-			if (_isNullable)
-			{
-				var presentList = new List<bool>(values.Count);
+            if (_isNullable)
+            {
+                var presentList = new List<bool>(values.Count);
 
-				foreach (var value in values)
-				{
-					if (!value.HasValue)
-					{
-						stats.AddValue(null);
-						presentList.Add(false);
-					}
-					else
-					{
-						var daysSinceEpoch = (int)(value.Value - _unixEpoch).TotalDays;
-						stats.AddValue(daysSinceEpoch);
-						presentList.Add(true);
-						datesList.Add(daysSinceEpoch);
-					}
+                foreach (var value in values)
+                {
+                    if (!value.HasValue)
+                    {
+                        stats.AddValue(null);
+                        presentList.Add(false);
+                    }
+                    else
+                    {
+                        var daysSinceEpoch = (int)(value.Value - _unixEpoch).TotalDays;
+                        stats.AddValue(daysSinceEpoch);
+                        presentList.Add(true);
+                        datesList.Add(daysSinceEpoch);
+                    }
+                }
 
-					var presentEncoder = new BitWriter(_presentBuffer);
-					presentEncoder.Write(presentList);
-					if (stats.HasNull)
-						_presentBuffer.MustBeIncluded = true;
-				}
-			}
-			else
-			{
-				foreach (var value in values)
-				{
-					var daysSinceEpoch = (int)(value.Value - _unixEpoch).TotalDays;
-					stats.AddValue(daysSinceEpoch);
-					datesList.Add(daysSinceEpoch);
-				}
-			}
+                var presentEncoder = new BitWriter(_presentBuffer);
+                presentEncoder.Write(presentList);
+                if (stats.HasNull)
+                    _presentBuffer.MustBeIncluded = true;
+            }
+            else
+            {
+                foreach (var value in values)
+                {
+                    var daysSinceEpoch = (int)(value.Value - _unixEpoch).TotalDays;
+                    stats.AddValue(daysSinceEpoch);
+                    datesList.Add(daysSinceEpoch);
+                }
+            }
 
 			var datesEncoder = new IntegerRunLengthEncodingV2Writer(_dataBuffer);
 			datesEncoder.Write(datesList, true, _shouldAlignEncodedValues);
