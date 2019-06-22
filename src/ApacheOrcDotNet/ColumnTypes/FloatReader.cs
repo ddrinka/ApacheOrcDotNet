@@ -22,7 +22,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			{
 				while (dataIndex + 4 <= data.Length)
 				{
-					var value = BitManipulation.ReadFloatBE(data, dataIndex);
+					var value = BitManipulation.ReadFloat(data, dataIndex);
 					dataIndex += 4;
 					yield return value;
 				}
@@ -33,7 +33,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 				{
 					if (isPresent)
 					{
-						var value = BitManipulation.ReadFloatBE(data, dataIndex);
+						var value = BitManipulation.ReadFloat(data, dataIndex);
 						dataIndex += 4;
 						yield return value;
 					}

@@ -86,7 +86,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 
 			foreach (var value in valList)
 			{
-				_dataBuffer.WriteDoubleBE(value);
+				_dataBuffer.WriteDouble(value);
 			}
 		}
 	}

@@ -22,7 +22,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 			{
 				while (dataIndex + 8 <= data.Length)
 				{
-					var value = BitManipulation.ReadDoubleBE(data, dataIndex);
+					var value = BitManipulation.ReadDouble(data, dataIndex);
 					dataIndex += 8;
 					yield return value;
 				}
@@ -33,7 +33,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 				{
 					if (isPresent)
 					{
-						var value = BitManipulation.ReadDoubleBE(data, dataIndex);
+						var value = BitManipulation.ReadDouble(data, dataIndex);
 						dataIndex += 8;
 						yield return value;
 					}

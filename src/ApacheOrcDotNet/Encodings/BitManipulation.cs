@@ -28,35 +28,29 @@ namespace ApacheOrcDotNet.Encodings
 			return result;
 		}
 
-		public static float ReadFloatBE(this byte[] buffer, int startIndex)
+		public static float ReadFloat(this byte[] buffer, int startIndex)
 		{
-			var reverseBuf = new byte[4];
-			for (int i = reverseBuf.Length - 1; i >= 0; i--)
-				reverseBuf[i] = buffer[startIndex++];
-			return BitConverter.ToSingle(reverseBuf, 0);
+			return BitConverter.ToSingle(buffer, startIndex);
 		}
 
-		public static void WriteFloatBE(this Stream stream, float value)
+        public static void WriteFloat(this Stream stream, float value)
+        {
+            var bytes = BitConverter.GetBytes(value);
+            for (int i = 0; i < bytes.Length; i++)
+                stream.WriteByte(bytes[i]);
+        }
+
+		public static double ReadDouble(this byte[] buffer, int startIndex)
 		{
-			var bytes = BitConverter.GetBytes(value);
-			for (int i = bytes.Length - 1; i >= 0; i--)
-				stream.WriteByte(bytes[i]);
+			return BitConverter.ToDouble(buffer, startIndex);
 		}
 
-		public static double ReadDoubleBE(this byte[] buffer, int startIndex)
-		{
-			var reverseBuf = new byte[8];
-			for (int i = reverseBuf.Length - 1; i >= 0; i--)
-				reverseBuf[i] = buffer[startIndex++];
-			return BitConverter.ToDouble(reverseBuf, 0);
-		}
-
-		public static void WriteDoubleBE(this Stream stream, double value)
-		{
-			var bytes = BitConverter.GetBytes(value);
-			for (int i = bytes.Length - 1; i >= 0; i--)
-				stream.WriteByte(bytes[i]);
-		}
+        public static void WriteDouble(this Stream stream, double value)
+        {
+            var bytes = BitConverter.GetBytes(value);
+            for (int i = 0; i < bytes.Length; i++)
+                stream.WriteByte(bytes[i]);
+        }
 
 		public static void WriteLongBE(this Stream stream, int numBytes, long value)
 		{
