@@ -48,7 +48,7 @@ namespace ApacheOrcDotNet
         {
             foreach (var property in GetWritablePublicProperties(type))
             {
-                var columnId = footer.Types[0].FieldNames.FindIndex(fn => fn == property.Name) + 1;
+                var columnId = footer.Types[0].FieldNames.FindIndex(fn => fn.ToLower() == property.Name.ToLower()) + 1;
                 if (columnId == 0)
                     throw new KeyNotFoundException($"'{property.Name}' not found in ORC data");
                 var columnType = footer.Types[columnId].Kind;
