@@ -50,8 +50,13 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		{
 			var pocos = new List<SingleValuePoco>();
 			var random = new Random(123);
-			for (int i = 0; i < numValues; i++)
-				pocos.Add(new SingleValuePoco { Value = (decimal)random.Next() / (decimal)Math.Pow(10, random.Next() % 10) });
+            for (int i = 0; i < numValues; i++)
+            {
+                decimal wholePortion = random.Next() % 99999;       //14-9
+                decimal decimalPortion = random.Next() % 999999999; //9
+                decimal value = wholePortion + decimalPortion / 1000000000m;
+                pocos.Add(new SingleValuePoco { Value = value });
+            }
 
 			var configuration = new SerializationConfiguration()
 					.ConfigureType<SingleValuePoco>()
