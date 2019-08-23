@@ -30,6 +30,47 @@ namespace ApacheOrcDotNet.Infrastructure
 			1000000000000000000L
 		};
 
+        static int GetPrecision(long v)
+        {
+            if (v >= 1000000000000000000L)
+                return 19;
+            if (v >= 100000000000000000L)
+                return 18;
+            if (v >= 10000000000000000L)
+                return 17;
+            if (v >= 1000000000000000L)
+                return 16;
+            if (v >= 100000000000000L)
+                return 15;
+            if (v >= 10000000000000L)
+                return 14;
+            if (v >= 1000000000000L)
+                return 13;
+            if (v >= 100000000000L)
+                return 12;
+            if (v >= 10000000000L)
+                return 11;
+            if (v >= 1000000000L)
+                return 10;
+            if (v >= 100000000L)
+                return 9;
+            if (v >= 10000000L)
+                return 8;
+            if (v >= 1000000L)
+                return 7;
+            if (v >= 100000L)
+                return 6;
+            if (v >= 10000L)
+                return 5;
+            if (v >= 1000L)
+                return 4;
+            if (v >= 100L)
+                return 3;
+            if (v >= 10L)
+                return 2;
+            return 1;
+        }
+
 		public static Tuple<long,byte> ToLongAndScale(this decimal value)
 		{
 			var bits = decimal.GetBits(value);
@@ -84,5 +125,12 @@ namespace ApacheOrcDotNet.Infrastructure
 				return Tuple.Create(newM, newE);
 			}
 		}
+
+        public static void CheckPrecision(this long value, int maxPrecision)
+        {
+            var precision = GetPrecision(value);
+            if (precision > maxPrecision)
+                throw new OverflowException($"Attempted to serialize a decimal with higher precision than configured. value={value} precision={precision} maxPrecision={maxPrecision}");
+        }
     }
 }

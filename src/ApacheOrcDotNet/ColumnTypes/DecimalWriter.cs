@@ -13,6 +13,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 	{
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;
+        readonly int _precision;
 		readonly int _scale;
 		readonly OrcCompressedBuffer _presentBuffer;
 		readonly OrcCompressedBuffer _dataBuffer;
@@ -22,10 +23,11 @@ namespace ApacheOrcDotNet.ColumnTypes
 		{
 			_isNullable = isNullable;
 			_shouldAlignEncodedValues = shouldAlignEncodedValues;
+            _precision = precision;
 			_scale = scale;
 			ColumnId = columnId;
 
-			if (precision > 18)
+			if (_precision > 18)
 				throw new NotSupportedException("This implementation of DecimalWriter does not support precision greater than 18 digits (2^63)");
 
 			if (_isNullable)
@@ -81,6 +83,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 					{
 						var longAndScale = value.Value.ToLongAndScale();
 						var rescaled = longAndScale.Rescale(_scale, truncateIfNecessary: false);
+                        rescaled.Item1.CheckPrecision(_precision);
 						wholePartsList.Add(rescaled.Item1);
 						scaleList.Add(rescaled.Item2);
 					}
@@ -99,6 +102,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 					stats.AddValue(value);
 					var longAndScale = value.Value.ToLongAndScale();
 					var rescaled = longAndScale.Rescale(_scale, truncateIfNecessary: false);
+                    rescaled.Item1.CheckPrecision(_precision);
 					wholePartsList.Add(rescaled.Item1);
 					scaleList.Add(rescaled.Item2);
 				}

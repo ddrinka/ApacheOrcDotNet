@@ -25,6 +25,27 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 			RoundTripNulls(70000);
 		}
 
+        [Fact]
+        public void TooMuchPrecision_Throws()
+        {
+            var serializationConfiguration = new SerializationConfiguration()
+                .ConfigureType<SingleValuePoco>()
+                    .ConfigureProperty(x => x.Value, x => { x.DecimalPrecision = 14; x.DecimalScale = 9; })
+                    .Build();
+
+            var stream = new MemoryStream();
+            var goodWriter = new OrcWriter<SingleValuePoco>(stream, new WriterConfiguration(), serializationConfiguration);
+            goodWriter.AddRow(new SingleValuePoco { Value = 12345.678901234m });
+            goodWriter.Dispose();
+
+            var badWriter = new OrcWriter<SingleValuePoco>(stream, new WriterConfiguration(), serializationConfiguration);
+            badWriter.AddRow(new SingleValuePoco { Value = 123456.789012345m });
+            Assert.Throws<OverflowException>(() =>
+            {
+                badWriter.Dispose();
+            });
+        }
+
 		void RoundTripSingleValue(int numValues)
 		{
 			var pocos = new List<SingleValuePoco>();

@@ -178,5 +178,34 @@ namespace ApacheOrcDotNet.Test.Infrastructure
 			Assert.Equal(1646577, result.Item1);
 			Assert.Equal(4, result.Item2);
 		}
-	}
+
+        [Theory]
+        [InlineData(0,1)]
+        [InlineData(1,1)]
+        [InlineData(99,2)]
+        [InlineData(123,3)]
+        [InlineData(1000,4)]
+        [InlineData(99999,5)]
+        [InlineData(1234567890123456789,19)]
+        public void CheckPrecision_Good(long value, int maxPrecision)
+        {
+            value.CheckPrecision(maxPrecision);
+        }
+
+        [Theory]
+        [InlineData(10, 1)]
+        [InlineData(11, 1)]
+        [InlineData(199, 2)]
+        [InlineData(1123, 3)]
+        [InlineData(11000, 4)]
+        [InlineData(199999, 5)]
+        [InlineData(1234567890123456789, 18)]
+        public void CheckPrecision_Bad(long value, int maxPrecision)
+        {
+            Assert.Throws<OverflowException>(() =>
+            {
+                value.CheckPrecision(maxPrecision);
+            });
+        }
+    }
 }
