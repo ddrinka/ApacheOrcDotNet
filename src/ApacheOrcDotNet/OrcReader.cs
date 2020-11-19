@@ -1,21 +1,16 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
-namespace ApacheOrcDotNet
-{
-    public class OrcReader
-    {
+namespace ApacheOrcDotNet {
+    public class OrcReader {
         readonly Type _type;
         readonly FileTail _fileTail;
 
-        public OrcReader(Type type, Stream inputStream)
-        {
+        public OrcReader(Type type, Stream inputStream) {
             _type = type;
             _fileTail = new FileTail(inputStream);
 
@@ -23,20 +18,16 @@ namespace ApacheOrcDotNet
                 throw new InvalidDataException($"The base type must be {nameof(Protocol.ColumnTypeKind.Struct)}");
         }
 
-        public IEnumerable<object> Read()
-        {
+        public IEnumerable<object> Read() {
             var properties = FindColumnsForType(_type, _fileTail.Footer).ToList();
 
-            foreach (var stripe in _fileTail.Stripes)
-            {
+            foreach (var stripe in _fileTail.Stripes) {
                 var stripeStreams = stripe.GetStripeStreamCollection();
                 var readAndSetters = properties.Select(p => GetReadAndSetterForColumn(p.propertyInfo, stripeStreams, p.columnId, p.columnType)).ToList();
 
-                for (ulong i = 0; i < stripe.NumRows; i++)
-                {
+                for (ulong i = 0; i < stripe.NumRows; i++) {
                     var obj = Activator.CreateInstance(_type);
-                    foreach (var readAndSetter in readAndSetters)
-                    {
+                    foreach (var readAndSetter in readAndSetters) {
                         readAndSetter(obj);
                     }
                     yield return obj;
@@ -44,10 +35,8 @@ namespace ApacheOrcDotNet
             }
         }
 
-        static IEnumerable<(PropertyInfo propertyInfo, uint columnId, Protocol.ColumnTypeKind columnType)> FindColumnsForType(Type type, Protocol.Footer footer)
-        {
-            foreach (var property in GetWritablePublicProperties(type))
-            {
+        static IEnumerable<(PropertyInfo propertyInfo, uint columnId, Protocol.ColumnTypeKind columnType)> FindColumnsForType(Type type, Protocol.Footer footer) {
+            foreach (var property in GetWritablePublicProperties(type)) {
                 var columnId = footer.Types[0].FieldNames.FindIndex(fn => fn.ToLower() == property.Name.ToLower()) + 1;
                 if (columnId == 0)
                     throw new KeyNotFoundException($"'{property.Name}' not found in ORC data");
@@ -56,15 +45,12 @@ namespace ApacheOrcDotNet
             }
         }
 
-        static IEnumerable<PropertyInfo> GetWritablePublicProperties(Type type)
-        {
+        static IEnumerable<PropertyInfo> GetWritablePublicProperties(Type type) {
             return type.GetTypeInfo().DeclaredProperties.Where(p => p.SetMethod != null);
         }
 
-        Action<object> GetReadAndSetterForColumn(PropertyInfo propertyInfo, Stripes.StripeStreamReaderCollection stripeStreams, uint columnId, Protocol.ColumnTypeKind columnType)
-        {
-            switch (columnType)
-            {
+        Action<object> GetReadAndSetterForColumn(PropertyInfo propertyInfo, Stripes.StripeStreamReaderCollection stripeStreams, uint columnId, Protocol.ColumnTypeKind columnType) {
+            switch (columnType) {
                 case Protocol.ColumnTypeKind.Long:
                 case Protocol.ColumnTypeKind.Int:
                 case Protocol.ColumnTypeKind.Short:
@@ -92,20 +78,17 @@ namespace ApacheOrcDotNet
             }
         }
 
-        static Action<object> GetValueSetterEnumerable<T>(PropertyInfo propertyInfo, IEnumerable<T> enumerable)
-        {
+        static Action<object> GetValueSetterEnumerable<T>(PropertyInfo propertyInfo, IEnumerable<T> enumerable) {
             var valueSetter = GetValueSetter<T>(propertyInfo);
             var enumerator = enumerable.GetEnumerator();
-            return instance =>
-            {
+            return instance => {
                 if (!enumerator.MoveNext())
                     throw new InvalidOperationException("Read past the end of data");
                 valueSetter(instance, enumerator.Current);
             };
         }
 
-        static Action<object, FromT> GetValueSetter<FromT>(PropertyInfo propertyInfo)
-        {
+        static Action<object, FromT> GetValueSetter<FromT>(PropertyInfo propertyInfo) {
             var instance = Expression.Parameter(typeof(object), "instance");
             var value = Expression.Parameter(typeof(FromT), "value");
             var valueAsType = Expression.Convert(value, propertyInfo.PropertyType);

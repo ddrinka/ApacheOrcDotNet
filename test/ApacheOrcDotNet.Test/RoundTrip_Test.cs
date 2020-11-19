@@ -1,30 +1,23 @@
-﻿using ApacheOrcDotNet.ColumnTypes;
-using ApacheOrcDotNet.Test.TestHelpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test
-{
-    public class RoundTrip_Test
-    {
-		[Fact]
-		public void SingleStripe_RoundTrip()
-		{
-			var testElements = new List<RoundTripTestObject>();
-			var random = new Random(123);
-			for (int i = 0; i < 10000; i++)
-				testElements.Add(RoundTripTestObject.Random(random));
-			TestRoundTrip(testElements);
-		}
+namespace ApacheOrcDotNet.Test {
+    public class RoundTrip_Test {
+        [Fact]
+        public void SingleStripe_RoundTrip() {
+            var testElements = new List<RoundTripTestObject>();
+            var random = new Random(123);
+            for (int i = 0; i < 10000; i++)
+                testElements.Add(RoundTripTestObject.Random(random));
+            TestRoundTrip(testElements);
+        }
 
 
         [Fact]
-        public void MultipleStripe_RoundTrip()
-        {
+        public void MultipleStripe_RoundTrip() {
             var testElements = new List<RoundTripTestObject>();
             var random = new Random(123);
             for (int i = 0; i < 2000000; i++)
@@ -32,8 +25,7 @@ namespace ApacheOrcDotNet.Test
             TestRoundTrip(testElements);
         }
 
-        void TestRoundTrip<T>(List<T> expected) where T : new()
-        {
+        void TestRoundTrip<T>(List<T> expected) where T : new() {
             var memStream = new MemoryStream();
             using (var writer = new OrcWriter<T>(memStream, new WriterConfiguration())) //Use the default configuration
             {
@@ -49,13 +41,12 @@ namespace ApacheOrcDotNet.Test
             for (int i = 0; i < expected.Count; i++)
                 Assert.Equal(expected[i], actual[i]);
         }
-	}
+    }
 
-	class RoundTripTestObject
-	{
+    class RoundTripTestObject {
         readonly static DateTime _dateBase = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-		public int Int { get; set; }
+        public int Int { get; set; }
         public long Long { get; set; }
         public short Short { get; set; }
         public uint UInt { get; set; }
@@ -73,10 +64,8 @@ namespace ApacheOrcDotNet.Test
         public string String { get; set; }
 
 
-        public static RoundTripTestObject Random(Random r)
-        {
-            var result = new RoundTripTestObject
-            {
+        public static RoundTripTestObject Random(Random r) {
+            var result = new RoundTripTestObject {
                 Int = r.Next(),
                 Long = r.Next() * 0xFFFFFFL,
                 Short = (short)r.Next(),
@@ -100,8 +89,7 @@ namespace ApacheOrcDotNet.Test
             return result;
         }
 
-        public override bool Equals(object obj)
-        {
+        public override bool Equals(object obj) {
             var test = obj as RoundTripTestObject;
             return test != null &&
                    Int == test.Int &&
@@ -122,8 +110,7 @@ namespace ApacheOrcDotNet.Test
                    String == test.String;
         }
 
-        public override int GetHashCode()
-        {
+        public override int GetHashCode() {
             var hashCode = 291051517;
             hashCode = hashCode * -1521134295 + Int.GetHashCode();
             hashCode = hashCode * -1521134295 + Long.GetHashCode();

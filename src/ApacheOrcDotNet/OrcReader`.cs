@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
-namespace ApacheOrcDotNet
-{
-    public class OrcReader<T> where T : new()
-    {
+namespace ApacheOrcDotNet {
+    public class OrcReader<T> where T : new() {
         readonly OrcReader _underlyingOrcReader;
 
-        public OrcReader(Stream inputStream)
-        {
+        public OrcReader(Stream inputStream) {
             _underlyingOrcReader = new OrcReader(typeof(T), inputStream);
         }
 
