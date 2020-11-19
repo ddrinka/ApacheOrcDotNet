@@ -2,13 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class DecimalReader : ColumnReader
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class DecimalReader : ColumnReader
 	{
 		public DecimalReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{

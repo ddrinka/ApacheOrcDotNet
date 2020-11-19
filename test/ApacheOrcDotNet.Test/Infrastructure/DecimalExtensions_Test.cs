@@ -1,12 +1,8 @@
 ﻿using ApacheOrcDotNet.Infrastructure;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.Infrastructure
-{
+namespace ApacheOrcDotNet.Test.Infrastructure {
     public class DecimalExtensions_Test
     {
 		[Fact]

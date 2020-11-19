@@ -1,14 +1,46 @@
-﻿using System;
-using System.Collections.Generic;
+﻿
+/* Unmerged change from project 'ApacheOrcDotNet.Test (net50)'
+Before:
+using System;
+After:
+using ApacheOrcDotNet.Infrastructure;
+using Microsoft.Extensions.FileProviders;
+using System;
+*/
+
+/* Unmerged change from project 'ApacheOrcDotNet.Test (net461)'
+Before:
+using System;
+After:
+using ApacheOrcDotNet.Infrastructure;
+using Microsoft.Extensions.FileProviders;
+using System;
+*/
+using ApacheOrcDotNet.Infrastructure;
+using Microsoft.Extensions.FileProviders;
+using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
+/* Unmerged change from project 'ApacheOrcDotNet.Test (net50)'
+Before:
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
 using ApacheOrcDotNet.Infrastructure;
+After:
+using System.Threading.Tasks;
+*/
 
-namespace ApacheOrcDotNet.Test.TestHelpers
-{
+/* Unmerged change from project 'ApacheOrcDotNet.Test (net461)'
+Before:
+using System.Threading.Tasks;
+using Microsoft.Extensions.FileProviders;
+using ApacheOrcDotNet.Infrastructure;
+After:
+using System.Threading.Tasks;
+*/
+
+
+namespace ApacheOrcDotNet.Test.TestHelpers {
     public class DataFileHelper : IDisposable
     {
 		readonly Stream _dataStream;

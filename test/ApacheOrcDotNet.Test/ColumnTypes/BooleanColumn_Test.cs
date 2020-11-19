@@ -4,11 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.ColumnTypes
-{
+namespace ApacheOrcDotNet.Test.ColumnTypes {
     public class BooleanColumn_Test
     {
 		[Fact]

@@ -1,14 +1,9 @@
 ﻿using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Infrastructure;
 using ProtoBuf;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Stripes
-{
+namespace ApacheOrcDotNet.Stripes {
     public class StripeReader
     {
 		readonly Stream _inputStream;

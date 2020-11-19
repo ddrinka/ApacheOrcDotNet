@@ -5,12 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.ColumnTypes
-{
+namespace ApacheOrcDotNet.Test.ColumnTypes {
     public class DateColumn_Test
     {
 		[Fact]

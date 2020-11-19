@@ -1,16 +1,30 @@
-﻿using ApacheOrcDotNet.Infrastructure;
-using ApacheOrcDotNet.Stripes;
+﻿using ApacheOrcDotNet.Encodings;
+using ApacheOrcDotNet.Infrastructure;
+
+/* Unmerged change from project 'ApacheOrcDotNet (net50)'
+Before:
 using ApacheOrcDotNet.Encodings;
+After:
+using ApacheOrcDotNet.Stripes;
+*/
 using System;
-using System.IO;
+using System.Collections.Generic;
+
+/* Unmerged change from project 'ApacheOrcDotNet (net50)'
+Before:
 using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+After:
+using System.IO;
+using System.Linq;
+using System.Numerics;
+*/
+using System.Linq;
+using System.Numerics;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class ColumnReader
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class ColumnReader
 	{
 		readonly StripeStreamReaderCollection _stripeStreams;
 		readonly uint _columnId;

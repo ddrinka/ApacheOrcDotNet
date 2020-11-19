@@ -3,14 +3,20 @@ using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
+/* Unmerged change from project 'ApacheOrcDotNet (net50)'
+Before:
 using System.Threading.Tasks;
 using System.IO;
+After:
+using System.Text;
+using System.Threading.Tasks;
+*/
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class StringWriter : IColumnWriter<string>
+
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class StringWriter : IColumnWriter<string>
 	{
 		readonly bool _shouldAlignLengths;
 		readonly bool _shouldAlignDictionaryLookup;

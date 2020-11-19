@@ -1,15 +1,10 @@
 ﻿using ApacheOrcDotNet.Protocol;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Compression
-{
-	using IOStream = System.IO.Stream;
+namespace ApacheOrcDotNet.Compression {
+    using IOStream = System.IO.Stream;
 
-	public static class CompressionFactory
+    public static class CompressionFactory
 	{
 		/// <summary>
 		/// Create a stream that when written to, writes compressed data to the provided <paramref name="outputStream"/>.

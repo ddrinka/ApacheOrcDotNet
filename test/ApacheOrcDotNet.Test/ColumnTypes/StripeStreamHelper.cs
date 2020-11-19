@@ -2,15 +2,11 @@
 using ApacheOrcDotNet.FluentSerialization;
 using ApacheOrcDotNet.Protocol;
 using ApacheOrcDotNet.Stripes;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.ColumnTypes
-{
+namespace ApacheOrcDotNet.Test.ColumnTypes {
     public static class StripeStreamHelper
     {
 		public static void Write<T>(System.IO.Stream outputStream, IEnumerable<T> values, out Footer footer, SerializationConfiguration serializationConfiguration = null) where T : class

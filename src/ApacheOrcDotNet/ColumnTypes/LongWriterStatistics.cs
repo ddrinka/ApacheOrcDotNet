@@ -1,12 +1,8 @@
 ﻿using ApacheOrcDotNet.Statistics;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class LongWriterStatistics : ColumnWriterStatistics, IStatistics
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class LongWriterStatistics : ColumnWriterStatistics, IStatistics
 	{
 		public long? Min { get; set; }
 		public long? Max { get; set; }

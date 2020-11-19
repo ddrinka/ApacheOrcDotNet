@@ -1,14 +1,8 @@
 ﻿using ApacheOrcDotNet.Compression;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.Compression
-{
+namespace ApacheOrcDotNet.Test.Compression {
     public class ZLibStream_Test
     {
 		[Fact]

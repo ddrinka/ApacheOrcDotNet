@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class ColumnWriterStatistics
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class ColumnWriterStatistics
 	{
         public List<List<ulong>> PositionTuples = new List<List<ulong>>();
 

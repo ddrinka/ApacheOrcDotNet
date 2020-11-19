@@ -1,12 +1,7 @@
 ﻿using ApacheOrcDotNet.Compression;
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
+namespace ApacheOrcDotNet.ColumnTypes {
     public interface IColumnWriter
     {
 		List<IStatistics> Statistics { get; }

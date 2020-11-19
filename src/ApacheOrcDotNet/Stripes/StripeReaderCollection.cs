@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Stripes
-{
-	public class StripeReaderCollection : IList<StripeReader>
+namespace ApacheOrcDotNet.Stripes {
+    public class StripeReaderCollection : IList<StripeReader>
 	{
 		readonly List<StripeReader> _innerCollection = new List<StripeReader>();
 		public StripeReaderCollection(Stream inputStream, Protocol.Footer footer, Protocol.CompressionKind compressionKind)

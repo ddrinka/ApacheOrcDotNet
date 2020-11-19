@@ -1,4 +1,7 @@
-﻿using System;
+﻿
+/* Unmerged change from project 'ApacheOrcDotNet (net50)'
+Before:
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,10 +9,24 @@ using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Statistics;
 using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.Protocol;
+After:
+using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Encodings;
+using ApacheOrcDotNet.Protocol;
+using ApacheOrcDotNet.Statistics;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+*/
+using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Encodings;
+using ApacheOrcDotNet.Protocol;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class LongWriter : IColumnWriter<long?>
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class LongWriter : IColumnWriter<long?>
 	{
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;

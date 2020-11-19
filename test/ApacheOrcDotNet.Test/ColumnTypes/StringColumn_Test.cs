@@ -1,15 +1,12 @@
-﻿using ApacheOrcDotNet.ColumnTypes;
-using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.ColumnTypes
-{
+namespace ApacheOrcDotNet.Test.ColumnTypes {
     public class StringColumn_Test
     {
 		[Fact]

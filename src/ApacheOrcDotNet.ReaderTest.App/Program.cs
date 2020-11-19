@@ -4,8 +4,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace ApacheOrcDotNet.ReaderTest.App
-{
+namespace ApacheOrcDotNet.ReaderTest.App {
     class Program
     {
         static void Main(string[] args)

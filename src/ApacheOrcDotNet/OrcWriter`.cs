@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using ApacheOrcDotNet.FluentSerialization;
+using System.Collections.Generic;
 using System.IO;
-using ApacheOrcDotNet.FluentSerialization;
 
-namespace ApacheOrcDotNet
-{
-	public class OrcWriter<T> : IOrcWriter<T>
+namespace ApacheOrcDotNet {
+    public class OrcWriter<T> : IOrcWriter<T>
 	{
 		readonly OrcWriter _underlyingOrcWriter;
 

@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Encodings
-{
-	public static class BitManipulation
+namespace ApacheOrcDotNet.Encodings {
+    public static class BitManipulation
 	{
 		public static byte CheckedReadByte(this Stream stream)
 		{

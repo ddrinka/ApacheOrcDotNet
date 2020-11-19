@@ -1,14 +1,10 @@
 ﻿using ApacheOrcDotNet.ColumnTypes;
 using ApacheOrcDotNet.Stripes;
 using ApacheOrcDotNet.Test.TestHelpers;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.ColumnTypes
-{
+namespace ApacheOrcDotNet.Test.ColumnTypes {
     public class LongReader_Test
     {
 		StripeStreamReaderCollection GetStripeStreamCollection()

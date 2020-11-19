@@ -1,12 +1,8 @@
 ﻿using ProtoBuf;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Protocol
-{
-	public enum CompressionKind
+namespace ApacheOrcDotNet.Protocol {
+    public enum CompressionKind
 	{
 		None = 0,
 		Zlib = 1,

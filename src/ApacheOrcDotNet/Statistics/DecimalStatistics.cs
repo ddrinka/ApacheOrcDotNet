@@ -1,12 +1,8 @@
 ﻿using ProtoBuf;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Statistics
-{
-	[ProtoContract]
+namespace ApacheOrcDotNet.Statistics {
+    [ProtoContract]
 	public class DecimalStatistics : IDecimalStatistics
 	{
 		[ProtoMember(1)] public string Minimum { get; set; }
