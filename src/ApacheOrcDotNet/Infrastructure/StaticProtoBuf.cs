@@ -1,16 +1,11 @@
 ﻿using ProtoBuf.Meta;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Infrastructure
-{
+namespace ApacheOrcDotNet.Infrastructure {
     public static class StaticProtoBuf
     {
 		static StaticProtoBuf()
 		{
-			Serializer = TypeModel.Create();
+			Serializer = RuntimeTypeModel.Create();
 			Serializer.UseImplicitZeroDefaults = false;
 		}
 
