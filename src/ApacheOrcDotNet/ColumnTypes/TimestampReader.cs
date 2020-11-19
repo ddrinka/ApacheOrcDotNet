@@ -2,12 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class TimestampReader : ColumnReader
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class TimestampReader : ColumnReader
 	{
 		readonly static DateTime _orcEpoch = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 

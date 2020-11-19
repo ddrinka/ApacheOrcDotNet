@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Encodings
-{
-	public class IntegerRunLengthEncodingV2Reader
+namespace ApacheOrcDotNet.Encodings {
+    public class IntegerRunLengthEncodingV2Reader
 	{
 		enum EncodingType { ShortRepeat, Direct, PatchedBase, Delta }
 

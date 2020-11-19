@@ -1,15 +1,9 @@
 ﻿using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Protocol;
 using ProtoBuf;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.Protocol
-{
+namespace ApacheOrcDotNet.Test.Protocol {
     public class Footer_Test
     {
 		[Fact]

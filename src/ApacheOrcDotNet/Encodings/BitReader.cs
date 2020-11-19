@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Encodings
-{
+namespace ApacheOrcDotNet.Encodings {
     public class BitReader
     {
 		readonly ByteRunLengthEncodingReader _byteReader;

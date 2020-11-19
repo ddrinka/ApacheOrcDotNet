@@ -1,13 +1,9 @@
 ﻿using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.Stripes;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class DoubleReader : ColumnReader
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class DoubleReader : ColumnReader
 	{
 		public DoubleReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{

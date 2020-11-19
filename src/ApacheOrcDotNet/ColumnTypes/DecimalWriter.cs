@@ -5,11 +5,9 @@ using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class DecimalWriter : IColumnWriter<decimal?>
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class DecimalWriter : IColumnWriter<decimal?>
 	{
 		readonly bool _isNullable;
 		readonly bool _shouldAlignEncodedValues;

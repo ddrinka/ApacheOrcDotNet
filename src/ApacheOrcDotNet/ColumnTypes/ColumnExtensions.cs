@@ -1,14 +1,11 @@
 ﻿using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Infrastructure;
-using ApacheOrcDotNet.Statistics;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public static class ColumnExtensions
+namespace ApacheOrcDotNet.ColumnTypes {
+    public static class ColumnExtensions
 	{
 		public static void WriteToBuffer(this IEnumerable<IStatistics> statistics, Stream outputStream, Func<int,bool> bufferIndexMustBeIncluded)
 		{

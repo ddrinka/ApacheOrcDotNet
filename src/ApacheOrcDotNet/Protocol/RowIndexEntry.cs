@@ -1,13 +1,9 @@
 ﻿using ApacheOrcDotNet.Statistics;
 using ProtoBuf;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Protocol
-{
-	[ProtoContract]
+namespace ApacheOrcDotNet.Protocol {
+    [ProtoContract]
     public class RowIndexEntry
     {
 		[ProtoMember(1, IsPacked = true)]

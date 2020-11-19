@@ -1,11 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿
+/* Unmerged change from project 'ApacheOrcDotNet.Test (net50)'
+Before:
+using System;
+After:
+using ApacheOrcDotNet.FluentSerialization;
+using System;
+*/
+
+/* Unmerged change from project 'ApacheOrcDotNet.Test (net461)'
+Before:
+using System;
+After:
+using ApacheOrcDotNet.FluentSerialization;
+using System;
+*/
+using ApacheOrcDotNet.FluentSerialization;
+using System
+/* Unmerged change from project 'ApacheOrcDotNet.Test (net50)'
+Before:
 using ApacheOrcDotNet.FluentSerialization;
 using Xunit;
+After:
+using Xunit;
+*/
 
-namespace ApacheOrcDotNet.Test.FluentSerialization
-{
+/* Unmerged change from project 'ApacheOrcDotNet.Test (net461)'
+Before:
+using ApacheOrcDotNet.FluentSerialization;
+using Xunit;
+After:
+using Xunit;
+*/
+;
+using Xunit;
+
+namespace ApacheOrcDotNet.Test.FluentSerialization {
     public class FluentSerialization_Test
     {
 		[Fact]

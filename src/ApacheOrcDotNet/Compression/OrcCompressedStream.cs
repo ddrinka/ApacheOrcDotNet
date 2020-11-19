@@ -2,14 +2,10 @@
 using ApacheOrcDotNet.Infrastructure;
 using ApacheOrcDotNet.Protocol;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Compression
-{
-	using IOStream = System.IO.Stream;
+namespace ApacheOrcDotNet.Compression {
+    using IOStream = System.IO.Stream;
 
     public static class OrcCompressedStream
     {

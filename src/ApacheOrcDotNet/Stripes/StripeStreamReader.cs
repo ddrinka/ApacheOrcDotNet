@@ -1,14 +1,24 @@
-﻿using System;
+﻿
+/* Unmerged change from project 'ApacheOrcDotNet (net50)'
+Before:
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ApacheOrcDotNet.Compression;
+After:
+using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Infrastructure;
-using System.IO;
+using System;
+using System.Collections.Generic;
+using System.Compression;
+*/
+using ApacheOrcDotNet.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Stripes
-{
-	public class StripeStreamReader
+namespace ApacheOrcDotNet.Stripes {
+    public class StripeStreamReader
     {
 		readonly Stream _inputStream;
 		readonly long _inputStreamOffset;

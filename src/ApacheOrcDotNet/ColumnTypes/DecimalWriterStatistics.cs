@@ -1,11 +1,7 @@
 ﻿using ApacheOrcDotNet.Statistics;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
+namespace ApacheOrcDotNet.ColumnTypes {
     public class DecimalWriterStatistics : ColumnWriterStatistics, IStatistics
     {
 		public decimal? Min { get; set; }

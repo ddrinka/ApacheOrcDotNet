@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Infrastructure
-{
-	/// <summary>
-	/// A read-only Stream that calls out to a provider when data has been exhausted
-	/// </summary>
+namespace ApacheOrcDotNet.Infrastructure {
+    /// <summary>
+    /// A read-only Stream that calls out to a provider when data has been exhausted
+    /// </summary>
     public class ConcatenatingStream : Stream
     {
 		readonly Func<Stream> _nextStreamProvider;

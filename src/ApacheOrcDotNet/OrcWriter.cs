@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using ApacheOrcDotNet.Compression;
+﻿using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.FluentSerialization;
 using ApacheOrcDotNet.Infrastructure;
 using ApacheOrcDotNet.Stripes;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
-namespace ApacheOrcDotNet
-{
-	public class OrcWriter : IOrcWriter
+namespace ApacheOrcDotNet {
+    public class OrcWriter : IOrcWriter
 	{
 		readonly Stream _outputStream;
 		readonly OrcCompressedBufferFactory _bufferFactory;

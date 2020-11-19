@@ -1,6 +1,5 @@
-﻿namespace ApacheOrcDotNet.FluentSerialization
-{
-	public class SerializationPropertyConfiguration
+﻿namespace ApacheOrcDotNet.FluentSerialization {
+    public class SerializationPropertyConfiguration
     {
 		public bool ExcludeFromSerialization { get; set; }
 		public bool SerializeAsDate { get; set; }

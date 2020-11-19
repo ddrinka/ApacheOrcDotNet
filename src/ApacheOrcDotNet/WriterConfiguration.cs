@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace ApacheOrcDotNet
-{
-	public enum CompressionType { None, ZLIB }
+﻿namespace ApacheOrcDotNet {
+    public enum CompressionType { None, ZLIB }
 	public enum Version { V0_12 }
 	public enum EncodingStrategy { Speed, Size }
 	public enum CompressionStrategy { Speed, Size }

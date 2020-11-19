@@ -1,14 +1,8 @@
-﻿using ApacheOrcDotNet.Compression;
-using ApacheOrcDotNet.Infrastructure;
-using System;
-using System.Collections.Generic;
+﻿using ApacheOrcDotNet.Infrastructure;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.Infrastructure
-{
+namespace ApacheOrcDotNet.Test.Infrastructure {
     public class StreamSegment_Test
     {
 		[Fact]

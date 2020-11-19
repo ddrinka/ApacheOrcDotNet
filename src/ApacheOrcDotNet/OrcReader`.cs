@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
-namespace ApacheOrcDotNet
-{
+namespace ApacheOrcDotNet {
     public class OrcReader<T> where T : new()
     {
         readonly OrcReader _underlyingOrcReader;

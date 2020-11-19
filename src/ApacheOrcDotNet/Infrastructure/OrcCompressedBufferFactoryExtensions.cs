@@ -1,12 +1,7 @@
 ﻿using ApacheOrcDotNet.Compression;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Infrastructure
-{
+namespace ApacheOrcDotNet.Infrastructure {
     public static class OrcCompressedBufferFactoryExtensions
     {
 		public static void SerializeAndCompressTo(this OrcCompressedBufferFactory bufferFactory, Stream outputStream, object instance, out long length)

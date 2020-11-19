@@ -1,12 +1,8 @@
 ﻿using ApacheOrcDotNet.Statistics;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class BooleanWriterStatistics : ColumnWriterStatistics, IStatistics
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class BooleanWriterStatistics : ColumnWriterStatistics, IStatistics
 	{
 		public ulong? FalseCount { get; set; } = 0;
 		public ulong? TrueCount { get; set; } = 0;

@@ -4,11 +4,9 @@ using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class DateWriter : IColumnWriter<DateTime?>
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class DateWriter : IColumnWriter<DateTime?>
 	{
 		readonly static DateTime _unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0);		//Here we'll use a Kind=Unspecified DateTime to avoid muddling the subtraction below
 

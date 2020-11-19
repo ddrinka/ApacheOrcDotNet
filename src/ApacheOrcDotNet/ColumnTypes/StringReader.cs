@@ -2,13 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class StringReader : ColumnReader
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class StringReader : ColumnReader
 	{
 		public StringReader(StripeStreamReaderCollection stripeStreams, uint columnId) : base(stripeStreams, columnId)
 		{

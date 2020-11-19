@@ -1,13 +1,9 @@
 ﻿using ApacheOrcDotNet.Infrastructure;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Encodings
-{
-	public class ByteRunLengthEncodingWriter
+namespace ApacheOrcDotNet.Encodings {
+    public class ByteRunLengthEncodingWriter
 	{
 		readonly Stream _outputStream;
 

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
-namespace ApacheOrcDotNet.FluentSerialization
-{
+namespace ApacheOrcDotNet.FluentSerialization {
     public class SerializationConfiguration
     {
 		readonly Dictionary<Type, ISerializationTypeConfiguration> _types = new Dictionary<Type, ISerializationTypeConfiguration>();

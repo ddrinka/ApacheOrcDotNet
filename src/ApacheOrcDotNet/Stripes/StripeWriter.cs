@@ -7,10 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Stripes
-{
+namespace ApacheOrcDotNet.Stripes {
     public class StripeWriter
     {
 		readonly string _typeName;

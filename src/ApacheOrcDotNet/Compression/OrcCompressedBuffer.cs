@@ -1,12 +1,7 @@
-﻿using ApacheOrcDotNet.Compression;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Compression
-{
+namespace ApacheOrcDotNet.Compression {
     public class OrcCompressedBuffer : Stream
     {
 		readonly int _compressionBlockSize;

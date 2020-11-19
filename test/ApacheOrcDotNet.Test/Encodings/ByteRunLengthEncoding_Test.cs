@@ -1,13 +1,10 @@
 ﻿using ApacheOrcDotNet.Encodings;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.Encodings
-{
+namespace ApacheOrcDotNet.Test.Encodings {
     public class ByteRunLengthEncoding_Test
     {
 		[Fact]

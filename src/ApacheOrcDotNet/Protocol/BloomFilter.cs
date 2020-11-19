@@ -1,12 +1,8 @@
 ﻿using ProtoBuf;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Protocol
-{
-	[ProtoContract]
+namespace ApacheOrcDotNet.Protocol {
+    [ProtoContract]
     public class BloomFilter
     {
 		[ProtoMember(1)] public uint NumHashFunctions { get; }

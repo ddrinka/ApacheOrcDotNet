@@ -3,9 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
-namespace ApacheOrcDotNet.Stripes
-{
-	public class StripeStreamReaderCollection : IList<StripeStreamReader>
+namespace ApacheOrcDotNet.Stripes {
+    public class StripeStreamReaderCollection : IList<StripeStreamReader>
     {
 		readonly List<StripeStreamReader> _underlyingCollection = new List<StripeStreamReader>();
 

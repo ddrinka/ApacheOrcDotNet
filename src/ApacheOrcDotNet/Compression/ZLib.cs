@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Compression
-{
-	public class ZLibStream : Stream
+namespace ApacheOrcDotNet.Compression {
+    public class ZLibStream : Stream
 	{
 		readonly bool _areCompressing;
 		readonly Stream _deflateStream;

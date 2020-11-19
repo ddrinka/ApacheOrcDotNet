@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
-namespace ApacheOrcDotNet.FluentSerialization
-{
+namespace ApacheOrcDotNet.FluentSerialization {
     public class SerializationTypeConfiguration<T> : ISerializationTypeConfiguration
     {
 		readonly SerializationConfiguration _root;

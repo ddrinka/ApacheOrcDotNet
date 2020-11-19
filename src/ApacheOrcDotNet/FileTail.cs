@@ -3,14 +3,9 @@ using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.Infrastructure;
 using ApacheOrcDotNet.Stripes;
 using ProtoBuf;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet
-{
+namespace ApacheOrcDotNet {
     public class FileTail
     {
 		readonly Stream _inputStream;

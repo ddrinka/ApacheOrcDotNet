@@ -1,14 +1,11 @@
 ﻿using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.Protocol;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class DoubleWriter : IColumnWriter<double?>
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class DoubleWriter : IColumnWriter<double?>
 	{
 		readonly bool _isNullable;
 		readonly OrcCompressedBuffer _presentBuffer;

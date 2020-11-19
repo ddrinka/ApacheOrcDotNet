@@ -1,14 +1,11 @@
 ﻿using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.Protocol;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class BinaryWriter : IColumnWriter<byte[]>
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class BinaryWriter : IColumnWriter<byte[]>
 	{
 		readonly bool _shouldAlignLengths;
 		readonly OrcCompressedBuffer _presentBuffer;

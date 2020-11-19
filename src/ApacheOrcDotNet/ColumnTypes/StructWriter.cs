@@ -1,13 +1,25 @@
 ﻿using ApacheOrcDotNet.Compression;
+
+/* Unmerged change from project 'ApacheOrcDotNet (net50)'
+Before:
 using System;
+After:
+using ApacheOrcDotNet.Protocol;
+using System;
+*/
+using ApacheOrcDotNet.Protocol;
 using System.Collections.Generic;
-using System.Linq;
+/* Unmerged change from project 'ApacheOrcDotNet (net50)'
+Before:
 using System.Threading.Tasks;
 using ApacheOrcDotNet.Protocol;
+After:
+using System.Threading.Tasks;
+*/
 
-namespace ApacheOrcDotNet.ColumnTypes
-{
-	public class StructWriter : IColumnWriter<object>
+
+namespace ApacheOrcDotNet.ColumnTypes {
+    public class StructWriter : IColumnWriter<object>
 	{
 		//Assume all root values are present
 		public StructWriter(OrcCompressedBufferFactory bufferFactory, uint columnId)

@@ -1,15 +1,9 @@
 ﻿using ApacheOrcDotNet.Protocol;
 using ProtoBuf;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test.Protocol
-{
-	public class PostScript_Test
+namespace ApacheOrcDotNet.Test.Protocol {
+    public class PostScript_Test
     {
 		[Fact]
 		public void PostScript_ShouldMatchExpected()

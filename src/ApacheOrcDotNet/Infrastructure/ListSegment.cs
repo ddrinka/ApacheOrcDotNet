@@ -2,10 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Infrastructure
-{
+namespace ApacheOrcDotNet.Infrastructure {
     public class ListSegment<T> : IList<T>
     {
 		readonly IList<T> _underlyingList;

@@ -1,14 +1,10 @@
-﻿using ApacheOrcDotNet.ColumnTypes;
-using ApacheOrcDotNet.Test.TestHelpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace ApacheOrcDotNet.Test
-{
+namespace ApacheOrcDotNet.Test {
     public class RoundTrip_Test
     {
 		[Fact]

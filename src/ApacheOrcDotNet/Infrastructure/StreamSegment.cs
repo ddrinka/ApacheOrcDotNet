@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ApacheOrcDotNet.Infrastructure
-{
-	public class StreamSegment : Stream
+namespace ApacheOrcDotNet.Infrastructure {
+    public class StreamSegment : Stream
 	{
 		readonly Stream _underlyingStream;
 		readonly long _lengthToExpose;
