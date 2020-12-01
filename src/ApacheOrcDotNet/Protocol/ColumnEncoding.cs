@@ -9,10 +9,10 @@ namespace ApacheOrcDotNet.Protocol
 	[ProtoContract]
 	public enum ColumnEncodingKind
 	{
-		[ProtoEnum(Name = @"DIRECT", Value = 0)] Direct = 0,
-		[ProtoEnum(Name = @"DICTIONARY", Value = 1)] Dictionary = 1,
-		[ProtoEnum(Name = @"DIRECT_V2", Value = 2)] DirectV2 = 2,
-		[ProtoEnum(Name = @"DICTIONARY_V2", Value = 3)] DictionaryV2 = 3
+		Direct = 0,
+		Dictionary = 1,
+		DirectV2 = 2,
+		DictionaryV2 = 3
 	}
 
 

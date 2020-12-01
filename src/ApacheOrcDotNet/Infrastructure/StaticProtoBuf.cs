@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.Infrastructure
     {
 		static StaticProtoBuf()
 		{
-			Serializer = TypeModel.Create();
+			Serializer = RuntimeTypeModel.Create();
 			Serializer.UseImplicitZeroDefaults = false;
 		}
 

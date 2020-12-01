@@ -8,12 +8,12 @@ namespace ApacheOrcDotNet.Protocol
 {
 	public enum CompressionKind
 	{
-		[ProtoEnum(Name = @"NONE", Value = 0)] None = 0,
-		[ProtoEnum(Name = @"ZLIB", Value = 1)] Zlib = 1,
-		[ProtoEnum(Name = @"SNAPPY", Value = 2)] Snappy = 2,
-		[ProtoEnum(Name = @"LZO", Value = 3)] Lzo = 3,
-		[ProtoEnum(Name = @"LZ4", Value = 4)] Lz4 = 4,
-		[ProtoEnum(Name = @"ZSTD", Value = 5)] Zstd = 5
+		None = 0,
+		Zlib = 1,
+		Snappy = 2,
+		Lzo = 3,
+		Lz4 = 4,
+		Zstd = 5
 	}
 
 	[ProtoContract]
