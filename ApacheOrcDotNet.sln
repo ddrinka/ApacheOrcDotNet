@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26228.9
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31129.286
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{58463841-CD45-4229-9E70-A0B74E70ADD7}"
 EndProject
@@ -11,8 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{9E68D2AB
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E64233AB-9609-4FE2-81C9-206ABF07AB43}"
 	ProjectSection(SolutionItems) = preProject
-		appveyor.yml = appveyor.yml
 		README.md = README.md
+		.github\workflows\testAndPublishLibraries13.yaml = .github\workflows\testAndPublishLibraries13.yaml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApacheOrcDotNet", "src\ApacheOrcDotNet\ApacheOrcDotNet.csproj", "{88CBE7A5-B70E-4801-8FA4-A83A7CDD0B10}"
@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApacheOrcDotNet.Test", "tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApacheOrcDotNet.WriterTest.App", "src\ApacheOrcDotNet.WriterTest.App\ApacheOrcDotNet.WriterTest.App.csproj", "{8FC4EFCA-35E9-4965-A2F8-52974F29E4DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApacheOrcDotNet.ReaderTest.App", "src\ApacheOrcDotNet.ReaderTest.App\ApacheOrcDotNet.ReaderTest.App.csproj", "{F3C9D56A-913A-453D-9C42-B9F467748413}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApacheOrcDotNet.ReaderTest.App", "src\ApacheOrcDotNet.ReaderTest.App\ApacheOrcDotNet.ReaderTest.App.csproj", "{F3C9D56A-913A-453D-9C42-B9F467748413}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -4,7 +4,6 @@
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <OutputType>Exe</OutputType>
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
