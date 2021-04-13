@@ -54,7 +54,7 @@ jobs:
       run: dotnet restore
 
     - name: Build
-      run: dotnet pack -c Release /p:assemblyVersion=$BASE_VERSION.$GITHUB_RUN_NUMBER /p:version=$BASE_VERSION.$GITHUB_RUN_NUMBER /p:RepositoryUrl=${{github.server_url}}/${{github.repository}}
+      run: dotnet pack -c Release /p:assemblyVersion=$BASE_VERSION.$GITHUB_RUN_NUMBER /p:version=$BASE_VERSION.$GITHUB_RUN_NUMBER /p:RepositoryUrl=https://github.com/johnny-robot/
 
     - name: Push to Nuget Repository
       run: dotnet nuget push **/*.nupkg --skip-duplicate --source https://nuget.pkg.github.com/johnny-robot/index.json --api-key ${{ secrets.GITHUBPACKAGESAPIKEY }}
