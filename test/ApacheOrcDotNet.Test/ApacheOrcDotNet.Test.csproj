@@ -1,11 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;net461</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AssemblyName>ApacheOrcDotNet.Test</AssemblyName>
     <IsPackable>false</IsPackable>
-    <Version>1.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

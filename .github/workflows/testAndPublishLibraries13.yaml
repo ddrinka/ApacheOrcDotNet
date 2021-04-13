@@ -1,0 +1,86 @@
+name: Test and Publish Libraries
+
+env:
+  BASE_VERSION: "1.3"
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+on:
+  push:
+    branches:
+      - "master"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        conf: [Debug, Release]
+
+    steps:
+    # Checkout source tree
+    - uses: actions/checkout@v2
+
+    # Install dotnet
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+
+    # Restore packages
+    - name: Install dependencies
+      run: dotnet restore
+
+    # Run tests
+    - name: Test
+      run: dotnet test --configuration ${{ matrix.conf }} --nologo -v quiet --no-restore --filter Category!=UNSAFE --logger GitHubActions
+
+  publishRelease:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+
+    - name: Add package source
+      run: dotnet nuget add source https://nuget.pkg.github.com/johnny-robot/index.json --name GitHub --username ${{ github.repository_owner }} --password ${{secrets.GITHUBPACKAGESAPIKEY}} --store-password-in-clear-text
+
+    - name: Install dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet pack -c Release /p:assemblyVersion=$BASE_VERSION.$GITHUB_RUN_NUMBER /p:version=$BASE_VERSION.$GITHUB_RUN_NUMBER /p:RepositoryUrl=${{github.server_url}}/${{github.repository}}
+
+    - name: Push to Nuget Repository
+      run: dotnet nuget push **/*.nupkg --skip-duplicate --source https://nuget.pkg.github.com/johnny-robot/index.json --api-key ${{ secrets.GITHUBPACKAGESAPIKEY }}
+      env:
+        DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER: false
+
+  publishDebug:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+
+    - name: Add package source
+      run: dotnet nuget add source https://www.myget.org/F/johnny/auth/${{secrets.MYGETAPIKEY}}/api/v3/index.json --name MyGet
+
+    - name: Install dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet pack -c Debug /p:assemblyVersion=$BASE_VERSION.$GITHUB_RUN_NUMBER /p:version=$BASE_VERSION.$GITHUB_RUN_NUMBER /p:RepositoryUrl=${{github.server_url}}/${{github.repository}}
+
+    - name: Push to Nuget Repository
+      run: dotnet nuget push **/*.nupkg --skip-duplicate --source https://www.myget.org/F/johnny/auth/${{secrets.MYGETAPIKEY}}/api/v3/index.json
