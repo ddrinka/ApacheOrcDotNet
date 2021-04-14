@@ -74,7 +74,7 @@ jobs:
         dotnet-version: 5.0.x
 
     - name: Add package source
-      run: dotnet nuget add source https://www.myget.org/F/johnny/auth/${{secrets.MYGETAPIKEY}}/api/v3/index.json --name MyGet
+      run: dotnet nuget add source https://www.myget.org/F/johnny-robot/auth/${{secrets.MYGETAPIKEY}}/api/v3/index.json --name MyGet
 
     - name: Install dependencies
       run: dotnet restore
@@ -83,4 +83,4 @@ jobs:
       run: dotnet pack -c Debug /p:assemblyVersion=$BASE_VERSION.$GITHUB_RUN_NUMBER /p:version=$BASE_VERSION.$GITHUB_RUN_NUMBER /p:RepositoryUrl=${{github.server_url}}/${{github.repository}}
 
     - name: Push to Nuget Repository
-      run: dotnet nuget push **/*.nupkg --skip-duplicate --source https://www.myget.org/F/johnny/auth/${{secrets.MYGETAPIKEY}}/api/v3/index.json
+      run: dotnet nuget push **/*.nupkg --skip-duplicate --source https://www.myget.org/F/johnny-robot/auth/${{secrets.MYGETAPIKEY}}/api/v3/index.json
