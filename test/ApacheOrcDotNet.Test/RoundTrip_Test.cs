@@ -32,6 +32,35 @@ namespace ApacheOrcDotNet.Test
             TestRoundTrip(testElements);
         }
 
+
+        class SinglePropertyObject
+        {
+            public int Int { get; set; }
+        }
+        [Fact]
+        public void ColumnsMissing()
+        {
+            var testElements = new[]
+            {
+                new SinglePropertyObject { Int = 10 }
+            };
+
+            var memStream = new MemoryStream();
+            using (var writer = new OrcWriter<SinglePropertyObject>(memStream, new WriterConfiguration())) //Use the default configuration
+            {
+                writer.AddRows(testElements);
+            }
+
+            memStream.Seek(0, SeekOrigin.Begin);
+
+            var reader = new OrcReader<RoundTripTestObject>(memStream, ignoreMissingColumns: true);
+            var actual = reader.Read().ToList();
+
+            Assert.Equal(testElements.Length, actual.Count);
+            for (int i = 0; i < testElements.Length; i++)
+                Assert.Equal(testElements[i].Int, actual[i].Int);
+        }
+
         void TestRoundTrip<T>(List<T> expected) where T : new()
         {
             var memStream = new MemoryStream();

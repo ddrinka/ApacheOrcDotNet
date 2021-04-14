@@ -13,10 +13,12 @@ namespace ApacheOrcDotNet
     {
         readonly Type _type;
         readonly FileTail _fileTail;
+        readonly bool _ignoreMissingColumns;
 
-        public OrcReader(Type type, Stream inputStream)
+        public OrcReader(Type type, Stream inputStream, bool ignoreMissingColumns = false)
         {
             _type = type;
+            _ignoreMissingColumns = ignoreMissingColumns;
             _fileTail = new FileTail(inputStream);
 
             if (_fileTail.Footer.Types[0].Kind != Protocol.ColumnTypeKind.Struct)
@@ -44,13 +46,18 @@ namespace ApacheOrcDotNet
             }
         }
 
-        static IEnumerable<(PropertyInfo propertyInfo, uint columnId, Protocol.ColumnTypeKind columnType)> FindColumnsForType(Type type, Protocol.Footer footer)
+        IEnumerable<(PropertyInfo propertyInfo, uint columnId, Protocol.ColumnTypeKind columnType)> FindColumnsForType(Type type, Protocol.Footer footer)
         {
             foreach (var property in GetWritablePublicProperties(type))
             {
                 var columnId = footer.Types[0].FieldNames.FindIndex(fn => fn.ToLower() == property.Name.ToLower()) + 1;
                 if (columnId == 0)
-                    throw new KeyNotFoundException($"'{property.Name}' not found in ORC data");
+                {
+                    if (_ignoreMissingColumns)
+                        continue;
+                    else
+                        throw new KeyNotFoundException($"'{property.Name}' not found in ORC data");
+                }
                 var columnType = footer.Types[columnId].Kind;
                 yield return (property, (uint)columnId, columnType);
             }

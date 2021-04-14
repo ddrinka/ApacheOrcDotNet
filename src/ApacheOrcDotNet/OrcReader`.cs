@@ -10,9 +10,9 @@ namespace ApacheOrcDotNet
     {
         readonly OrcReader _underlyingOrcReader;
 
-        public OrcReader(Stream inputStream)
+        public OrcReader(Stream inputStream, bool ignoreMissingColumns = false)
         {
-            _underlyingOrcReader = new OrcReader(typeof(T), inputStream);
+            _underlyingOrcReader = new OrcReader(typeof(T), inputStream, ignoreMissingColumns);
         }
 
         public IEnumerable<T> Read() => _underlyingOrcReader.Read().Cast<T>();
