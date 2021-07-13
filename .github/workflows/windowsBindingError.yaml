@@ -29,4 +29,4 @@ jobs:
 
     # Run tests
     - name: Run
-      run: dotnet run --configuration Release src/ApacheOrcDotNet.WriteTest.App/ApacheOrcDotNet.WriterTest.App.csproj
+      run: dotnet run --configuration Release --project src/ApacheOrcDotNet.WriterTest.App/ApacheOrcDotNet.WriterTest.App.csproj
