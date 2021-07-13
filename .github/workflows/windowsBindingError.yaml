@@ -1,0 +1,32 @@
+name: Test For Windows Binding Error
+
+on:
+  push:
+    branches:
+      - "windowsBindingError"
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+    # Checkout source tree
+    - uses: actions/checkout@v2
+
+    # Install dotnet
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+
+    # Restore packages
+    - name: Install dependencies
+      run: dotnet restore
+
+    # Run tests
+    - name: Run
+      run: dotnet run --configuration Release src/ApacheOrcDotNet.WriteTest.App/ApacheOrcDotNet.WriterTest.App.csproj
