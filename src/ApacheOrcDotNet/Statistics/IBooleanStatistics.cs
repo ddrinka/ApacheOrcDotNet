@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.Statistics
 {
-    public class IBooleanStatistics
+    public interface IBooleanStatistics
     {
 		ulong FalseCount { get; }
 		ulong TrueCount { get; }
