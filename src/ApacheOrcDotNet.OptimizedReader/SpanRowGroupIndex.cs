@@ -12,6 +12,12 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
+    public class StreamIndexDetail
+    {
+        public StreamDetail StreamDetail { get; set; }
+        public List<RowGroupDetail> RowGroupDetails { get; } = new();
+    }
+
     public class RowGroupDetail
     {
         public ColumnStatistics Statistics { get; set; }
@@ -26,17 +32,51 @@ namespace ApacheOrcDotNet.OptimizedReader
         public int? ValueOffset2 { get; set; }  //Used for bitstreams
     }
 
-    public sealed class SpanRowGroupIndex
+    public static class SpanRowGroupIndex
     {
-        readonly RowIndex _rowIndex;
-
-        public SpanRowGroupIndex(ReadOnlySequence<byte> inputSequence)
+        public static IEnumerable<StreamIndexDetail> ReadRowGroupDetails(ReadOnlySequence<byte> inputSequence, List<StreamDetail> streamDetails, CompressionKind compressionKind)
         {
-            _rowIndex = Serializer.Deserialize<RowIndex>(inputSequence);
+            bool compressionEnabled = compressionKind != CompressionKind.None;
+
+            var rowIndex = Serializer.Deserialize<RowIndex>(inputSequence);
+            var result = new List<StreamIndexDetail>();
+            foreach(var stream in streamDetails)
+            {
+                result.Add(new StreamIndexDetail { StreamDetail = stream });
+            }
+
+            foreach(var entry in rowIndex.Entry)
+            {
+                var positions = entry.Positions.ToArray().AsSpan();
+                for (int i = 0; i < streamDetails.Count; i++)
+                {
+                    var stream = streamDetails[i];
+                    var streamPosition = stream.GetStreamPositionFromStreamType(compressionEnabled, positions);
+                    var numConsumedPositions = stream.GetNumValuesInPositionListForStream(compressionEnabled);
+
+                    result[i].RowGroupDetails.Add(new RowGroupDetail
+                    {
+                        Position = streamPosition,
+                        Statistics = entry.Statistics
+                    });
+                    positions = positions[numConsumedPositions..];
+                }
+            }
+
+            return result;
         }
 
-        public int Count => _rowIndex.Entry.Count;
+        static int GetPositionsToSkip(int streamId, IEnumerable<StreamDetail> streamDetails, bool compressionEnabled)
+        {
+            int positionsToSkip = 0;
+            foreach(var stream in streamDetails)
+            {
+                if (stream.StreamId >= streamId)
+                    break;
+                positionsToSkip += stream.GetNumValuesInPositionListForStream(compressionEnabled);
+            }
 
-        public ColumnStatistics GetColumnStatistics(int rowGroupId) => _rowIndex.Entry[rowGroupId].Statistics;
+            return positionsToSkip;
+        }
     }
 }

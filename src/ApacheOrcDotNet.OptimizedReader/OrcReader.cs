@@ -66,7 +66,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return _fileTail.Footer.Statistics[columnId];
         }
 
-        public SpanRowGroupIndex ReadRowGroupIndex(int columnId, int stripeId)
+        public IEnumerable<StreamIndexDetail> ReadRowGroupIndex(int columnId, int stripeId)
         {
             if(!_sliceStreams.TryGetValue(stripeId, out var streamDetails))
             {
@@ -74,14 +74,15 @@ namespace ApacheOrcDotNet.OptimizedReader
                 _sliceStreams.Add(stripeId, streamDetails);
             }
 
-            var matchingStreamDetail = streamDetails.Single(s => s.ColumnId == columnId && s.StreamKind == StreamKind.RowIndex);
+            var streamsForColumn = streamDetails.Where(s => s.ColumnId == columnId).ToList();
+            var rowIndexStream = streamsForColumn.First(s => s.StreamKind == StreamKind.RowIndex);
 
             var result = _byteRangeProvider.DecompressAndParseByteRange(
-                matchingStreamDetail.FileOffset,
-                matchingStreamDetail.Length,
+                rowIndexStream.FileOffset,
+                rowIndexStream.Length,
                 _fileTail.PostScript.Compression,
                 (int)_fileTail.PostScript.CompressionBlockSize,
-                sequence => new SpanRowGroupIndex(sequence)
+                sequence => SpanRowGroupIndex.ReadRowGroupDetails(sequence, streamsForColumn, _fileTail.PostScript.Compression)
             );
 
             return result;

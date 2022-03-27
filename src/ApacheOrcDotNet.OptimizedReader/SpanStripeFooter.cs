@@ -14,6 +14,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public class StreamDetail
     {
+        public int StreamId { get; set; }
         public int ColumnId { get; set; }
         public long FileOffset { get; set; }
         public int Length { get; set; }
@@ -28,10 +29,11 @@ namespace ApacheOrcDotNet.OptimizedReader
         {
             var stripeFooter = Serializer.Deserialize<StripeFooter>(inputSequence);
 
-            foreach (var stream in stripeFooter.Streams)
+            return stripeFooter.Streams.Select((stream, i) =>
             {
-                yield return new StreamDetail
+                var result = new StreamDetail
                 {
+                    StreamId = i,
                     ColumnId = (int)stream.Column,
                     FileOffset = stripeOffset,
                     Length = (int)stream.Length,
@@ -41,7 +43,9 @@ namespace ApacheOrcDotNet.OptimizedReader
                 };
 
                 stripeOffset += (long)stream.Length;
-            }
+
+                return result;
+            }).ToList();
         }
     }
 }

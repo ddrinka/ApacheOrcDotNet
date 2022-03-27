@@ -10,20 +10,41 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public static class StatsExtensions
     {
-        public static int GetNumValuesInPositionListForStream(this StreamDetail streamDetail, bool compressionEnabled) =>
-            (streamDetail.StreamKind, streamDetail.ColumnType, streamDetail.EncodingKind, compressionEnabled) switch
+        public static int GetNumValuesInPositionListForStream(this StreamDetail streamDetail, bool compressionEnabled)
+        {
+            int count = 2;  //All streams have a chunk offset and a value offset
+            if (compressionEnabled)
+                count++;    //If compression is enabled, an offset into the decompressed chunk is also included
+            if (streamDetail.StreamHasSecondValuePosition())
+                count++;    //Some streams include an additional offset
+
+            return count;
+        }
+
+        public static bool StreamHasSecondValuePosition(this StreamDetail streamDetail) =>
+            (streamDetail.StreamKind, streamDetail.ColumnType, streamDetail.EncodingKind) switch
             {
-                (StreamKind.Present, _, _, true) => 4,
-                (StreamKind.Present, _, _, false) => 3,
-                (StreamKind.Data, ColumnTypeKind.Int, _, true) => 3,
-                (StreamKind.Data, ColumnTypeKind.Int, _, false) => 2,
-                (StreamKind.Length, _, _, true) => throw new NotImplementedException(),
-                (StreamKind.Length, _, _, false) => throw new NotImplementedException(),
-                (StreamKind.Secondary, _, _, true) => throw new NotImplementedException(),
-                (StreamKind.Secondary, _, _, false) => throw new NotImplementedException(),
+                (StreamKind.Present, _, _) => true,
+                (StreamKind.Data, ColumnTypeKind.Int, _) => false,
+                (StreamKind.Length, _, _) => throw new NotImplementedException(),
+                (StreamKind.Secondary, _, _) => throw new NotImplementedException(),
                 //TODO This will need some work to fill in completely
                 _ => throw new ArgumentException()
             };
+
+        public static StreamPosition GetStreamPositionFromStreamType(this StreamDetail stream, bool compressionEnabled, ReadOnlySpan<ulong> positions)
+        {
+            int positionIndex = 0;
+            var result = new StreamPosition();
+            result.ChunkFileOffset = stream.FileOffset + (long)positions[positionIndex++];
+            if (compressionEnabled)
+                result.DecompressedOffset = (int)positions[positionIndex++];
+            result.ValueOffset = (int)positions[positionIndex++];
+            if (stream.StreamHasSecondValuePosition())
+                result.ValueOffset2 = (int)positions[positionIndex++];
+
+            return result;
+        }
 
         public static bool InRange(this ColumnStatistics stats, ColumnTypeKind columnType, string min, string max)
         {
