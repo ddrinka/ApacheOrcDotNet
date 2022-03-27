@@ -1,24 +1,32 @@
-﻿using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.Compression;
+using ApacheOrcDotNet.Protocol;
 using ApacheOrcDotNet.Statistics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
-    public class ColumnDescriptor
-    {
-        public string ColumnName { get; set; }
-        public string Min { get; set; }
-        public string Max { get; set; }
-    }
-
     public class OrcReaderConfiguration
     {
         public int OptimisticFileTailReadLength { get; set; } = 16 * 1024;
+    }
+
+    public class ColumnDetail
+    {
+        public int ColumnId { get; set; }
+        public string Name { get; set; }
+        public ColumnTypeKind ColumnType { get; set; }
+    }
+
+    public class StripeDetail
+    {
+        public int StripeId { get; set; }
+        public long RowCount { get; set; }
     }
 
     public sealed class OrcReader
@@ -26,7 +34,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         readonly OrcReaderConfiguration _configuration;
         readonly IByteRangeProvider _byteRangeProvider;
         readonly SpanFileTail _fileTail;
-        readonly Dictionary<int, RowIndex> _stripeIndices = new();
+        readonly Dictionary<int, List<StreamDetail>> _sliceStreams = new();
 
         public OrcReader(OrcReaderConfiguration configuration, IByteRangeProvider byteRangeProvider)
         {
@@ -34,33 +42,66 @@ namespace ApacheOrcDotNet.OptimizedReader
             _byteRangeProvider = byteRangeProvider;
 
             _fileTail = ReadFileTail();
+            if (_fileTail.Footer.Types[0].Kind != ColumnTypeKind.Struct)
+                throw new InvalidDataException($"The base type must be {nameof(ColumnTypeKind.Struct)}");
+
+            ColumnDetails = _fileTail.Footer.Types[0].FieldNames
+                .Select((name, i) => {
+                    var subType = (int)_fileTail.Footer.Types[0].SubTypes[i];
+                    var subTypeKind = _fileTail.Footer.Types[subType].Kind;
+                    return new ColumnDetail { ColumnId = i, Name = name, ColumnType = subTypeKind };
+                })
+                .ToList();
+
+            StripeDetails = _fileTail.Footer.Stripes
+                .Select((stripe, i) => new StripeDetail { StripeId = i, RowCount = (long)stripe.NumberOfRows })
+                .ToList();
+        }
+        
+        public IEnumerable<ColumnDetail> ColumnDetails { get; }
+        public IReadOnlyCollection<StripeDetail> StripeDetails { get; }
+
+        public ColumnStatistics GetFileColumnStatistics(int columnId)
+        {
+            return _fileTail.Footer.Statistics[columnId];
         }
 
-        public IEnumerable<OrcReaderResultSet<T>> Search<T>(params ColumnDescriptor[] columns) where T : struct
+        public SpanRowGroupIndex ReadRowGroupIndex(int columnId, int stripeId)
         {
-            throw new NotImplementedException();
-        }
-
-        bool FileContainsData(params ColumnDescriptor[] columns)
-        {
-            foreach (var descriptor in columns)
+            if(!_sliceStreams.TryGetValue(stripeId, out var streamDetails))
             {
-                var (columnId, columnType) = LookUpColumn(descriptor);
-                var stats = _fileTail.Footer.Statistics[columnId];
-                if (!stats.InRange(columnType, descriptor.Min, descriptor.Max))
-                    return false;
+                streamDetails = ReadStripeFooter(stripeId).ToList();
+                _sliceStreams.Add(stripeId, streamDetails);
             }
-            return true;
+
+            var matchingStreamDetail = streamDetails.Single(s => s.ColumnId == columnId && s.StreamKind == StreamKind.RowIndex);
+
+            var result = _byteRangeProvider.DecompressAndParseByteRange(
+                matchingStreamDetail.FileOffset,
+                matchingStreamDetail.Length,
+                _fileTail.PostScript.Compression,
+                (int)_fileTail.PostScript.CompressionBlockSize,
+                sequence => new SpanRowGroupIndex(sequence)
+            );
+
+            return result;
         }
 
-        (int columnId, ColumnTypeKind columnType) LookUpColumn(ColumnDescriptor descriptor)
+        IEnumerable<StreamDetail> ReadStripeFooter(int stripeId)
         {
-            var columnId = _fileTail.Footer.Types[0].FieldNames.FindIndex(fn => fn.ToLower() == descriptor.ColumnName.ToLower()) + 1;
-            if (columnId == -1)
-                throw new KeyNotFoundException($"'{descriptor.ColumnName}' not found in ORC data");
-            var columnType = _fileTail.Footer.Types[columnId].Kind;
+            var stripe = _fileTail.Footer.Stripes[stripeId];
+            var stripeFooterStart = (int)(stripe.Offset + stripe.IndexLength + stripe.DataLength); //TODO consider supporting >2TB files here
+            var stripeFooterLength = (int)stripe.FooterLength;
 
-            return (columnId, columnType);
+            var result = _byteRangeProvider.DecompressAndParseByteRange(
+                stripeFooterStart,
+                stripeFooterLength,
+                _fileTail.PostScript.Compression,
+                (int)_fileTail.PostScript.CompressionBlockSize,
+                sequence => SpanStripeFooter.ReadStreamDetails(sequence, ColumnDetails, (long)stripe.Offset)
+            );
+
+            return result;
         }
 
         SpanFileTail ReadFileTail()
@@ -69,8 +110,9 @@ namespace ApacheOrcDotNet.OptimizedReader
             while (true)
             {
                 var buffer = ArrayPool<byte>.Shared.Rent(lengthToReadFromEnd);
-                _byteRangeProvider.GetRangeFromEnd(buffer, lengthToReadFromEnd);
-                var success = SpanFileTail.TryRead(buffer, out var fileTail, out var additionalBytesRequired);
+                var bufferSpan = buffer.AsSpan()[..lengthToReadFromEnd];
+                _byteRangeProvider.GetRangeFromEnd(bufferSpan, lengthToReadFromEnd);
+                var success = SpanFileTail.TryRead(bufferSpan, out var fileTail, out var additionalBytesRequired);
                 ArrayPool<byte>.Shared.Return(buffer);
 
                 if (success)
@@ -78,16 +120,6 @@ namespace ApacheOrcDotNet.OptimizedReader
 
                 lengthToReadFromEnd += additionalBytesRequired;
             }
-        }
-
-        void EnsureStripeIndexRead(int stripeId)
-        {
-            if (_stripeIndices.ContainsKey(stripeId))
-                return;
-
-            var stripe = _fileTail.Footer.Stripes[stripeId];
-            var stripeIndexStart = stripe.Offset;
-            var stripIndexLength = stripe.IndexLength;
         }
     }
 }

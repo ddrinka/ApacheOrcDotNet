@@ -10,6 +10,21 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public static class StatsExtensions
     {
+        public static int GetNumValuesInPositionListForStream(this StreamDetail streamDetail, bool compressionEnabled) =>
+            (streamDetail.StreamKind, streamDetail.ColumnType, streamDetail.EncodingKind, compressionEnabled) switch
+            {
+                (StreamKind.Present, _, _, true) => 4,
+                (StreamKind.Present, _, _, false) => 3,
+                (StreamKind.Data, ColumnTypeKind.Int, _, true) => 3,
+                (StreamKind.Data, ColumnTypeKind.Int, _, false) => 2,
+                (StreamKind.Length, _, _, true) => throw new NotImplementedException(),
+                (StreamKind.Length, _, _, false) => throw new NotImplementedException(),
+                (StreamKind.Secondary, _, _, true) => throw new NotImplementedException(),
+                (StreamKind.Secondary, _, _, false) => throw new NotImplementedException(),
+                //TODO This will need some work to fill in completely
+                _ => throw new ArgumentException()
+            };
+
         public static bool InRange(this ColumnStatistics stats, ColumnTypeKind columnType, string min, string max)
         {
             switch (columnType)

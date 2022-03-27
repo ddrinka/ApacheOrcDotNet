@@ -1,12 +1,7 @@
-﻿using ApacheOrcDotNet.Compression;
+﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using ProtoBuf;
 using System;
-using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
@@ -49,12 +44,9 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
 
             int footerStart = buffer.Length - accumulatedLength;
-            int decompressedBufferLength = OrcCompressedBlock.PeekLength(postScript.Compression, buffer[footerStart..]);
             var compressedFooter = buffer.Slice(footerStart, (int)postScript.FooterLength);
-            var decompressedFooter = ArrayPool<byte>.Shared.Rent(decompressedBufferLength);
-            OrcCompressedBlock.DecompressBlock(postScript.Compression, compressedFooter, decompressedFooter);
-            var footer = Serializer.Deserialize<Protocol.Footer>(decompressedFooter.AsSpan()[..decompressedBufferLength]);
-            ArrayPool<byte>.Shared.Return(decompressedFooter);
+            using var decompressedMemorySequence = new DecompressingMemorySequence(compressedFooter, postScript.Compression, (int)postScript.CompressionBlockSize);
+            var footer = Serializer.Deserialize<Protocol.Footer>(decompressedMemorySequence.Sequence);
 
             fileTail = new SpanFileTail
             {
