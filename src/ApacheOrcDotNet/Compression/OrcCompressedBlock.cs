@@ -10,13 +10,14 @@ namespace ApacheOrcDotNet.Compression
 {
     public static class OrcCompressedBlock
     {
-        public static int PeekLength(CompressionKind compressionKind, ReadOnlySpan<byte> input)
+        /// <returns>Length of next (optionally compressed) block including any header</returns>
+        public static int GetChunkLength(CompressionKind compressionKind, ReadOnlySpan<byte> input)
         {
             if (compressionKind == CompressionKind.None)
                 return input.Length;
 
             ReadBlockHeader(input, out var blockLength, out _);
-            return blockLength;
+            return blockLength + 3;     //Include the block header length
         }
 
         private static void ReadBlockHeader(ReadOnlySpan<byte> input, out int blockLength, out bool isCompressed)
@@ -53,10 +54,8 @@ namespace ApacheOrcDotNet.Compression
             {
                 using var stream = new UnmanagedMemoryStream(pBuffer, input.Length);
                 using var deflateStream = new DeflateStream(stream, CompressionMode.Decompress);
-                deflateStream.Read(output.Slice(blockLength));
+                return deflateStream.Read(output);  //TODO ensure we don't need to loop here
             }
-
-            return blockLength;
         }
     }
 }
