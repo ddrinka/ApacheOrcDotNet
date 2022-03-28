@@ -24,7 +24,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             {
                 var bufferSpan = buffer.AsSpan()[..length];
                 provider.GetRange(bufferSpan, (int)offset);     //TODO support > 2TB files
-                using (var decompressed = new DecompressingMemorySequence(buffer, compressionKind, compressionBlockSize))
+                using (var decompressed = new DecompressingMemorySequence(bufferSpan, compressionKind, compressionBlockSize))
                 {
                     result = parser(decompressed.Sequence);
                 }

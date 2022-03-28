@@ -1,10 +1,6 @@
 ﻿using ApacheOrcDotNet.Protocol;
 using ApacheOrcDotNet.Statistics;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
@@ -12,6 +8,9 @@ namespace ApacheOrcDotNet.OptimizedReader
     {
         public static int GetNumValuesInPositionListForStream(this StreamDetail streamDetail, bool compressionEnabled)
         {
+            if (!streamDetail.StreamHasAnyPositions())
+                return 0;
+
             int count = 2;  //All streams have a chunk offset and a value offset
             if (compressionEnabled)
                 count++;    //If compression is enabled, an offset into the decompressed chunk is also included
@@ -21,29 +20,38 @@ namespace ApacheOrcDotNet.OptimizedReader
             return count;
         }
 
-        public static bool StreamHasSecondValuePosition(this StreamDetail streamDetail) =>
+        static bool StreamHasAnyPositions(this StreamDetail streamDetail) =>
+            (streamDetail.StreamKind, streamDetail.ColumnType, streamDetail.EncodingKind) switch
+            {
+                (StreamKind.Present, _, _) => true,
+                (StreamKind.Data, _, _) => true,
+                (StreamKind.Secondary, _, _) => true,
+                //TODO this will need some work to fill in completely
+                _ => false,
+            };
+
+
+        static bool StreamHasSecondValuePosition(this StreamDetail streamDetail) =>
             (streamDetail.StreamKind, streamDetail.ColumnType, streamDetail.EncodingKind) switch
             {
                 (StreamKind.Present, _, _) => true,
                 (StreamKind.Data, ColumnTypeKind.Int, _) => false,
-                (StreamKind.Length, _, _) => throw new NotImplementedException(),
+                (StreamKind.Data, ColumnTypeKind.String, _) => false,
+                (StreamKind.Length, _, ColumnEncodingKind.DictionaryV2) => false,
                 (StreamKind.Secondary, _, _) => throw new NotImplementedException(),
                 //TODO This will need some work to fill in completely
-                _ => throw new ArgumentException()
+                _ => throw new NotSupportedException()
             };
 
         public static StreamPosition GetStreamPositionFromStreamType(this StreamDetail stream, bool compressionEnabled, ReadOnlySpan<ulong> positions)
         {
             int positionIndex = 0;
-            var result = new StreamPosition();
-            result.ChunkFileOffset = stream.FileOffset + (long)positions[positionIndex++];
-            if (compressionEnabled)
-                result.DecompressedOffset = (int)positions[positionIndex++];
-            result.ValueOffset = (int)positions[positionIndex++];
-            if (stream.StreamHasSecondValuePosition())
-                result.ValueOffset2 = (int)positions[positionIndex++];
+            var chunkFileOffset = stream.FileOffset + (long)positions[positionIndex++];
+            var decompressedOffset = compressionEnabled ? (int?)positions[positionIndex++] : null;
+            var valueOffset = (int)positions[positionIndex++];
+            var valueOffset2 = stream.StreamHasSecondValuePosition() ? (int?)positions[positionIndex++] : null;
 
-            return result;
+            return new StreamPosition(chunkFileOffset, decompressedOffset, valueOffset, valueOffset2);
         }
 
         public static bool InRange(this ColumnStatistics stats, ColumnTypeKind columnType, string min, string max)

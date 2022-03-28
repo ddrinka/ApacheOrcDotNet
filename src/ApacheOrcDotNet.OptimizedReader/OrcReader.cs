@@ -16,18 +16,8 @@ namespace ApacheOrcDotNet.OptimizedReader
         public int OptimisticFileTailReadLength { get; set; } = 16 * 1024;
     }
 
-    public class ColumnDetail
-    {
-        public int ColumnId { get; set; }
-        public string Name { get; set; }
-        public ColumnTypeKind ColumnType { get; set; }
-    }
-
-    public class StripeDetail
-    {
-        public int StripeId { get; set; }
-        public long RowCount { get; set; }
-    }
+    public record ColumnDetail(int ColumnId, string Name, ColumnTypeKind ColumnType);
+    public record StripeDetail(int StripeId, long RowCount);
 
     public sealed class OrcReader
     {
@@ -46,15 +36,16 @@ namespace ApacheOrcDotNet.OptimizedReader
                 throw new InvalidDataException($"The base type must be {nameof(ColumnTypeKind.Struct)}");
 
             ColumnDetails = _fileTail.Footer.Types[0].FieldNames
-                .Select((name, i) => {
+                .Select((name, i) =>
+                {
                     var subType = (int)_fileTail.Footer.Types[0].SubTypes[i];
                     var subTypeKind = _fileTail.Footer.Types[subType].Kind;
-                    return new ColumnDetail { ColumnId = i, Name = name, ColumnType = subTypeKind };
+                    return new ColumnDetail(ColumnId: subType, Name: name, ColumnType: subTypeKind);
                 })
                 .ToList();
 
             StripeDetails = _fileTail.Footer.Stripes
-                .Select((stripe, i) => new StripeDetail { StripeId = i, RowCount = (long)stripe.NumberOfRows })
+                .Select((stripe, i) => new StripeDetail(StripeId: i, RowCount: (long)stripe.NumberOfRows))
                 .ToList();
         }
         

@@ -13,7 +13,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
     {
 		StripeStreamReaderCollection GetStripeStreamCollection()
 		{
-			var dataFile = new DataFileHelper("demo-12-zlib.orc");
+			var dataFile = new DataFileHelper(typeof(LongReader_Test), "demo-12-zlib.orc");
 			var stream = dataFile.GetStream();
 			var fileTail = new FileTail(stream);
             var stripes = fileTail.Stripes;

@@ -50,7 +50,7 @@ namespace ApacheOrcDotNet.Compression
 
             //.Net 5 only provides a stream-based ZLib inflator.  .Net 7 will likely introduce low-level calls to make this more optimized
             //https://github.com/dotnet/runtime/issues/62113
-            fixed (byte* pBuffer = &input[0])
+            fixed (byte* pBuffer = &input[3])   //Skip the header
             {
                 using var stream = new UnmanagedMemoryStream(pBuffer, input.Length);
                 using var deflateStream = new DeflateStream(stream, CompressionMode.Decompress);

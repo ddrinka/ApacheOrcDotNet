@@ -46,6 +46,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
         internal SequenceNode(byte[] leasedMemory, int length, SequenceNode previous)
         {
+            LeasedMemory = leasedMemory;
             Memory = leasedMemory.AsMemory(0, length);
             if (previous != null)
             {
