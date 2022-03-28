@@ -8,25 +8,21 @@ using System.IO;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
-    public record StreamIndexDetail(StreamDetail StreamDetail, List<RowGroupDetail> RowGroupDetails);
-    public record RowGroupDetail(ColumnStatistics Statistics, StreamPosition Position);
-    public record StreamPosition(long ChunkFileOffset, int? DecompressedOffset, int ValueOffset, int? ValueOffset2);
+    public record RowGroupDetail(ColumnStatistics Statistics, List<StreamPosition> StreamPositions);
+    public record StreamPosition(int StreamId, Position Position);
+    public record Position(long ChunkFileOffset, int? DecompressedOffset, int ValueOffset, int? ValueOffset2);
 
     public static class SpanRowGroupIndex
     {
-        public static IEnumerable<StreamIndexDetail> ReadRowGroupDetails(ReadOnlySequence<byte> inputSequence, List<StreamDetail> streamDetails, CompressionKind compressionKind)
+        public static IEnumerable<RowGroupDetail> ReadRowGroupDetails(ReadOnlySequence<byte> inputSequence, List<StreamDetail> streamDetails, CompressionKind compressionKind)
         {
             bool compressionEnabled = compressionKind != CompressionKind.None;
 
             var rowIndex = Serializer.Deserialize<RowIndex>(inputSequence);
-            var result = new List<StreamIndexDetail>();
-            foreach(var stream in streamDetails)
-            {
-                result.Add(new StreamIndexDetail(StreamDetail: stream, RowGroupDetails: new()));
-            }
 
             foreach(var entry in rowIndex.Entry)
             {
+                var streamPositions = new List<StreamPosition>();
                 var positions = entry.Positions.ToArray().AsSpan();
                 for (int i = 0; i < streamDetails.Count; i++)
                 {
@@ -36,18 +32,14 @@ namespace ApacheOrcDotNet.OptimizedReader
                         continue;
                     var streamPosition = stream.GetStreamPositionFromStreamType(compressionEnabled, positions);
 
-                    result[i].RowGroupDetails.Add(new RowGroupDetail
-                    (
-                        Position: streamPosition,
-                        Statistics: entry.Statistics
-                    ));
+                    streamPositions.Add(new StreamPosition(StreamId: i, Position: streamPosition));
                     positions = positions[numConsumedPositions..];
                 }
                 if (positions.Length != 0)
                     throw new InvalidDataException($"Some position records were not consumed. ColumnType={streamDetails[0].ColumnType} StreamId={streamDetails[0].StreamId}");
-            }
 
-            return result;
+                yield return new RowGroupDetail(Statistics: entry.Statistics, StreamPositions: streamPositions);
+            }
         }
 
         static int GetPositionsToSkip(int streamId, IEnumerable<StreamDetail> streamDetails, bool compressionEnabled)

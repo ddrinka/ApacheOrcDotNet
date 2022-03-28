@@ -57,7 +57,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return _fileTail.Footer.Statistics[columnId];
         }
 
-        public IEnumerable<StreamIndexDetail> ReadRowGroupIndex(int columnId, int stripeId)
+        public IEnumerable<RowGroupDetail> ReadRowGroupIndex(int columnId, int stripeId)
         {
             if(!_sliceStreams.TryGetValue(stripeId, out var streamDetails))
             {

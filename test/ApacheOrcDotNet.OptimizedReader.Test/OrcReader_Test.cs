@@ -57,12 +57,12 @@ namespace ApacheOrcDotNet.OptimizedReader
         public void RowGroupStatistics()
         {
             var reader = new OrcReader(new OrcReaderConfiguration(), _byteRangeProvider);
-            var indexDetails = reader.ReadRowGroupIndex(1, 0).ToList();
-            var indexDetail = indexDetails[1];
-            Assert.Equal("BZX", indexDetail.RowGroupDetails[0].Statistics.StringStatistics.Minimum);
-            Assert.Equal("BZX", indexDetail.RowGroupDetails[0].Statistics.StringStatistics.Maximum);
-            Assert.Equal(0, indexDetail.RowGroupDetails[0].Position.DecompressedOffset);
-            Assert.Equal(0, indexDetail.RowGroupDetails[0].Position.ValueOffset);
+            var rowGroupDetails = reader.ReadRowGroupIndex(1, 0).ToList();
+            var rowGroupDetail = rowGroupDetails[0];
+            Assert.Equal("BZX", rowGroupDetail.Statistics.StringStatistics.Minimum);
+            Assert.Equal("BZX", rowGroupDetail.Statistics.StringStatistics.Maximum);
+            Assert.Equal(0, rowGroupDetail.StreamPositions[0].Position.DecompressedOffset);
+            Assert.Equal(0, rowGroupDetail.StreamPositions[0].Position.ValueOffset);
         }
     }
 }

@@ -43,7 +43,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 _ => throw new NotSupportedException()
             };
 
-        public static StreamPosition GetStreamPositionFromStreamType(this StreamDetail stream, bool compressionEnabled, ReadOnlySpan<ulong> positions)
+        public static Position GetStreamPositionFromStreamType(this StreamDetail stream, bool compressionEnabled, ReadOnlySpan<ulong> positions)
         {
             int positionIndex = 0;
             var chunkFileOffset = stream.FileOffset + (long)positions[positionIndex++];
@@ -51,7 +51,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             var valueOffset = (int)positions[positionIndex++];
             var valueOffset2 = stream.StreamHasSecondValuePosition() ? (int?)positions[positionIndex++] : null;
 
-            return new StreamPosition(chunkFileOffset, decompressedOffset, valueOffset, valueOffset2);
+            return new Position(chunkFileOffset, decompressedOffset, valueOffset, valueOffset2);
         }
 
         public static bool InRange(this ColumnStatistics stats, ColumnTypeKind columnType, string min, string max)
