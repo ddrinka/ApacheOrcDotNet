@@ -9,7 +9,7 @@ using System.IO;
 namespace ApacheOrcDotNet.OptimizedReader
 {
     public record RowGroupDetail(ColumnStatistics Statistics, List<StreamPosition> StreamPositions);
-    public record StreamPosition(int StreamId, Position Position);
+    public record StreamPosition(StreamDetail Stream, Position Position);
     public record Position(long ChunkFileOffset, int? DecompressedOffset, int ValueOffset, int? ValueOffset2);
 
     public static class SpanRowGroupIndex
@@ -24,15 +24,14 @@ namespace ApacheOrcDotNet.OptimizedReader
             {
                 var streamPositions = new List<StreamPosition>();
                 var positions = entry.Positions.ToArray().AsSpan();
-                for (int i = 0; i < streamDetails.Count; i++)
+                foreach(var stream in streamDetails)
                 {
-                    var stream = streamDetails[i];
                     var numConsumedPositions = stream.GetNumValuesInPositionListForStream(compressionEnabled);
                     if (numConsumedPositions == 0)
                         continue;
                     var streamPosition = stream.GetStreamPositionFromStreamType(compressionEnabled, positions);
 
-                    streamPositions.Add(new StreamPosition(StreamId: i, Position: streamPosition));
+                    streamPositions.Add(new StreamPosition(Stream: stream, Position: streamPosition));
                     positions = positions[numConsumedPositions..];
                 }
                 if (positions.Length != 0)

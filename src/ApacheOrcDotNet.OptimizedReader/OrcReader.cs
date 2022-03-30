@@ -24,7 +24,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         readonly OrcReaderConfiguration _configuration;
         readonly IByteRangeProvider _byteRangeProvider;
         readonly SpanFileTail _fileTail;
-        readonly Dictionary<int, List<StreamDetail>> _sliceStreams = new();
+        readonly Dictionary<int, List<StreamDetail>> _stripeStreams = new();
 
         public OrcReader(OrcReaderConfiguration configuration, IByteRangeProvider byteRangeProvider)
         {
@@ -59,10 +59,10 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public IEnumerable<RowGroupDetail> ReadRowGroupIndex(int columnId, int stripeId)
         {
-            if(!_sliceStreams.TryGetValue(stripeId, out var streamDetails))
+            if(!_stripeStreams.TryGetValue(stripeId, out var streamDetails))
             {
                 streamDetails = ReadStripeFooter(stripeId).ToList();
-                _sliceStreams.Add(stripeId, streamDetails);
+                _stripeStreams.Add(stripeId, streamDetails);
             }
 
             var streamsForColumn = streamDetails.Where(s => s.ColumnId == columnId).ToList();
@@ -77,6 +77,11 @@ namespace ApacheOrcDotNet.OptimizedReader
             );
 
             return result;
+        }
+
+        public int ReadLongValues(Span<long> output, StreamPosition position)
+        {
+            throw new NotImplementedException();
         }
 
         IEnumerable<StreamDetail> ReadStripeFooter(int stripeId)
