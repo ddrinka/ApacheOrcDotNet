@@ -57,6 +57,11 @@ namespace ApacheOrcDotNet.OptimizedReader
             return _fileTail.Footer.Statistics[columnId];
         }
 
+        public ColumnStatistics GetStripeColumnStatistics(int columnId, int stripeId)
+        {
+            return _fileTail.Metadata.StripeStats[stripeId].ColStats[columnId];
+        }
+
         public IEnumerable<RowGroupDetail> ReadRowGroupIndex(int columnId, int stripeId)
         {
             if(!_stripeStreams.TryGetValue(stripeId, out var streamDetails))

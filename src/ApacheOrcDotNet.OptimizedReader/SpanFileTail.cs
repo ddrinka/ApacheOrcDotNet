@@ -9,6 +9,7 @@ namespace ApacheOrcDotNet.OptimizedReader
     {
         public Protocol.PostScript PostScript { get; private init; }
         public Protocol.Footer Footer { get; private init; }
+        public Protocol.Metadata Metadata { get; private init; }
 
         public static bool TryRead(ReadOnlySpan<byte> buffer, out SpanFileTail fileTail, out int additionalBytesRequired)
         {
@@ -36,6 +37,10 @@ namespace ApacheOrcDotNet.OptimizedReader
                 throw new InvalidDataException("Postscript didn't contain magic bytes");
 
             accumulatedLength += (int)postScript.FooterLength;
+            int footerStart = buffer.Length - accumulatedLength;
+            accumulatedLength += (int)postScript.MetadataLength;
+            int metadataStart = buffer.Length - accumulatedLength;
+
             if (buffer.Length < accumulatedLength)
             {
                 additionalBytesRequired = accumulatedLength - buffer.Length;
@@ -43,15 +48,19 @@ namespace ApacheOrcDotNet.OptimizedReader
                 return false;
             }
 
-            int footerStart = buffer.Length - accumulatedLength;
             var compressedFooter = buffer.Slice(footerStart, (int)postScript.FooterLength);
-            using var decompressedMemorySequence = new DecompressingMemorySequence(compressedFooter, postScript.Compression, (int)postScript.CompressionBlockSize);
-            var footer = Serializer.Deserialize<Protocol.Footer>(decompressedMemorySequence.Sequence);
+            using var decompressedFooterSequence = new DecompressingMemorySequence(compressedFooter, postScript.Compression, (int)postScript.CompressionBlockSize);
+            var footer = Serializer.Deserialize<Protocol.Footer>(decompressedFooterSequence.Sequence);
+
+            var compressedMetadata = buffer.Slice(metadataStart, (int)postScript.MetadataLength);
+            using var decompressedMetadataSequence = new DecompressingMemorySequence(compressedMetadata, postScript.Compression, (int)postScript.CompressionBlockSize);
+            var metadata = Serializer.Deserialize<Protocol.Metadata>(decompressedMetadataSequence.Sequence);
 
             fileTail = new SpanFileTail
             {
                 PostScript = postScript,
-                Footer = footer
+                Footer = footer,
+                Metadata = metadata
             };
             additionalBytesRequired = 0;
             return true;

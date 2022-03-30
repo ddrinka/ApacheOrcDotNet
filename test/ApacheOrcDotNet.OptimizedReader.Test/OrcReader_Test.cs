@@ -54,6 +54,20 @@ namespace ApacheOrcDotNet.OptimizedReader
         }
 
         [Fact]
+        public void StripeColumnStatistics()
+        {
+            var reader = new OrcReader(new OrcReaderConfiguration(), _byteRangeProvider);
+            Assert.Equal("BZX", reader.GetStripeColumnStatistics(1, 0).StringStatistics.Minimum);
+            Assert.Equal("BZX", reader.GetStripeColumnStatistics(1, 0).StringStatistics.Maximum);
+            Assert.Equal(1, reader.GetStripeColumnStatistics(2, 0).IntStatistics.Minimum);
+            Assert.Equal(35, reader.GetStripeColumnStatistics(2, 0).IntStatistics.Maximum);
+            Assert.Equal(311, reader.GetStripeColumnStatistics(3, 0).IntStatistics.Minimum);
+            Assert.Equal(16690225, reader.GetStripeColumnStatistics(3, 0).IntStatistics.Maximum);
+            Assert.Equal(25200.063318m, decimal.Parse(reader.GetStripeColumnStatistics(5, 0).DecimalStatistics.Minimum));
+            Assert.Equal(71979.49409m, decimal.Parse(reader.GetStripeColumnStatistics(5, 0).DecimalStatistics.Maximum));
+        }
+
+        [Fact]
         public void RowGroupStatistics()
         {
             var reader = new OrcReader(new OrcReaderConfiguration(), _byteRangeProvider);

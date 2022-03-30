@@ -16,6 +16,9 @@ namespace ApacheOrcDotNet.OptimizedReader
         {
             _writeRequestedRangesToFile = writeRequestedRangesToFile;
             _readRequestedRangesFromFile = readRequestedRangesFromFile;
+
+            if (_writeRequestedRangesToFile == true && _readRequestedRangesFromFile == true)
+                throw new InvalidOperationException("Cannot read and write to range files simultaneously");
         }
 
         public void Dispose()
