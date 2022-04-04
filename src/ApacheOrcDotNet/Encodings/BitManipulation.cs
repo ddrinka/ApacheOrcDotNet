@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.Encodings
 {
-	public static class BitManipulation
+    public static class BitManipulation
 	{
 		public static byte CheckedReadByte(this Stream stream)
 		{
@@ -24,6 +23,20 @@ namespace ApacheOrcDotNet.Encodings
 			{
 				long nextByte = stream.CheckedReadByte();
 				result |= (nextByte << (i * 8));
+			}
+			return result;
+		}
+
+		public static long ReadLongBE(this ReadOnlySpan<byte> buffer, int numBytes)
+		{
+			if (buffer.Length < numBytes)
+				throw new InvalidOperationException("Attempt to read past end of stream");
+
+			long result = 0;
+			for (int i = numBytes - 1; i >= 0; i--)
+			{
+				long nextByte = buffer[numBytes - i - 1];
+				result |= nextByte << (i * 8);
 			}
 			return result;
 		}
@@ -234,6 +247,37 @@ namespace ApacheOrcDotNet.Encodings
 			}
 		}
 
+		public static int ReadBitpackedIntegers(this ReadOnlySpan<byte> stream, bool isSigned, int bitWidth, int count, Span<long> values)
+		{
+			byte currentByte = 0;
+			int bitsAvailable = 0;
+			int currentByteIndex = 0;
+			for (int i = 0; i < count; i++)
+			{
+				ulong result = 0;
+				int neededBits = bitWidth;
+				while (neededBits > bitsAvailable)
+				{
+					result <<= bitsAvailable; //Make space for incoming bits
+					result |= currentByte & ((1u << bitsAvailable) - 1); //OR in the bits
+					neededBits -= bitsAvailable;
+					currentByte = stream[currentByteIndex++];
+					bitsAvailable = 8;
+				}
+
+				if (neededBits > 0) //Left over bits
+				{
+					result <<= neededBits;
+					bitsAvailable -= neededBits;
+					result |= ((ulong)currentByte >> bitsAvailable) & ((1ul << neededBits) - 1);
+				}
+
+				values[i] = isSigned ? ((long)result).ZigzagDecode() :  (long)result;
+			}
+
+			return count;
+		}
+
 		public static void WriteBitpackedIntegers(this Stream stream, IEnumerable<long> values, int bitWidth)
 		{
 			byte currentByte = 0;
@@ -279,6 +323,22 @@ namespace ApacheOrcDotNet.Encodings
 			return result;
 		}
 
+		public static long ReadVarIntUnsigned(this ReadOnlySpan<byte> buffer, ref int offset)
+		{
+			long result = 0;
+			long currentByte;
+			int bitCount = 0;
+			do
+			{
+				currentByte = buffer[offset++];
+				result |= (currentByte & 0x7f) << bitCount;
+				bitCount += 7;
+			}
+			while (currentByte >= 0x80);        //Done when the high bit is not set
+
+			return result;
+		}
+
 		public static void WriteVarIntUnsigned(this Stream stream, long value)
 		{
 			while (true)
@@ -301,6 +361,12 @@ namespace ApacheOrcDotNet.Encodings
 		public static long ReadVarIntSigned(this Stream stream)
 		{
 			var unsigned = ReadVarIntUnsigned(stream);
+			return unsigned.ZigzagDecode();
+		}
+
+		public static long ReadVarIntSigned(this ReadOnlySpan<byte> buffer, ref int offset)
+		{
+			var unsigned = ReadVarIntUnsigned(buffer, ref offset);
 			return unsigned.ZigzagDecode();
 		}
 

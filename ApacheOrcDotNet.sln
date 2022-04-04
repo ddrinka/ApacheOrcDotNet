@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31129.286
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32319.34
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{58463841-CD45-4229-9E70-A0B74E70ADD7}"
 	ProjectSection(SolutionItems) = preProject
@@ -33,6 +33,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApacheOrcDotNet.OptimizedRe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApacheOrcDotNet.OptimizedReader.Test", "test\ApacheOrcDotNet.OptimizedReader.Test\ApacheOrcDotNet.OptimizedReader.Test.csproj", "{AE3C0606-2210-40ED-AE93-67DBD06461BE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApacheOrcDotNet.OptimizedReaderTest.App", "src\ApacheOrcDotNet.OptimizedReaderTest.App\ApacheOrcDotNet.OptimizedReaderTest.App.csproj", "{E8C6F47D-51EE-4488-AF63-2898C01A6515}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{AE3C0606-2210-40ED-AE93-67DBD06461BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AE3C0606-2210-40ED-AE93-67DBD06461BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AE3C0606-2210-40ED-AE93-67DBD06461BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8C6F47D-51EE-4488-AF63-2898C01A6515}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8C6F47D-51EE-4488-AF63-2898C01A6515}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8C6F47D-51EE-4488-AF63-2898C01A6515}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8C6F47D-51EE-4488-AF63-2898C01A6515}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -74,6 +80,7 @@ Global
 		{F3C9D56A-913A-453D-9C42-B9F467748413} = {58463841-CD45-4229-9E70-A0B74E70ADD7}
 		{6C94BFE7-2452-42FF-A17A-4E090F2F8DBD} = {58463841-CD45-4229-9E70-A0B74E70ADD7}
 		{AE3C0606-2210-40ED-AE93-67DBD06461BE} = {40D373E1-A120-41E0-9D3D-1BACC719BB38}
+		{E8C6F47D-51EE-4488-AF63-2898C01A6515} = {58463841-CD45-4229-9E70-A0B74E70ADD7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BAAC5D9A-83A0-432F-9987-90C49734F761}
