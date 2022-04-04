@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
@@ -29,7 +25,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public void GetRangeFromEnd(Span<byte> buffer, int positionFromEnd)
         {
-            _stream.Seek(positionFromEnd, SeekOrigin.End);
+            _stream.Seek(-positionFromEnd, SeekOrigin.End);
             DoRead(buffer);
         }
 
