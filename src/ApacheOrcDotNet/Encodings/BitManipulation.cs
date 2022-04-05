@@ -249,9 +249,9 @@ namespace ApacheOrcDotNet.Encodings
 
 		public static int ReadBitpackedIntegers(this ReadOnlySpan<byte> stream, bool isSigned, int bitWidth, int count, Span<long> values)
 		{
+			var bytesRead = 0;
 			byte currentByte = 0;
 			int bitsAvailable = 0;
-			int currentByteIndex = 0;
 			for (int i = 0; i < count; i++)
 			{
 				ulong result = 0;
@@ -261,7 +261,7 @@ namespace ApacheOrcDotNet.Encodings
 					result <<= bitsAvailable; //Make space for incoming bits
 					result |= currentByte & ((1u << bitsAvailable) - 1); //OR in the bits
 					neededBits -= bitsAvailable;
-					currentByte = stream[currentByteIndex++];
+					currentByte = stream[bytesRead++];
 					bitsAvailable = 8;
 				}
 
@@ -275,7 +275,7 @@ namespace ApacheOrcDotNet.Encodings
 				values[i] = isSigned ? ((long)result).ZigzagDecode() :  (long)result;
 			}
 
-			return count;
+			return bytesRead;
 		}
 
 		public static void WriteBitpackedIntegers(this Stream stream, IEnumerable<long> values, int bitWidth)

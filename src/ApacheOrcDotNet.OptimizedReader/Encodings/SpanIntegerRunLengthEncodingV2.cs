@@ -10,30 +10,17 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
 
         public static int ReadValues(ReadOnlySpan<byte> input, Position position, bool isSigned, Span<long> values)
         {
-            int numValues = 0;
-            int firstByte = input[0];
-
-            if (firstByte < 0)
-                return 0;
-
+            var firstByte = input[0];
             var encodingType = (EncodingType)((firstByte >> 6) & 0x3);
-            switch (encodingType)
-            {
-                case EncodingType.ShortRepeat:
-                    numValues += ReadShortRepeatValues(firstByte, isSigned, input.Slice(1), values);
-                    break;
-                case EncodingType.Direct:
-                    numValues += ReadDirectValues(firstByte, isSigned, input.Slice(1), values);
-                    break;
-                case EncodingType.PatchedBase:
-                    numValues += ReadPatchedBaseValues(firstByte, isSigned, input.Slice(1), values);
-                    break;
-                case EncodingType.Delta:
-                    numValues += ReadDeltaValues(firstByte, isSigned, input.Slice(1), values);
-                    break;
-            }
 
-            return numValues;
+            return encodingType switch
+            {
+                EncodingType.ShortRepeat => ReadShortRepeatValues(firstByte, isSigned, input.Slice(1), values),
+                EncodingType.Direct => ReadDirectValues(firstByte, isSigned, input.Slice(1), values),
+                EncodingType.PatchedBase => ReadPatchedBaseValues(firstByte, isSigned, input.Slice(1), values),
+                EncodingType.Delta => ReadDeltaValues(firstByte, isSigned, input.Slice(1), values),
+                _ => throw new InvalidOperationException($"Invalid encoding type: {encodingType}")
+            };
         }
 
         private static int ReadShortRepeatValues(int firstByte, bool isSigned, ReadOnlySpan<byte> input, Span<long> values)
@@ -48,7 +35,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             for (int i = 0; i < repeatCount; i++)
                 values[i] = value;
 
-            return repeatCount;
+            return width;
         }
 
         private static int ReadDirectValues(int firstByte, bool isSigned, ReadOnlySpan<byte> input, Span<long> values)
@@ -61,7 +48,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             length |= input[offset++];
             length += 1;
 
-            return input.Slice(offset).ReadBitpackedIntegers(isSigned, width, length, values);
+            offset += input.Slice(offset).ReadBitpackedIntegers(isSigned, width, length, values);
+
+            return offset;
         }
 
         private static int ReadPatchedBaseValues(int firstByte, bool isSigned, ReadOnlySpan<byte> input, Span<long> values)
@@ -89,19 +78,17 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                 baseValue = baseValue & ~msbMask;
                 baseValue = -baseValue;
             }
+            offset += baseValueWidth;
 
             //Buffer all the values so we can patch them
-            offset += baseValueWidth;
-            Span<long> dataValues = stackalloc long[length];
-            var numDataValues = input.Slice(offset).ReadBitpackedIntegers(isSigned, width, length, dataValues);
+            offset += input.Slice(offset).ReadBitpackedIntegers(isSigned, width, length, values);
 
             if (patchGapWidth + patchWidth > 64)
                 throw new InvalidDataException($"{nameof(patchGapWidth)} ({patchGapWidth}) + {nameof(patchWidth)} ({patchWidth}) > 64");
 
-            offset += numDataValues;
             Span<long> patchListValues = stackalloc long[patchListLength];
             var patchListWidth = BitManipulation.FindNearestDirectWidth(patchWidth + patchGapWidth);
-            var numPatchListValues = input.Slice(offset).ReadBitpackedIntegers(isSigned, patchListWidth, patchListLength, patchListValues);
+            offset += input.Slice(offset).ReadBitpackedIntegers(isSigned, patchListWidth, patchListLength, patchListValues);
 
             int patchIndex = 0;
             long gap = 0;
@@ -112,17 +99,17 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             {
                 if (i == gap)
                 {
-                    var patchedValue = dataValues[i] | (patch << width);
+                    var patchedValue = values[i] | (patch << width);
                     values[i] = baseValue + patchedValue;
 
                     if (patchIndex < patchListLength)
                         GetNextPatch(patchListValues, ref patchIndex, ref gap, out patch, patchWidth, (1L << patchWidth) - 1);
                 }
                 else
-                    values[i] = baseValue + dataValues[i];
+                    values[i] = baseValue + values[i];
             }
 
-            return length;
+            return offset;
         }
 
         private static int ReadDeltaValues(int firstByte, bool isSigned, ReadOnlySpan<byte> input, Span<long> values)
@@ -156,9 +143,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                 values[valueIndex++] = values[valueIndex - 2] + deltaBase;
 
                 Span<long> deltaValues = stackalloc long[length - 1];
-                var numDeltaValues = input.Slice(offset).ReadBitpackedIntegers(isSigned, width, length - 1, deltaValues);
+                offset += input.Slice(offset).ReadBitpackedIntegers(isSigned, width, length - 1, deltaValues);
 
-                for (int index = 0; index < numDeltaValues; index++)
+                for (int index = 0; index < deltaValues.Length; index++)
                 {
                     if (deltaBase > 0)
                         values[valueIndex++] = values[valueIndex - 2] + deltaValues[index];
@@ -167,7 +154,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                 }
             }
 
-            return length;
+            return offset;
         }
 
         private static void GetNextPatch(Span<long> patchListValues, ref int patchIndex, ref long gap, out long patch, int patchWidth, long patchMask)
