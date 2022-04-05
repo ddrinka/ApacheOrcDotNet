@@ -88,7 +88,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             Span<long> output = stackalloc long[5];
 
             var position = new Position(ChunkFileOffset: 0, DecompressedOffset: null, ValueOffset: 0, ValueOffset2: null);
-            SpanIntegerRunLengthEncodingV2.ReadValues(input, position, isSigned: false, output);
+            var bytesRead = SpanIntegerRunLengthEncodingV2.ReadValues(input, position, isSigned: false, output);
 
             for (int i = 0; i < expected.Length; i++)
                 Assert.Equal(expected[i], output[i]);
@@ -102,7 +102,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             Span<long> output = stackalloc long[4];
 
             var position = new Position(ChunkFileOffset: 0, DecompressedOffset: null, ValueOffset: 0, ValueOffset2: null);
-            SpanIntegerRunLengthEncodingV2.ReadValues(input, position, isSigned: false, output);
+            var bytesRead = SpanIntegerRunLengthEncodingV2.ReadValues(input, position, isSigned: false, output);
 
             for (int i = 0; i < expected.Length; i++)
                 Assert.Equal(expected[i], output[i]);
@@ -116,7 +116,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             Span<long> output = stackalloc long[20];
 
             var position = new Position(ChunkFileOffset: 0, DecompressedOffset: null, ValueOffset: 0, ValueOffset2: null);
-            SpanIntegerRunLengthEncodingV2.ReadValues(input, position, isSigned: false, output);
+            var bytesRead = SpanIntegerRunLengthEncodingV2.ReadValues(input, position, isSigned: false, output);
 
             for (int i = 0; i < expected.Length; i++)
                 Assert.Equal(expected[i], output[i]);
@@ -130,7 +130,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             Span<long> output = stackalloc long[10];
 
             var position = new Position(ChunkFileOffset: 0, DecompressedOffset: null, ValueOffset: 0, ValueOffset2: null);
-            SpanIntegerRunLengthEncodingV2.ReadValues(input, position, isSigned: false, output);
+            var bytesRead = SpanIntegerRunLengthEncodingV2.ReadValues(input, position, isSigned: false, output);
 
             for (int i = 0; i < expected.Length; i++)
                 Assert.Equal(expected[i], output[i]);

@@ -1,13 +1,10 @@
-﻿using ApacheOrcDotNet.Compression;
-using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.Protocol;
 using ApacheOrcDotNet.Statistics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
@@ -48,7 +45,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 .Select((stripe, i) => new StripeDetail(StripeId: i, RowCount: (long)stripe.NumberOfRows))
                 .ToList();
         }
-        
+
         public IEnumerable<ColumnDetail> ColumnDetails { get; }
         public IReadOnlyCollection<StripeDetail> StripeDetails { get; }
 
@@ -64,7 +61,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public IEnumerable<RowGroupDetail> ReadRowGroupIndex(int columnId, int stripeId)
         {
-            if(!_stripeStreams.TryGetValue(stripeId, out var streamDetails))
+            if (!_stripeStreams.TryGetValue(stripeId, out var streamDetails))
             {
                 streamDetails = ReadStripeFooter(stripeId).ToList();
                 _stripeStreams.Add(stripeId, streamDetails);
