@@ -17,13 +17,21 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             {
                 var compressedChunkLength = OrcCompressedBlock.GetChunkLength(compressionKind, compressedBuffer[position..]);
                 var decompressedSegment = ArrayPool<byte>.Shared.Rent(compressionBlockSize);
-                var decompressedLength = OrcCompressedBlock.DecompressBlock(compressionKind, compressedBuffer.Slice(position, compressedChunkLength), decompressedSegment);
-                
-                _end = new SequenceNode(decompressedSegment, decompressedLength, _end);
+                var decompressedSegmentSpan = decompressedSegment.AsSpan().Slice(0, compressionBlockSize);
+
+                var chunkToDecompress = (position + compressedChunkLength) > compressedBuffer.Length
+                    ? compressedBuffer.Slice(position)
+                    : compressedBuffer.Slice(position, compressedChunkLength);
+
+                var decompressedLength = OrcCompressedBlock.DecompressBlock(compressionKind, chunkToDecompress, decompressedSegmentSpan);
+
+                _end = new SequenceNode(decompressedSegmentSpan.ToArray(), decompressedLength, _end);
                 if (_begin == null)
                     _begin = _end;
 
                 position += compressedChunkLength;
+
+                ArrayPool<byte>.Shared.Return(decompressedSegment);
             }
         }
 

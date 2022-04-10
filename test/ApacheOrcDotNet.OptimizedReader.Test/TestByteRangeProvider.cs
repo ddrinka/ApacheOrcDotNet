@@ -9,7 +9,7 @@ namespace ApacheOrcDotNet.OptimizedReader
     {
         readonly bool _writeRequestedRangesToFile;
         readonly bool _readRequestedRangesFromFile;
-        readonly Dictionary<(bool isFromEnd, int position, int length), Stream> _openFiles = new();
+        readonly Dictionary<(bool isFromEnd, long position, int length), Stream> _openFiles = new();
         readonly static object _fileLock = new();
 
         public TestByteRangeProvider(bool writeRequestedRangesToFile, bool readRequestedRangesFromFile)
@@ -27,7 +27,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 file.Dispose();
         }
 
-        public void GetRange(Span<byte> buffer, int position)
+        public int GetRange(Span<byte> buffer, long position)
         {
             var reader = GetOpenStreamForRange(false, position, buffer.Length);
             if (!_readRequestedRangesFromFile)
@@ -43,9 +43,10 @@ namespace ApacheOrcDotNet.OptimizedReader
                     outputStream.Write(buffer);
                 }
             }
+            return buffer.Length;
         }
 
-        public void GetRangeFromEnd(Span<byte> buffer, int positionFromEnd)
+        public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
         {
             var reader = GetOpenStreamForRange(true, positionFromEnd, buffer.Length);
             if (!_readRequestedRangesFromFile)
@@ -61,9 +62,10 @@ namespace ApacheOrcDotNet.OptimizedReader
                     outputStream.Write(buffer);
                 }
             }
+            return buffer.Length;
         }
 
-        Stream GetOpenStreamForRange(bool isFromEnd, int position, int length)
+        Stream GetOpenStreamForRange(bool isFromEnd, long position, int length)
         {
             if (_openFiles.TryGetValue((isFromEnd, position, length), out var existingStream))
                 return existingStream;
@@ -92,7 +94,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        string GetRangeFilename(bool isFromEnd, int position, int length)
+        string GetRangeFilename(bool isFromEnd, long position, int length)
         {
             string fromEnd = isFromEnd ? "fromEnd" : "fromStart";
             return $"orctest_{fromEnd}_{position}_{length}.orc";

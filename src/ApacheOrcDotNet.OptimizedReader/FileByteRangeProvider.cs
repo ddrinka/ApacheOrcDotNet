@@ -17,28 +17,32 @@ namespace ApacheOrcDotNet.OptimizedReader
             _stream.Dispose();
         }
 
-        public void GetRange(Span<byte> buffer, int position)
+        public int GetRange(Span<byte> buffer, long position)
         {
             _stream.Seek(position, SeekOrigin.Begin);
-            DoRead(buffer);
+            return DoRead(buffer);
         }
 
-        public void GetRangeFromEnd(Span<byte> buffer, int positionFromEnd)
+        public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
         {
             _stream.Seek(-positionFromEnd, SeekOrigin.End);
-            DoRead(buffer);
+            return DoRead(buffer);
         }
 
-        private void DoRead(Span<byte> buffer)
+        private int DoRead(Span<byte> buffer)
         {
-            int start = 0;
-            int remaining = buffer.Length;
-            while (remaining > 0)
+            int bytesRead = 0;
+            int bytesRemaining = buffer.Length;
+            while (bytesRemaining > 0)
             {
-                int count = _stream.Read(buffer[start..]);
-                start += count;
-                remaining -= count;
+                int count = _stream.Read(buffer[bytesRead..]);
+                if (count == 0)
+                    break;
+
+                bytesRead += count;
+                bytesRemaining -= count;
             }
+            return bytesRead;
         }
     }
 }

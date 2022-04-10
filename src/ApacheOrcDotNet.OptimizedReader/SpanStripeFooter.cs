@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
-    public record StreamDetail(int StreamId, int ColumnId, long FileOffset, int Length, ColumnTypeKind? ColumnType, StreamKind StreamKind, ColumnEncodingKind EncodingKind);
+    public record StreamDetail(int StreamId, int ColumnId, long FileOffset, int Length, ColumnTypeKind? ColumnType, StreamKind StreamKind, ColumnEncodingKind EncodingKind, int DictionarySize);
 
     public static class SpanStripeFooter
     {
@@ -24,7 +24,8 @@ namespace ApacheOrcDotNet.OptimizedReader
                     Length: (int)stream.Length,
                     ColumnType: columnDetails.FirstOrDefault(c => c.ColumnId == stream.Column)?.ColumnType,
                     StreamKind: stream.Kind,
-                    EncodingKind: stripeFooter.Columns[(int)stream.Column].Kind
+                    EncodingKind: stripeFooter.Columns[(int)stream.Column].Kind,
+                    DictionarySize: (int)stripeFooter.Columns[(int)stream.Column].DictionarySize
                 );
 
                 stripeOffset += (long)stream.Length;
