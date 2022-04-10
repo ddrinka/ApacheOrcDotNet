@@ -22,6 +22,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                 .Build()
             ;
 
+            var fileName = config.GetValue("fileName", string.Empty);
             var date = config.GetValue("date", DateTime.Now.ToString("d"));
             var source = config.GetValue("source", string.Empty);
             var symbol = config.GetValue("symbol", string.Empty);
@@ -32,9 +33,9 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             var isValidBeginTime = TimeSpan.TryParse(beginTime, out var parsedBeginTime);
             var isValidEndTime = TimeSpan.TryParse(endTime, out var parsedEndTime);
 
-            if (!isValidDate || source.Length == 0 || symbol.Length == 0 || !isValidBeginTime || !isValidEndTime || (parsedEndTime < parsedBeginTime))
+            if (fileName.Length ==0 || !isValidDate || source.Length == 0 || symbol.Length == 0 || !isValidBeginTime || !isValidEndTime || (parsedEndTime < parsedBeginTime))
             {
-                Console.WriteLine("Usage: --date m/d/yyyy --source sourceName --symbol symbolName --beginTime hh:mm:ss --endTime hh:mm:ss");
+                Console.WriteLine("Usage: --fileName orcFileName --date m/d/yyyy --source sourceName --symbol symbolName --beginTime hh:mm:ss --endTime hh:mm:ss");
                 Environment.Exit(-1);
             }
 
@@ -46,8 +47,9 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             Console.WriteLine($"symbol: '{symbol}'");
             Console.WriteLine($"beginTime: '{beginTime}'");
             Console.WriteLine($"endTime: '{endTime}'");
+            Console.WriteLine();
 
-            var configs = new OptimizedORCAppConfituration
+            var configs = new OptimizedORCAppConfiguration
             {
                 Date = parsedDate,
                 Source = source,
@@ -57,7 +59,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             };
 
             var fileByteRangeProviderFactory = new FileByteRangeProviderFactory();
-            var optimizedORCApp = new OptimizedORCApp(configs, fileByteRangeProviderFactory);
+            var optimizedORCApp = new OptimizedORCApp(fileName, configs, fileByteRangeProviderFactory);
             var stopWatch = new Stopwatch();
 
             stopWatch.Start();

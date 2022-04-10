@@ -3,7 +3,7 @@ using System;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
-    public class OptimizedORCAppConfituration
+    public class OptimizedORCAppConfiguration
     {
         public DateTime Date { get; set; }
         public string Source { get; set; }
@@ -14,21 +14,68 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
     public class OptimizedORCApp
     {
-        private readonly OptimizedORCAppConfituration _confituration;
+        private readonly string _orcFileName;
+        private readonly OptimizedORCAppConfiguration _configuration;
         private readonly IByteRangeProviderFactory _byteRangeProviderFactory;
 
-        public OptimizedORCApp(OptimizedORCAppConfituration confituration, IByteRangeProviderFactory byteRangeProviderFactory)
+        public OptimizedORCApp(string orcFileName, OptimizedORCAppConfiguration confituration, IByteRangeProviderFactory byteRangeProviderFactory)
         {
-            _confituration = confituration;
+            _orcFileName = orcFileName;
+            _configuration = confituration;
             _byteRangeProviderFactory = byteRangeProviderFactory;
         }
 
         public void Run()
         {
-            var byteRangeProvider = _byteRangeProviderFactory.Create(_confituration.Source);
-            var optimizedOrcReader = new OptimizedReader.OrcReader(new OrcReaderConfiguration(), byteRangeProvider);
+            //
+            var reader = new OrcOptimizedReader(
+                new OrcOptimizedReaderConfiguration() { OptimisticFileTailReadLength = 1 },
+                _byteRangeProviderFactory.Create(_orcFileName)
+            );
 
-            var rowGroupIndex = optimizedOrcReader.ReadRowGroupIndex(columnId: 0, stripeId: 0);
+            //
+            var lookupSource = _configuration.Source;
+            var lookupSymbol = _configuration.Symbol;
+            var beginTime = (decimal)_configuration.BeginTime.TotalSeconds;
+            var endTime = (decimal)_configuration.EndTime.TotalSeconds;
+
+            //
+            var stripeIds = reader.GetStripeIds("source", lookupSource, lookupSource);
+            stripeIds = reader.GetStripeIds(stripeIds, "symbol", lookupSymbol, lookupSymbol);
+            stripeIds = reader.GetStripeIds(stripeIds, "time", $"{beginTime}", $"{endTime}");
+
+            foreach (var stripeId in stripeIds)
+            {
+                var rowGroupIndexes = reader.GetRowGroupIndexes(stripeId, "source", lookupSource, lookupSource);
+                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, "symbol", lookupSymbol, lookupSymbol);
+                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, "time", $"{beginTime}", $"{endTime}");
+
+                foreach (var rowEntryIndex in rowGroupIndexes)
+                {
+                    var sourceReader = reader.CreateStringReader(stripeId, rowEntryIndex, "source");
+                    var symbolReader = reader.CreateStringReader(stripeId, rowEntryIndex, "symbol");
+                    var timeReader = reader.CreateDecimalAsDoubleReader(stripeId, rowEntryIndex, "time");
+                    var sizeReader = reader.CreateIntegerReader(stripeId, rowEntryIndex, "size");
+
+                    sourceReader.FillBuffer();
+                    symbolReader.FillBuffer();
+                    timeReader.FillBuffer();
+                    sizeReader.FillBuffer();
+
+                    for (int idx = 0; idx < sizeReader.Values.Length; idx++)
+                    {
+                        var source = sourceReader.Values[idx];
+                        var symbol = symbolReader.Values[idx];
+                        var time = timeReader.Values[idx];
+                        var size = sizeReader.Values[idx];
+
+                        if (source == lookupSource && symbol == lookupSymbol && time >= (double)beginTime && time <= (double)endTime)
+                        {
+                            Console.WriteLine($"{source},{symbol},{time.ToString().PadRight(15, '0')},{size}");
+                        }
+                    }
+                }
+            }
         }
     }
 }

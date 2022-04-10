@@ -1,5 +1,6 @@
 ﻿using ApacheOrcDotNet.Protocol;
 using ApacheOrcDotNet.Statistics;
+using ApacheOrcDotNet.Stripes;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -8,22 +9,20 @@ using System.Linq;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
-    public class OrcReaderConfiguration
-    {
-        public int OptimisticFileTailReadLength { get; set; } = 16 * 1024;
-    }
-
+    public record FilterArg(string ColumnName, string MinValue, string MaxValue);
+    public record Filter(int ColumnId, ColumnTypeKind ColumnType, string MinValue, string MaxValue);
     public record ColumnDetail(int ColumnId, string Name, ColumnTypeKind ColumnType);
     public record StripeDetail(int StripeId, long RowCount);
+    public record FilterCriteria(string ColumnName, string minValue, string maxValue);
 
     public sealed class OrcReader
     {
-        readonly OrcReaderConfiguration _configuration;
-        readonly IByteRangeProvider _byteRangeProvider;
-        readonly SpanFileTail _fileTail;
-        readonly Dictionary<int, List<StreamDetail>> _stripeStreams = new();
+        private readonly OrcOptimizedReaderConfiguration _configuration;
+        private readonly IByteRangeProvider _byteRangeProvider;
+        private readonly SpanFileTail _fileTail;
+        private readonly Dictionary<int, List<StreamDetail>> _stripeStreams = new();
 
-        public OrcReader(OrcReaderConfiguration configuration, IByteRangeProvider byteRangeProvider)
+        public OrcReader(OrcOptimizedReaderConfiguration configuration, IByteRangeProvider byteRangeProvider)
         {
             _configuration = configuration;
             _byteRangeProvider = byteRangeProvider;
@@ -46,50 +45,36 @@ namespace ApacheOrcDotNet.OptimizedReader
                 .ToList();
         }
 
-        public IEnumerable<ColumnDetail> ColumnDetails { get; }
-        public IReadOnlyCollection<StripeDetail> StripeDetails { get; }
+        public int GetColumnId(string columnName) => ColumnDetails.SingleOrDefault(colDetail =>
+            colDetail.Name.ToLower() == columnName.ToLower()
+        ).ColumnId;
 
-        public ColumnStatistics GetFileColumnStatistics(int columnId)
+        IEnumerable<StreamDetail> GetStripeStreams(int stripeId)
         {
-            return _fileTail.Footer.Statistics[columnId];
-        }
-
-        public ColumnStatistics GetStripeColumnStatistics(int columnId, int stripeId)
-        {
-            return _fileTail.Metadata.StripeStats[stripeId].ColStats[columnId];
-        }
-
-        public IEnumerable<RowGroupDetail> ReadRowGroupIndex(int columnId, int stripeId)
-        {
-            if (!_stripeStreams.TryGetValue(stripeId, out var streamDetails))
+            if (!_stripeStreams.ContainsKey(stripeId))
             {
-                streamDetails = ReadStripeFooter(stripeId).ToList();
-                _stripeStreams.Add(stripeId, streamDetails);
+                var stripe = _fileTail.Footer.Stripes[stripeId];
+                var stripeFooterStart = (int)(stripe.Offset + stripe.IndexLength + stripe.DataLength); //TODO consider supporting >2TB files here
+                var stripeFooterLength = (int)stripe.FooterLength;
+
+                var streams = _byteRangeProvider.DecompressAndParseByteRange(
+                    stripeFooterStart,
+                    stripeFooterLength,
+                    _fileTail.PostScript.Compression,
+                    (int)_fileTail.PostScript.CompressionBlockSize,
+                    sequence => SpanStripeFooter.ReadStreamDetails(sequence, ColumnDetails, (long)stripe.Offset)
+                ).ToList();
+
+                _stripeStreams.Add(stripeId, streams);
             }
 
-            var streamsForColumn = streamDetails.Where(s => s.ColumnId == columnId).ToList();
-            var rowIndexStream = streamsForColumn.First(s => s.StreamKind == StreamKind.RowIndex);
-
-            var result = _byteRangeProvider.DecompressAndParseByteRange(
-                rowIndexStream.FileOffset,
-                rowIndexStream.Length,
-                _fileTail.PostScript.Compression,
-                (int)_fileTail.PostScript.CompressionBlockSize,
-                sequence => SpanRowGroupIndex.ReadRowGroupDetails(sequence, streamsForColumn, _fileTail.PostScript.Compression)
-            );
-
-            return result;
-        }
-
-        public int ReadLongValues(Span<long> output, StreamPosition position)
-        {
-            throw new NotImplementedException();
+            return _stripeStreams[stripeId];
         }
 
         IEnumerable<StreamDetail> ReadStripeFooter(int stripeId)
         {
             var stripe = _fileTail.Footer.Stripes[stripeId];
-            var stripeFooterStart = (int)(stripe.Offset + stripe.IndexLength + stripe.DataLength); //TODO consider supporting >2TB files here
+            var stripeFooterStart = (int)(stripe.Offset + stripe.IndexLength + stripe.DataLength);
             var stripeFooterLength = (int)stripe.FooterLength;
 
             var result = _byteRangeProvider.DecompressAndParseByteRange(
@@ -120,5 +105,151 @@ namespace ApacheOrcDotNet.OptimizedReader
                 lengthToReadFromEnd += additionalBytesRequired;
             }
         }
+
+
+
+
+
+
+
+
+
+        #region Old Implementation / Tests
+
+        public IEnumerable<ColumnDetail> ColumnDetails { get; }
+        public IReadOnlyCollection<StripeDetail> StripeDetails { get; }
+
+        public List<string> ReadOldSource(int stripeId)
+        {
+            var fileStream = new FileStream(@"F:\integritas\ergon\_data\_orc_db_files\2022.03.18.tmp.orc", FileMode.Open);
+            var stripeReaderCollection = new StripeReaderCollection(fileStream, _fileTail.Footer, _fileTail.PostScript.Compression);
+            var stripeStreamReaderCollection = stripeReaderCollection[stripeId].GetStripeStreamCollection();
+
+            var valuesReader = new ColumnTypes.StringReader(stripeStreamReaderCollection, 1);
+
+            var values = valuesReader.Read().ToList();
+
+            fileStream.Dispose();
+
+            return values;
+        }
+
+        public List<string> ReadOldSymbol(int stripeId)
+        {
+            var fileStream = new FileStream(@"F:\integritas\ergon\_data\_orc_db_files\2022.03.18.tmp.orc", FileMode.Open);
+            var stripeReaderCollection = new StripeReaderCollection(fileStream, _fileTail.Footer, _fileTail.PostScript.Compression);
+            var stripeStreamReaderCollection = stripeReaderCollection[stripeId].GetStripeStreamCollection();
+
+            var valuesReader = new ColumnTypes.StringReader(stripeStreamReaderCollection, 8);
+
+            var values = valuesReader.Read().ToList();
+
+            fileStream.Dispose();
+
+            return values;
+        }
+
+        public List<decimal?> ReadOldTime(int stripeId)
+        {
+            var fileStream = new FileStream(@"F:\integritas\ergon\_data\_orc_db_files\2022.03.18.tmp.orc", FileMode.Open);
+            var stripeReaderCollection = new StripeReaderCollection(fileStream, _fileTail.Footer, _fileTail.PostScript.Compression);
+            var stripeStreamReaderCollection = stripeReaderCollection[stripeId].GetStripeStreamCollection();
+
+            var valuesReader = new ColumnTypes.DecimalReader(stripeStreamReaderCollection, 5);
+
+            var values = valuesReader.Read().ToList();
+
+            fileStream.Dispose();
+
+            return values;
+        }
+
+        public List<long?> ReadOldSize(int stripeId)
+        {
+            var fileStream = new FileStream(@"F:\integritas\ergon\_data\_orc_db_files\2022.03.18.tmp.orc", FileMode.Open);
+            var stripeReaderCollection = new StripeReaderCollection(fileStream, _fileTail.Footer, _fileTail.PostScript.Compression);
+            var stripeStreamReaderCollection = stripeReaderCollection[stripeId].GetStripeStreamCollection();
+
+            var valuesReader = new ColumnTypes.LongReader(stripeStreamReaderCollection, 10);
+
+            var values = valuesReader.Read().ToList();
+
+            fileStream.Dispose();
+
+            return values;
+        }
+
+        private IEnumerable<int> GetFilteredStripeIds(List<Filter> filters)
+        {
+            var filteredStripeIds = new List<int>();
+
+            for (int stripeIndex = 0; stripeIndex < _fileTail.Metadata.StripeStats.Count; stripeIndex++)
+            {
+                var isMatch = true;
+
+                for (int colIndex = 0; colIndex < filters.Count; colIndex++)
+                {
+                    var filter = filters[colIndex];
+                    var lookupStripeCol = GetStripeColumnStatistics(filter.ColumnId, stripeIndex);
+
+                    if (!lookupStripeCol.InRange(filter.ColumnType, filter.MinValue, filter.MaxValue))
+                    {
+                        isMatch = false;
+                        break;
+                    }
+                }
+
+                if (isMatch)
+                    filteredStripeIds.Add(stripeIndex);
+            }
+
+            return filteredStripeIds;
+        }
+
+        public ColumnStatistics GetFileColumnStatistics(int columnId)
+        {
+            return _fileTail.Footer.Statistics[columnId];
+        }
+
+        public ColumnStatistics GetStripeColumnStatistics(int columnId, int stripeId)
+        {
+            return _fileTail.Metadata.StripeStats[stripeId].ColStats[columnId];
+        }
+
+        public RowIndex GetRowGroupIndex(int columnId, int stripeId)
+        {
+            var streamDetails = GetStripeStreams(stripeId);
+            var rowIndexStream = streamDetails.Where(s =>
+                s.StreamKind == StreamKind.RowIndex
+                && s.ColumnId == columnId
+            ).Single();
+
+            return _byteRangeProvider.DecompressAndParseByteRange(
+                rowIndexStream.FileOffset,
+                rowIndexStream.Length,
+                _fileTail.PostScript.Compression,
+                (int)_fileTail.PostScript.CompressionBlockSize,
+                sequence => SpanRowGroupIndex.ReadRowGroupIndex(sequence)
+            );
+        }
+
+        public IEnumerable<RowGroupDetail> ReadRowGroupIndex(int columnId, int stripeId)
+        {
+            var streamDetails = GetStripeStreams(stripeId);
+            var streamsForColumn = streamDetails.Where(s => s.ColumnId == columnId).ToList();
+            var rowIndexStream = streamsForColumn.First(s => s.StreamKind == StreamKind.RowIndex);
+
+            var result = _byteRangeProvider.DecompressAndParseByteRange(
+                rowIndexStream.FileOffset,
+                rowIndexStream.Length,
+                _fileTail.PostScript.Compression,
+                (int)_fileTail.PostScript.CompressionBlockSize,
+                sequence => SpanRowGroupIndex.ReadRowGroupDetails(sequence, streamsForColumn, _fileTail.PostScript.Compression)
+            );
+
+            return result;
+        }
+
+        #endregion
     }
 }

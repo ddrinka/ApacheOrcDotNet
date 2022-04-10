@@ -10,21 +10,25 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public record RowGroupDetail(ColumnStatistics Statistics, List<StreamPosition> StreamPositions);
     public record StreamPosition(StreamDetail Stream, Position Position);
-    public record Position(long ChunkFileOffset, int? DecompressedOffset, int ValueOffset, int? ValueOffset2);
+    public record Position(long ChunkFileOffset, int DecompressedOffset, int ValueOffset, int ValueOffset2);
 
     public static class SpanRowGroupIndex
     {
+        public static RowIndex ReadRowGroupIndex(ReadOnlySequence<byte> inputSequence)
+    => Serializer.Deserialize<RowIndex>(inputSequence);
+
         public static IEnumerable<RowGroupDetail> ReadRowGroupDetails(ReadOnlySequence<byte> inputSequence, List<StreamDetail> streamDetails, CompressionKind compressionKind)
         {
             bool compressionEnabled = compressionKind != CompressionKind.None;
 
             var rowIndex = Serializer.Deserialize<RowIndex>(inputSequence);
 
-            foreach(var entry in rowIndex.Entry)
+            foreach (var entry in rowIndex.Entry)
             {
                 var streamPositions = new List<StreamPosition>();
                 var positions = entry.Positions.ToArray().AsSpan();
-                foreach(var stream in streamDetails)
+
+                foreach (var stream in streamDetails)
                 {
                     var numConsumedPositions = stream.GetNumValuesInPositionListForStream(compressionEnabled);
                     if (numConsumedPositions == 0)
@@ -34,6 +38,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                     streamPositions.Add(new StreamPosition(Stream: stream, Position: streamPosition));
                     positions = positions[numConsumedPositions..];
                 }
+
                 if (positions.Length != 0)
                     throw new InvalidDataException($"Some position records were not consumed. ColumnType={streamDetails[0].ColumnType} StreamId={streamDetails[0].StreamId}");
 
@@ -44,7 +49,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         static int GetPositionsToSkip(int streamId, IEnumerable<StreamDetail> streamDetails, bool compressionEnabled)
         {
             int positionsToSkip = 0;
-            foreach(var stream in streamDetails)
+            foreach (var stream in streamDetails)
             {
                 if (stream.StreamId >= streamId)
                     break;
