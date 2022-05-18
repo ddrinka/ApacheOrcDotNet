@@ -2,66 +2,16 @@
 using ApacheOrcDotNet.Statistics;
 using System;
 
-namespace ApacheOrcDotNet.OptimizedReader
+namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public static class StatsExtensions
     {
-        public static int GetNumValuesInPositionListForStream(this StreamDetail streamDetail, bool compressionEnabled)
-        {
-            if (!streamDetail.StreamHasAnyPositions())
-                return 0;
-
-            int count = 2;  //All streams have a chunk offset and a value offset
-            if (compressionEnabled)
-                count++;    //If compression is enabled, an offset into the decompressed chunk is also included
-            if (streamDetail.StreamHasSecondValuePosition())
-                count++;    //Some streams include an additional offset
-
-            return count;
-        }
-
-        static bool StreamHasAnyPositions(this StreamDetail streamDetail) =>
-            (streamDetail.StreamKind, streamDetail.ColumnType, streamDetail.EncodingKind) switch
-            {
-                (StreamKind.Present, _, _) => true,
-                (StreamKind.Data, _, _) => true,
-                (StreamKind.Secondary, _, _) => true,
-                //TODO this will need some work to fill in completely
-                _ => false,
-            };
-
-
-        static bool StreamHasSecondValuePosition(this StreamDetail streamDetail) =>
-            (streamDetail.StreamKind, streamDetail.ColumnType, streamDetail.EncodingKind) switch
-            {
-                (StreamKind.Present, _, _) => true,
-                (StreamKind.Data, ColumnTypeKind.Int, _) => false,
-                (StreamKind.Data, ColumnTypeKind.Long, _) => false,
-                (StreamKind.Data, ColumnTypeKind.Decimal, _) => false,
-                (StreamKind.Data, ColumnTypeKind.String, _) => false,
-                (StreamKind.Length, _, ColumnEncodingKind.DictionaryV2) => false,
-                (StreamKind.Secondary, _, _) => false, // Already secondary.
-                //TODO This will need some work to fill in completely
-                _ => throw new NotSupportedException()
-            };
-
-        public static Position GetStreamPositionFromStreamType(this StreamDetail stream, bool compressionEnabled, ReadOnlySpan<ulong> positions)
-        {
-            int positionIndex = 0;
-            var chunkFileOffset = stream.FileOffset + (long)positions[positionIndex++];
-            var decompressedOffset = compressionEnabled ? (int)positions[positionIndex++] : 0;
-            var valueOffset = (int)positions[positionIndex++];
-            var valueOffset2 = stream.StreamHasSecondValuePosition() ? (int)positions[positionIndex++] : 0;
-
-            return new Position(chunkFileOffset, decompressedOffset, valueOffset, valueOffset2);
-        }
-
         public static bool InRange(this ColumnStatistics stats, ColumnTypeKind columnType, string min, string max)
         {
             switch (columnType)
             {
                 case ColumnTypeKind.Boolean:
-                    return InRangeBoolean(stats, min == "true", max == "true");
+                    return stats.InRangeBoolean(min == "true", max == "true");
                 case ColumnTypeKind.Byte:
                 case ColumnTypeKind.Short:
                 case ColumnTypeKind.Int:
@@ -69,19 +19,19 @@ namespace ApacheOrcDotNet.OptimizedReader
                     {
                         var minVal = long.Parse(min);
                         var maxVal = long.Parse(max);
-                        return InRangeNumeric(stats, minVal, maxVal);
+                        return stats.InRangeNumeric(minVal, maxVal);
                     }
                 case ColumnTypeKind.Float:
                 case ColumnTypeKind.Double:
                     {
                         var minVal = double.Parse(min);
                         var maxVal = double.Parse(max);
-                        return InRangeDouble(stats, minVal, maxVal);
+                        return stats.InRangeDouble(minVal, maxVal);
                     }
                 case ColumnTypeKind.String:
                 case ColumnTypeKind.Varchar:
                 case ColumnTypeKind.Char:
-                    return InRangeString(stats, min, max);
+                    return stats.InRangeString(min, max);
                 case ColumnTypeKind.Decimal:
                     {
                         var minVal = decimal.Parse(min);
@@ -91,7 +41,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                             throw new ArgumentOutOfRangeException($"Unable to parse: '{stats.DecimalStatistics.Minimum}'");
                         if (!decimal.TryParse(stats.DecimalStatistics.Maximum, out var statsMaxVal))
                             throw new ArgumentOutOfRangeException($"Unable to parse: '{stats.DecimalStatistics.Maximum}'");
-                        return InRangeDecimal(stats, minVal, maxVal);
+                        return stats.InRangeDecimal(minVal, maxVal);
                     }
                 default:
                     throw new NotImplementedException($"Range check for {columnType} not implemented");

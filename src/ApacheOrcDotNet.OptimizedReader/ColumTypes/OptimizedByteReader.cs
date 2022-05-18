@@ -1,21 +1,18 @@
-﻿using ApacheOrcDotNet.Encodings;
-using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.Protocol;
 using System;
 using System.Buffers;
 
-namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
+namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 {
-    public class DoubleReader : BaseColumnReader<double>
+    public class OptimizedByteReader : BaseColumnReader<byte?>
     {
-        public DoubleReader(ReaderContext readerContext) : base(readerContext)
+        public OptimizedByteReader(ReaderContext readerContext) : base(readerContext)
         {
         }
 
         public override void FillBuffer()
         {
-            var presentStreamRequired = _readerContext.RowIndexEntry.Statistics.HasNull;
-
-            var presentStream = GetStripeStream(StreamKind.Present, presentStreamRequired);
+            var presentStream = GetStripeStream(StreamKind.Present, isRequired: false);
             var dataStream = GetStripeStream(StreamKind.Data);
 
             var presentBuffer = ArrayPool<bool>.Shared.Rent(_numMaxValuesToRead);
@@ -32,26 +29,20 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                 var numDataValuesRead = ReadByteStream(dataStream, dataPostions, dataBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
 
                 var dataIndex = 0;
-                if (presentStreamRequired)
+                if (presentStream != null)
                 {
                     for (int idx = 0; idx < numPresentValuesRead; idx++)
                     {
                         if (presentBuffer[idx])
-                        {
-                            _outputValuesRaw[_numValuesRead++] = BitManipulation.ReadDouble(dataBuffer, dataIndex);
-                            dataIndex += 8;
-                        }
+                            _outputValuesRaw[_numValuesRead++] = dataBuffer[dataIndex++];
                         else
-                            _outputValuesRaw[_numValuesRead++] = double.NaN;
+                            _outputValuesRaw[_numValuesRead++] = null;
                     }
                 }
                 else
                 {
                     for (int idx = 0; idx < numDataValuesRead; idx++)
-                    {
-                        _outputValuesRaw[_numValuesRead++] = BitManipulation.ReadDouble(dataBuffer, dataIndex);
-                        dataIndex += 8;
-                    }
+                        _outputValuesRaw[_numValuesRead++] = dataBuffer[idx];
                 }
             }
             finally

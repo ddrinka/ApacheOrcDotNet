@@ -2,19 +2,17 @@
 using System;
 using System.Buffers;
 
-namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
+namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 {
-    public class BooleanReader : BaseColumnReader<bool?>
+    public class OptimizedBooleanReader : BaseColumnReader<bool?>
     {
-        public BooleanReader(ReaderContext readerContext) : base(readerContext)
+        public OptimizedBooleanReader(ReaderContext readerContext) : base(readerContext)
         {
         }
 
         public override void FillBuffer()
         {
-            var presentStreamRequired = _readerContext.RowIndexEntry.Statistics.HasNull;
-
-            var presentStream = GetStripeStream(StreamKind.Present, presentStreamRequired);
+            var presentStream = GetStripeStream(StreamKind.Present, isRequired: false);
             var dataStream = GetStripeStream(StreamKind.Data);
 
             var presentBuffer = ArrayPool<bool>.Shared.Rent(_numMaxValuesToRead);
@@ -31,7 +29,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                 var numDataValuesRead = ReadBooleanStream(dataStream, dataPostions, dataBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
 
                 var dataIndex = 0;
-                if (presentStreamRequired)
+                if (presentStream != null)
                 {
                     for (int idx = 0; idx < numPresentValuesRead; idx++)
                     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace ApacheOrcDotNet.OptimizedReader
+namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public sealed class FileByteRangeProvider : IByteRangeProvider
     {

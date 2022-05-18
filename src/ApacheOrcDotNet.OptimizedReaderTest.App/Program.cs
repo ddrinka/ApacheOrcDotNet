@@ -1,4 +1,4 @@
-﻿using ApacheOrcDotNet.OptimizedReader;
+﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Diagnostics;
@@ -58,7 +58,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                 EndTime = parsedEndTime
             };
 
-            var fileByteRangeProviderFactory = new FileByteRangeProviderFactory();
+            var fileByteRangeProviderFactory = new MemoryMappedFileRangeProviderFactory();
             var optimizedORCApp = new OptimizedORCApp(fileName, configs, fileByteRangeProviderFactory);
             var stopWatch = new Stopwatch();
 

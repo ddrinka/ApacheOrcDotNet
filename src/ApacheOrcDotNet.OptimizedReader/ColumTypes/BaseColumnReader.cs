@@ -1,5 +1,6 @@
 ﻿using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.OptimizedReader.Encodings;
+using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using ApacheOrcDotNet.Protocol;
 using System;
 using System.Buffers;
@@ -8,7 +9,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
+namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 {
     public readonly record struct StreamPositions(int RowGroupOffset = 0, int RowEntryOffset = 0, int ValuesToSkip = 0, int RemainingBits = 0);
 
@@ -23,7 +24,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
         {
             _readerContext = readerContext;
             _outputValuesRaw = ArrayPool<TOutput>.Shared.Rent((int)_readerContext.FileTail.Footer.RowIndexStride);
-            _numMaxValuesToRead = (int)_readerContext.FileTail.Footer.RowIndexStride;
+            _numMaxValuesToRead = (int)Math.Min(_readerContext.FileTail.Footer.RowIndexStride, _readerContext.RowIndexEntry.Statistics.NumberOfValues);
         }
 
         public Span<TOutput> Values => _outputValuesRaw.AsSpan().Slice(0, _numValuesRead);
@@ -62,33 +63,44 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
             );
 
             var valuesBuffer = ArrayPool<byte>.Shared.Rent(1_000);
-            var valuesBufferSpan = valuesBuffer.AsSpan().Slice(0, 1_000);
-            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
-            var dataReader = new SequenceReader<byte>(dataSequence);
 
-            var numValuesRead = 0;
-            var skippedValues = 0;
-            while (!dataReader.End)
+            try
             {
-                var numByteValuesRead = OptimizedByteRunLengthEncodingReader.ReadValues(
-                    ref dataReader,
-                    valuesBufferSpan
-                );
-
-                for (int idx = 0; idx < numByteValuesRead; idx++)
+                using (dataBuffer)
                 {
-                    if (skippedValues++ < positions.ValuesToSkip)
-                        continue;
+                    var valuesBufferSpan = valuesBuffer.AsSpan().Slice(0, 1_000);
+                    var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
+                    var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+                    var dataReader = new SequenceReader<byte>(dataSequence);
 
-                    outputValues[numValuesRead++] = valuesBufferSpan[idx];
+                    var numValuesRead = 0;
+                    var skippedValues = 0;
+                    while (!dataReader.End)
+                    {
+                        var numByteValuesRead = OptimizedByteRunLengthEncodingReader.ReadValues(
+                            ref dataReader,
+                            valuesBufferSpan
+                        );
 
-                    if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        for (int idx = 0; idx < numByteValuesRead; idx++)
+                        {
+                            if (skippedValues++ < positions.ValuesToSkip)
+                                continue;
+
+                            outputValues[numValuesRead++] = valuesBufferSpan[idx];
+
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+                        }
+                    }
+
+                    return numValuesRead;
                 }
             }
-
-            return numValuesRead;
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(valuesBuffer);
+            }
         }
 
         [SkipLocalsInit]
@@ -104,63 +116,74 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                 compressionBlockSize: _readerContext.CompressionBlockSize
             );
 
-            var valuesBuffer = ArrayPool<byte>.Shared.Rent(1_000);
-            var valuesBufferSpan = valuesBuffer.AsSpan().Slice(0, 1_000);
-            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
-            var dataReader = new SequenceReader<byte>(dataSequence);
-
-            var numValuesRead = 0;
-            var skippedValues = 0;
-            while (!dataReader.End)
+            using (dataBuffer)
             {
-                var numByteValuesRead = OptimizedByteRunLengthEncodingReader.ReadValues(
-                    ref dataReader,
-                    valuesBufferSpan
-                );
+                var valuesBuffer = ArrayPool<byte>.Shared.Rent(1_000);
 
-                for (int idx = 0; idx < numByteValuesRead; idx++)
+                try
                 {
-                    if (skippedValues++ < positions.ValuesToSkip)
-                        continue;
+                    var valuesBufferSpan = valuesBuffer.AsSpan().Slice(0, 1_000);
+                    var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
+                    var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+                    var dataReader = new SequenceReader<byte>(dataSequence);
 
-                    var decodedByte = valuesBufferSpan[idx];
+                    var numValuesRead = 0;
+                    var skippedValues = 0;
+                    while (!dataReader.End)
+                    {
+                        var numByteValuesRead = OptimizedByteRunLengthEncodingReader.ReadValues(
+                            ref dataReader,
+                            valuesBufferSpan
+                        );
 
-                    outputValues[numValuesRead++] = (decodedByte & 0x80) != 0;
-                    if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        for (int idx = 0; idx < numByteValuesRead; idx++)
+                        {
+                            if (skippedValues++ < positions.ValuesToSkip)
+                                continue;
 
-                    outputValues[numValuesRead++] = (decodedByte & 0x40) != 0;
-                    if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                            var decodedByte = valuesBufferSpan[idx];
 
-                    outputValues[numValuesRead++] = (decodedByte & 0x20) != 0;
-                    if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                            outputValues[numValuesRead++] = (decodedByte & 0x80) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
 
-                    outputValues[numValuesRead++] = (decodedByte & 0x10) != 0;
-                    if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                            outputValues[numValuesRead++] = (decodedByte & 0x40) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
 
-                    outputValues[numValuesRead++] = (decodedByte & 0x08) != 0;
-                    if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                            outputValues[numValuesRead++] = (decodedByte & 0x20) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
 
-                    outputValues[numValuesRead++] = (decodedByte & 0x04) != 0;
-                    if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                            outputValues[numValuesRead++] = (decodedByte & 0x10) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
 
-                    outputValues[numValuesRead++] = (decodedByte & 0x02) != 0;
-                    if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                            outputValues[numValuesRead++] = (decodedByte & 0x08) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
 
-                    outputValues[numValuesRead++] = (decodedByte & 0x01) != 0;
-                    if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                            outputValues[numValuesRead++] = (decodedByte & 0x04) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+
+                            outputValues[numValuesRead++] = (decodedByte & 0x02) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+
+                            outputValues[numValuesRead++] = (decodedByte & 0x01) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+                        }
+                    }
+
+                    return numValuesRead;
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(valuesBuffer);
                 }
             }
-
-            return numValuesRead;
         }
 
         [SkipLocalsInit]
@@ -180,34 +203,45 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
             );
 
             var valuesBuffer = ArrayPool<long>.Shared.Rent(1_000);
-            var valuesBufferSpan = valuesBuffer.AsSpan().Slice(0, 1_000);
-            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
-            var dataReader = new SequenceReader<byte>(dataSequence);
 
-            var numValuesRead = 0;
-            var skippedValues = 0;
-            while (!dataReader.End)
+            try
             {
-                var numNewValuesRead = OptimizedIntegerRunLengthEncodingV2.ReadValues(
-                    ref dataReader,
-                    isSigned,
-                    valuesBufferSpan
-                );
+                var valuesBufferSpan = valuesBuffer.AsSpan().Slice(0, 1_000);
+                var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
+                var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+                var dataReader = new SequenceReader<byte>(dataSequence);
 
-                for (int idx = 0; idx < numNewValuesRead; idx++)
+                using (dataBuffer)
                 {
-                    if (skippedValues++ < positions.ValuesToSkip)
-                        continue;
+                    var numValuesRead = 0;
+                    var skippedValues = 0;
+                    while (!dataReader.End)
+                    {
+                        var numNewValuesRead = OptimizedIntegerRunLengthEncodingV2.ReadValues(
+                            ref dataReader,
+                            isSigned,
+                            valuesBufferSpan
+                        );
 
-                    outputValues[numValuesRead++] = (int)valuesBuffer[idx];
+                        for (int idx = 0; idx < numNewValuesRead; idx++)
+                        {
+                            if (skippedValues++ < positions.ValuesToSkip)
+                                continue;
 
-                    if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                            outputValues[numValuesRead++] = (int)valuesBuffer[idx];
+
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+                        }
+                    }
+
+                    return numValuesRead;
                 }
             }
-
-            return numValuesRead;
+            finally
+            {
+                ArrayPool<long>.Shared.Return(valuesBuffer);
+            }
         }
 
         [SkipLocalsInit]
@@ -227,27 +261,30 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                 compressionBlockSize: _readerContext.CompressionBlockSize
             );
 
-            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
-            var dataReader = new SequenceReader<byte>(dataSequence);
-
-            while (!dataReader.End)
+            using (dataBuffer)
             {
-                var bigInt = ReadBigVarInt(ref dataReader);
+                var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
+                var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+                var dataReader = new SequenceReader<byte>(dataSequence);
 
-                if (!bigInt.HasValue)
-                    break;
+                while (!dataReader.End)
+                {
+                    var bigInt = ReadBigVarInt(ref dataReader);
 
-                if (skippedValues++ < positions.ValuesToSkip)
-                    continue;
+                    if (!bigInt.HasValue)
+                        break;
 
-                outputValues[numValuesRead++] = bigInt.Value;
+                    if (skippedValues++ < positions.ValuesToSkip)
+                        continue;
 
-                if (numValuesRead >= outputValues.Length)
-                    break;
+                    outputValues[numValuesRead++] = bigInt.Value;
+
+                    if (numValuesRead >= outputValues.Length)
+                        break;
+                }
+
+                return numValuesRead;
             }
-
-            return numValuesRead;
         }
 
         private protected StreamPositions GetPresentStreamPositions(StreamDetail presentStream)
@@ -347,7 +384,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                 if (!stream.TryRead(out var currentByte))
                     return null; // Reached the end of the stream
 
-                currentLong |= ((long)currentByte & 0x7f) << (bitCount % 63);
+                currentLong |= ((long)currentByte & 0x7f) << bitCount % 63;
                 bitCount += 7;
 
                 if (bitCount % 63 == 0)
@@ -355,7 +392,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                     if (bitCount == 63)
                         value = new BigInteger(currentLong);
                     else
-                        value |= new BigInteger(currentLong) << (bitCount - 63);
+                        value |= new BigInteger(currentLong) << bitCount - 63;
 
                     currentLong = 0;
                 }
@@ -367,7 +404,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
 
             if (currentLong != 0) // Some bits left to add to result
             {
-                var shift = (bitCount / 63) * 63;
+                var shift = bitCount / 63 * 63;
                 value |= new BigInteger(currentLong) << shift;
             }
 

@@ -1,8 +1,9 @@
-﻿using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
+using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
 
-namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
+namespace ApacheOrcDotNet.OptimizedReader
 {
     public class ReaderContext
     {
@@ -31,5 +32,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
         public RowIndexEntry RowIndexEntry { get; }
         public CompressionKind CompressionKind { get; }
         public int CompressionBlockSize { get; }
+
+        public ColumnEncodingKind ColumnEncodingKind { get; init; }
     }
 }

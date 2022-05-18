@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ApacheOrcDotNet.OptimizedReader
+﻿namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public sealed class FileByteRangeProviderFactory : IByteRangeProviderFactory
     {

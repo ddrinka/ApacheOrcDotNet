@@ -1,9 +1,8 @@
-﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
-using ProtoBuf;
+﻿using ProtoBuf;
 using System;
 using System.IO;
 
-namespace ApacheOrcDotNet.OptimizedReader
+namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public sealed class SpanFileTail
     {

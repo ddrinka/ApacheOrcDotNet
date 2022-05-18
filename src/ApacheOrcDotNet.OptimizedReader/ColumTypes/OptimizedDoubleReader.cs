@@ -1,24 +1,23 @@
-﻿using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.Encodings;
+using ApacheOrcDotNet.Protocol;
 using System;
 using System.Buffers;
 
-namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
+namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 {
-    public class IntegerDirectV2Reader : BaseColumnReader<long?>
+    public class OptimizedDoubleReader : BaseColumnReader<double>
     {
-        public IntegerDirectV2Reader(ReaderContext readerContext) : base(readerContext)
+        public OptimizedDoubleReader(ReaderContext readerContext) : base(readerContext)
         {
         }
 
         public override void FillBuffer()
         {
-            var presentStreamRequired = _readerContext.RowIndexEntry.Statistics.HasNull;
-
-            var presentStream = GetStripeStream(StreamKind.Present, presentStreamRequired);
+            var presentStream = GetStripeStream(StreamKind.Present, isRequired: false);
             var dataStream = GetStripeStream(StreamKind.Data);
 
             var presentBuffer = ArrayPool<bool>.Shared.Rent(_numMaxValuesToRead);
-            var dataBuffer = ArrayPool<long>.Shared.Rent(_numMaxValuesToRead);
+            var dataBuffer = ArrayPool<byte>.Shared.Rent(_numMaxValuesToRead);
 
             try
             {
@@ -28,29 +27,35 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
 
                 // Data
                 var dataPostions = GetTargetedStreamPositions(presentStream, dataStream);
-                var numDataValuesRead = ReadNumericStream(dataStream, dataPostions, isSigned: true, dataBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
+                var numDataValuesRead = ReadByteStream(dataStream, dataPostions, dataBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
 
                 var dataIndex = 0;
-                if (presentStreamRequired)
+                if (presentStream != null)
                 {
                     for (int idx = 0; idx < numPresentValuesRead; idx++)
                     {
                         if (presentBuffer[idx])
-                            _outputValuesRaw[_numValuesRead++] = dataBuffer[dataIndex++];
+                        {
+                            _outputValuesRaw[_numValuesRead++] = dataBuffer.ReadDouble(dataIndex);
+                            dataIndex += 8;
+                        }
                         else
-                            _outputValuesRaw[_numValuesRead++] = null;
+                            _outputValuesRaw[_numValuesRead++] = double.NaN;
                     }
                 }
                 else
                 {
                     for (int idx = 0; idx < numDataValuesRead; idx++)
-                        _outputValuesRaw[_numValuesRead++] = dataBuffer[idx];
+                    {
+                        _outputValuesRaw[_numValuesRead++] = dataBuffer.ReadDouble(dataIndex);
+                        dataIndex += 8;
+                    }
                 }
             }
             finally
             {
                 ArrayPool<bool>.Shared.Return(presentBuffer);
-                ArrayPool<long>.Shared.Return(dataBuffer);
+                ArrayPool<byte>.Shared.Return(dataBuffer);
             }
         }
     }

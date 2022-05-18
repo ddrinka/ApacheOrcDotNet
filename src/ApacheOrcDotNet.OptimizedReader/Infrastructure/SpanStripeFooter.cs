@@ -4,7 +4,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ApacheOrcDotNet.OptimizedReader
+namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public record StreamDetail(int StreamId, int ColumnId, long FileOffset, int Length, ColumnTypeKind? ColumnType, StreamKind StreamKind, ColumnEncodingKind EncodingKind, int DictionarySize);
 

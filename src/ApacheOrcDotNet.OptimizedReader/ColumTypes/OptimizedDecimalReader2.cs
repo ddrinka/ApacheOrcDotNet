@@ -3,19 +3,17 @@ using System;
 using System.Buffers;
 using System.Numerics;
 
-namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
+namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 {
-    public class DecimalDirectV2Reader : BaseColumnReader<decimal?>
+    public class OptimizedDecimalReader2 : BaseColumnReader<double>
     {
-        public DecimalDirectV2Reader(ReaderContext readerContext) : base(readerContext)
+        public OptimizedDecimalReader2(ReaderContext readerContext) : base(readerContext)
         {
         }
 
         public override void FillBuffer()
         {
-            var presentStreamRequired = _readerContext.RowIndexEntry.Statistics.HasNull;
-
-            var presentStream = GetStripeStream(StreamKind.Present, presentStreamRequired);
+            var presentStream = GetStripeStream(StreamKind.Present, isRequired: false);
             var dataStream = GetStripeStream(StreamKind.Data);
             var secondaryStream = GetStripeStream(StreamKind.Secondary);
 
@@ -38,17 +36,17 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                 var numSecondaryValuesRead = ReadNumericStream(secondaryStream, secondaryPostions, isSigned: true, secondaryBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
 
                 var secondaryIndex = 0;
-                if (presentStreamRequired)
+                if (presentStream != null)
                 {
                     for (int idx = 0; idx < numPresentValuesRead; idx++)
                     {
                         if (presentBuffer[idx])
                         {
-                            _outputValuesRaw[_numValuesRead++] = BigIntegerToDecimal(dataBuffer[secondaryIndex], secondaryBuffer[secondaryIndex]);
+                            _outputValuesRaw[_numValuesRead++] = BigIntegerToDouble(dataBuffer[secondaryIndex], secondaryBuffer[secondaryIndex]);
                             secondaryIndex++;
                         }
                         else
-                            _outputValuesRaw[_numValuesRead++] = null;
+                            _outputValuesRaw[_numValuesRead++] = double.NaN;
                     }
                 }
                 else
@@ -57,7 +55,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                         throw new InvalidOperationException("Number of values read from DATA and SECODARY streams do not match.");
 
                     for (int idx = 0; idx < numSecondaryValuesRead; idx++)
-                        _outputValuesRaw[_numValuesRead++] = BigIntegerToDecimal(dataBuffer[idx], secondaryBuffer[idx]);
+                        _outputValuesRaw[_numValuesRead++] = BigIntegerToDouble(dataBuffer[idx], secondaryBuffer[idx]);
                 }
             }
             finally

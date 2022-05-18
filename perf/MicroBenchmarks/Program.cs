@@ -6,7 +6,7 @@ namespace MicroBenchmarks
     {
         static void Main(string[] args)
         {
-            _ = BenchmarkRunner.Run<ReaderBenchmarks>();
+            _ = BenchmarkRunner.Run<NullableBenchmarks>();
         }
     }
 }
