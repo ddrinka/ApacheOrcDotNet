@@ -2,21 +2,19 @@
 using System;
 using System.Buffers;
 
-namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
+namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 {
-    public class DateTimeReader : BaseColumnReader<DateTime?>
+    public class OptimizedDateReader : BaseColumnReader<DateTime?>
     {
         readonly static DateTime _unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        public DateTimeReader(ReaderContext readerContext) : base(readerContext)
+        public OptimizedDateReader(ReaderContext readerContext) : base(readerContext)
         {
         }
 
         public override void FillBuffer()
         {
-            var presentStreamRequired = _readerContext.RowIndexEntry.Statistics.HasNull;
-
-            var presentStream = GetStripeStream(StreamKind.Present, presentStreamRequired);
+            var presentStream = GetStripeStream(StreamKind.Present, isRequired: false);
             var dataStream = GetStripeStream(StreamKind.Data);
 
             var presentBuffer = ArrayPool<bool>.Shared.Rent(_numMaxValuesToRead);
@@ -32,7 +30,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                 var dataPostions = GetTargetedStreamPositions(presentStream, dataStream);
                 var numDataValuesRead = ReadNumericStream(dataStream, dataPostions, isSigned: true, dataBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
 
-                if (presentStreamRequired)
+                if (presentStream != null)
                 {
                     var dataIndex = 0;
                     for (int idx = 0; idx < numPresentValuesRead; idx++)

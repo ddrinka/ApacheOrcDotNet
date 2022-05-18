@@ -12,7 +12,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             if (!reader.TryRead(out var firstByte))
                 return numReadValues;
 
-            if (firstByte < 0x80) // A run
+            if (firstByte >= 0 && firstByte < 0x80) // A run
             {
                 numReadValues = firstByte + 3;
 
@@ -25,6 +25,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             else // Literals
             {
                 numReadValues = 0x100 - firstByte;
+
                 for (int i = 0; i < numReadValues; i++)
                 {
                     if (!reader.TryRead(out var value))

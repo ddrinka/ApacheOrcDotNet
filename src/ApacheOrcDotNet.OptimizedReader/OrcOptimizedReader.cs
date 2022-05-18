@@ -1,4 +1,5 @@
-﻿using ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized;
+﻿using ApacheOrcDotNet.OptimizedReader.ColumTypes;
+using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using ApacheOrcDotNet.Protocol;
 using ApacheOrcDotNet.Statistics;
 using ProtoBuf;
@@ -13,83 +14,6 @@ namespace ApacheOrcDotNet.OptimizedReader
     public class OrcOptimizedReaderConfiguration
     {
         public int OptimisticFileTailReadLength { get; set; } = 16 * 1024;
-    }
-
-    public record ReaderContextOld(IEnumerable<StreamDetail> Streams, ColumnDetail Column, RowIndex Row, int RowEntryIndex)
-    {
-        public RowIndexEntry RowIndexEntry => Row.Entry[RowEntryIndex];
-
-        public int GetRowEntryPosition(int positionIndex) => (int)RowIndexEntry.Positions[positionIndex];
-
-        public StreamPositions GetPresentStreamPositions(StreamDetail presentStream)
-        {
-            if (presentStream == null)
-                return new();
-
-            return new(GetRowEntryPosition(0), GetRowEntryPosition(1), GetRowEntryPosition(2), GetRowEntryPosition(3));
-        }
-
-        public StreamPositions GetTargetedStreamPositions(StreamDetail presentStream, StreamDetail targetedStream)
-        {
-            var positionStep = presentStream == null ? 0 : 4;
-
-            int rowGroupOffset = (targetedStream.StreamKind, Column.ColumnType, targetedStream.EncodingKind) switch
-            {
-                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 0),
-
-                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 2),
-
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 0),
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 2),
-
-                (StreamKind.Data, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 0),
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 0),
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 0),
-                (StreamKind.Data, ColumnTypeKind.Short, _) => GetRowEntryPosition(positionStep + 0),
-                (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 0),
-                (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 0),
-
-                _ => throw new NotImplementedException()
-            };
-            int rowEntryOffset = (targetedStream.StreamKind, Column.ColumnType, targetedStream.EncodingKind) switch
-            {
-                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
-
-                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 3),
-
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 3),
-
-                (StreamKind.Data, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 1),
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 1),
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 1),
-                (StreamKind.Data, ColumnTypeKind.Short, _) => GetRowEntryPosition(positionStep + 1),
-                (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 1),
-                (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 1),
-
-                _ => throw new NotImplementedException()
-            };
-            int valuesToSkip = (targetedStream.StreamKind, Column.ColumnType, targetedStream.EncodingKind) switch
-            {
-                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
-
-                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 4),
-
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 4),
-
-                (StreamKind.Data, ColumnTypeKind.Decimal, _) => 0,
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 2),
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => 0,
-                (StreamKind.Data, ColumnTypeKind.Short, _) => GetRowEntryPosition(positionStep + 2),
-                (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 2),
-                (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 2),
-
-                _ => throw new NotImplementedException()
-            };
-
-            return new StreamPositions(rowGroupOffset, rowEntryOffset, valuesToSkip);
-        }
     }
 
     public sealed class OrcOptimizedReader
@@ -157,117 +81,65 @@ namespace ApacheOrcDotNet.OptimizedReader
             });
         }
 
-        public BaseColumnReader<byte[]> CreateBinaryReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<byte[]> CreateBinaryColumnReader(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            return new ColumTypes.Specialized.BinaryReader(readerContext);
+            return new OptimizedBinaryReader(readerContext);
         }
 
-        public BaseColumnReader<bool?> CreateBooleanReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<bool?> CreateBooleanColumnReader(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            return new BooleanReader(readerContext);
+            return new OptimizedBooleanReader(readerContext);
         }
 
-        public BaseColumnReader<byte?> CreateByteReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<byte?> CreateByteColumnReader(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            return new ByteReader(readerContext);
+            return new OptimizedByteReader(readerContext);
         }
 
-        public BaseColumnReader<DateTime?> CreateDateTimeReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<DateTime?> CreateDateColumnReader(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            var columnEncoding = GetColumnEncodingKind(readerContext.Column.ColumnId, stripeId);
-
-            return columnEncoding switch
-            {
-                ColumnEncodingKind.DirectV2 => new DateTimeReader(readerContext),
-                _ => throw new InvalidOperationException()
-            };
+            return new OptimizedDateReader(readerContext);
         }
 
-        public BaseColumnReader<decimal?> CreateDecimalReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<decimal?> CreateDecimalColumnReader(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            var columnEncoding = GetColumnEncodingKind(readerContext.Column.ColumnId, stripeId);
-
-            return columnEncoding switch
-            {
-                ColumnEncodingKind.DirectV2 => new DecimalDirectV2Reader(readerContext),
-                _ => throw new InvalidOperationException()
-            };
+            return new OptimizedDecimalReader(readerContext);
         }
 
-        public BaseColumnReader<double> CreateDecimalAsDoubleReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<double> CreateDecimalColumnReaderAsDouble(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            var columnEncoding = GetColumnEncodingKind(readerContext.Column.ColumnId, stripeId);
-
-            return columnEncoding switch
-            {
-                ColumnEncodingKind.DirectV2 => new DecimalAsDoubleDirectV2Reader(readerContext),
-                _ => throw new InvalidOperationException()
-            };
+            return new OptimizedDecimalReader2(readerContext);
         }
 
-        public BaseColumnReader<double> CreateDoubleReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<double> CreateDoubleColumnReader(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            var columnEncoding = GetColumnEncodingKind(readerContext.Column.ColumnId, stripeId);
-
-            return columnEncoding switch
-            {
-                ColumnEncodingKind.DirectV2 => new DoubleReader(readerContext),
-                _ => throw new InvalidOperationException()
-            };
+            return new OptimizedDoubleReader(readerContext);
         }
 
-        public BaseColumnReader<double> CreateFloatReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<double> CreateFloatColumnReader(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            var columnEncoding = GetColumnEncodingKind(readerContext.Column.ColumnId, stripeId);
-
-            return columnEncoding switch
-            {
-                ColumnEncodingKind.DirectV2 => new DoubleReader(readerContext),
-                _ => throw new InvalidOperationException()
-            };
+            return new OptimizedDoubleReader(readerContext);
         }
 
-        public BaseColumnReader<long?> CreateIntegerReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<long?> CreateIntegerColumnReader(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            return new IntegerDirectV2Reader(readerContext);
+            return new OptimizedIntegerReader(readerContext);
         }
 
-        public BaseColumnReader<string> CreateStringReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<string> CreateStringColumnReader(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            var columnEncoding = GetColumnEncodingKind(readerContext.Column.ColumnId, stripeId);
-
-            return columnEncoding switch
-            {
-                ColumnEncodingKind.DictionaryV2 => new StringDictionaryV2Reader(readerContext),
-                ColumnEncodingKind.DirectV2 => new StringDirectV2Reader(readerContext),
-                _ => throw new InvalidOperationException()
-            };
+            return new OptimizedStringReader(readerContext);
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         private SpanFileTail ReadFileTail()
         {
@@ -293,7 +165,10 @@ namespace ApacheOrcDotNet.OptimizedReader
             var streams = GetColumnStreams(column.ColumnId, stripeId);
             var rowGroup = GetRowGroupIndex(column.ColumnId, stripeId);
 
-            return new ReaderContext(_byteRangeProvider, _fileTail, column, streams, rowGroup, rowEntryIndex);
+            return new ReaderContext(_byteRangeProvider, _fileTail, column, streams, rowGroup, rowEntryIndex)
+            {
+                ColumnEncodingKind = GetColumnEncodingKind(column.ColumnId, stripeId)
+            };
         }
 
         private IEnumerable<StreamDetail> GetStripeStreams(int stripeId)
@@ -304,15 +179,18 @@ namespace ApacheOrcDotNet.OptimizedReader
                 var stripeFooterStart = (long)(stripe.Offset + stripe.IndexLength + stripe.DataLength);
                 var stripeFooterLength = (int)stripe.FooterLength;
 
-                var streams = _byteRangeProvider.DecompressAndParseByteRange(
+                var decompressedData = _byteRangeProvider.DecompressByteRange(
                     stripeFooterStart,
                     stripeFooterLength,
                     _fileTail.PostScript.Compression,
-                    (int)_fileTail.PostScript.CompressionBlockSize,
-                    sequence => SpanStripeFooter.ReadStreamDetails(sequence, _columnDetails, (long)stripe.Offset)
-                ).ToList();
+                    (int)_fileTail.PostScript.CompressionBlockSize
+                );
 
-                _stripeStreams.Add(stripeId, streams);
+                using (decompressedData)
+                {
+                    var streams = SpanStripeFooter.ReadStreamDetails(decompressedData.Sequence, _columnDetails, (long)stripe.Offset);
+                    _stripeStreams.Add(stripeId, streams.ToList());
+                }
             }
 
             return _stripeStreams[stripeId];
@@ -339,15 +217,18 @@ namespace ApacheOrcDotNet.OptimizedReader
                     && s.ColumnId == columnId
                 ).Single();
 
-                var index = _byteRangeProvider.DecompressAndParseByteRange(
-                    rowIndexStream.FileOffset,
-                    rowIndexStream.Length,
-                    _fileTail.PostScript.Compression,
-                    (int)_fileTail.PostScript.CompressionBlockSize,
-                    sequence => Serializer.Deserialize<RowIndex>(sequence)
-                );
+                var decompressedData = _byteRangeProvider.DecompressByteRange(
+                     rowIndexStream.FileOffset,
+                     rowIndexStream.Length,
+                     _fileTail.PostScript.Compression,
+                     (int)_fileTail.PostScript.CompressionBlockSize
+                 );
 
-                _rowGroupIndexes.Add(key, index);
+                using (decompressedData)
+                {
+                    var index = Serializer.Deserialize<RowIndex>(decompressedData.Sequence);
+                    _rowGroupIndexes.Add(key, index);
+                }
             }
 
             return _rowGroupIndexes[key];

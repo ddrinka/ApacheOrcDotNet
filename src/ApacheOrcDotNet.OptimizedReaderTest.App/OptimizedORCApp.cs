@@ -1,5 +1,7 @@
 ﻿using ApacheOrcDotNet.OptimizedReader;
+using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
+using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
@@ -52,15 +54,17 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
                 foreach (var rowEntryIndex in rowGroupIndexes)
                 {
-                    var sourceReader = reader.CreateStringReader(stripeId, rowEntryIndex, "source");
-                    var symbolReader = reader.CreateStringReader(stripeId, rowEntryIndex, "symbol");
-                    var timeReader = reader.CreateDecimalAsDoubleReader(stripeId, rowEntryIndex, "time");
-                    var sizeReader = reader.CreateIntegerReader(stripeId, rowEntryIndex, "size");
+                    var sourceReader = reader.CreateStringColumnReader(stripeId, rowEntryIndex, "source");
+                    var symbolReader = reader.CreateStringColumnReader(stripeId, rowEntryIndex, "symbol");
+                    var timeReader = reader.CreateDecimalColumnReader(stripeId, rowEntryIndex, "time");
+                    var sizeReader = reader.CreateIntegerColumnReader(stripeId, rowEntryIndex, "size");
 
-                    sourceReader.FillBuffer();
-                    symbolReader.FillBuffer();
-                    timeReader.FillBuffer();
-                    sizeReader.FillBuffer();
+                    Parallel.Invoke(
+                        () => sourceReader.FillBuffer(),
+                        () => symbolReader.FillBuffer(),
+                        () => timeReader.FillBuffer(),
+                        () => sizeReader.FillBuffer()
+                    );
 
                     for (int idx = 0; idx < sizeReader.Values.Length; idx++)
                     {
@@ -69,7 +73,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         var time = timeReader.Values[idx];
                         var size = sizeReader.Values[idx];
 
-                        if (source == lookupSource && symbol == lookupSymbol && time >= (double)beginTime && time <= (double)endTime)
+                        if (source == lookupSource && symbol == lookupSymbol && time >= beginTime && time <= endTime)
                         {
                             Console.WriteLine($"{source},{symbol},{time.ToString().PadRight(15, '0')},{size}");
                         }

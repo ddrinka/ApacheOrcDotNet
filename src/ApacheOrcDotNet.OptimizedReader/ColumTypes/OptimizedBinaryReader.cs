@@ -1,20 +1,19 @@
-﻿using ApacheOrcDotNet.Protocol;
+﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
+using ApacheOrcDotNet.Protocol;
 using System;
 using System.Buffers;
 
-namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
+namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 {
-    public class BinaryReader : BaseColumnReader<byte[]>
+    public class OptimizedBinaryReader : BaseColumnReader<byte[]>
     {
-        public BinaryReader(ReaderContext readerContext) : base(readerContext)
+        public OptimizedBinaryReader(ReaderContext readerContext) : base(readerContext)
         {
         }
 
         public override void FillBuffer()
         {
-            var presentStreamRequired = _readerContext.RowIndexEntry.Statistics.HasNull;
-
-            var presentStream = GetStripeStream(StreamKind.Present, presentStreamRequired);
+            var presentStream = GetStripeStream(StreamKind.Present, isRequired: false);
             var lengthStream = GetStripeStream(StreamKind.Length);
             var dataStream = GetStripeStream(StreamKind.Data);
 
@@ -40,38 +39,41 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                     compressionBlockSize: _readerContext.CompressionBlockSize
                 );
 
-                var rowEntryLength = dataBuffer.Sequence.Length - dataStreamPostions.RowEntryOffset;
-                var dataSequence = dataBuffer.Sequence.Slice(dataStreamPostions.RowEntryOffset, rowEntryLength);
-
-                var stringOffset = 0;
-                if (presentStreamRequired)
+                using (dataBuffer)
                 {
-                    var lengthIndex = 0;
-                    for (int idx = 0; idx < numPresentValuesRead; idx++)
+                    var rowEntryLength = dataBuffer.Sequence.Length - dataStreamPostions.RowEntryOffset;
+                    var dataSequence = dataBuffer.Sequence.Slice(dataStreamPostions.RowEntryOffset, rowEntryLength);
+
+                    var stringOffset = 0;
+                    if (presentStream != null)
                     {
-                        if (presentBuffer[idx])
+                        var lengthIndex = 0;
+                        for (int idx = 0; idx < numPresentValuesRead; idx++)
                         {
-                            var length = (int)lengthsBuffer[lengthIndex++];
-                            _outputValuesRaw[_numValuesRead++] = dataBuffer.Sequence.Slice(stringOffset, length).ToArray();
-                            stringOffset += length;
+                            if (presentBuffer[idx])
+                            {
+                                var length = (int)lengthsBuffer[lengthIndex++];
+                                _outputValuesRaw[_numValuesRead++] = dataBuffer.Sequence.Slice(stringOffset, length).ToArray();
+                                stringOffset += length;
+                            }
+                            else
+                                _outputValuesRaw[_numValuesRead++] = null;
+
+                            if (_numValuesRead >= _numMaxValuesToRead)
+                                break;
                         }
-                        else
-                            _outputValuesRaw[_numValuesRead++] = null;
-
-                        if (_numValuesRead >= _numMaxValuesToRead)
-                            break;
                     }
-                }
-                else
-                {
-                    for (int idx = 0; idx < numLengthValuesRead; idx++)
+                    else
                     {
-                        var length = (int)lengthsBuffer[idx];
-                        _outputValuesRaw[_numValuesRead++] = dataSequence.Slice(stringOffset, length).ToArray();
-                        stringOffset += length;
+                        for (int idx = 0; idx < numLengthValuesRead; idx++)
+                        {
+                            var length = (int)lengthsBuffer[idx];
+                            _outputValuesRaw[_numValuesRead++] = dataSequence.Slice(stringOffset, length).ToArray();
+                            stringOffset += length;
 
-                        if (_numValuesRead >= _numMaxValuesToRead)
-                            break;
+                            if (_numValuesRead >= _numMaxValuesToRead)
+                                break;
+                        }
                     }
                 }
             }

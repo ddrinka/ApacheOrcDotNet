@@ -1,4 +1,4 @@
-﻿namespace ApacheOrcDotNet.OptimizedReader
+﻿namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public interface IByteRangeProviderFactory
     {

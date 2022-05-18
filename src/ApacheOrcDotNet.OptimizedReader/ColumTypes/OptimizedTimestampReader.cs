@@ -2,21 +2,19 @@
 using System;
 using System.Buffers;
 
-namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
+namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 {
-    public class TimestampReader : BaseColumnReader<DateTime?>
+    public class OptimizedTimestampReader : BaseColumnReader<DateTime?>
     {
         readonly static DateTime _orcEpoch = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        public TimestampReader(ReaderContext readerContext) : base(readerContext)
+        public OptimizedTimestampReader(ReaderContext readerContext) : base(readerContext)
         {
         }
 
         public override void FillBuffer()
         {
-            var presentStreamRequired = _readerContext.RowIndexEntry.Statistics.HasNull;
-
-            var presentStream = GetStripeStream(StreamKind.Present, presentStreamRequired);
+            var presentStream = GetStripeStream(StreamKind.Present, isRequired: false);
             var dataStream = GetStripeStream(StreamKind.Data);
             var secondaryStream = GetStripeStream(StreamKind.Secondary);
 
@@ -38,7 +36,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
                 var secondaryPostions = GetTargetedStreamPositions(presentStream, secondaryStream);
                 var numSecondaryValuesRead = ReadNumericStream(secondaryStream, secondaryPostions, isSigned: false, secondaryBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
 
-                if (presentStreamRequired)
+                if (presentStream != null)
                 {
                     var secondaryIndex = 0;
                     for (int idx = 0; idx < numPresentValuesRead; idx++)

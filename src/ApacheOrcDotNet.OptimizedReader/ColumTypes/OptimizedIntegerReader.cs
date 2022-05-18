@@ -2,23 +2,21 @@
 using System;
 using System.Buffers;
 
-namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
+namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 {
-    public class ByteReader : BaseColumnReader<byte?>
+    public class OptimizedIntegerReader : BaseColumnReader<long?>
     {
-        public ByteReader(ReaderContext readerContext) : base(readerContext)
+        public OptimizedIntegerReader(ReaderContext readerContext) : base(readerContext)
         {
         }
 
         public override void FillBuffer()
         {
-            var presentStreamRequired = _readerContext.RowIndexEntry.Statistics.HasNull;
-
-            var presentStream = GetStripeStream(StreamKind.Present, presentStreamRequired);
+            var presentStream = GetStripeStream(StreamKind.Present, isRequired: false);
             var dataStream = GetStripeStream(StreamKind.Data);
 
             var presentBuffer = ArrayPool<bool>.Shared.Rent(_numMaxValuesToRead);
-            var dataBuffer = ArrayPool<byte>.Shared.Rent(_numMaxValuesToRead);
+            var dataBuffer = ArrayPool<long>.Shared.Rent(_numMaxValuesToRead);
 
             try
             {
@@ -28,10 +26,10 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
 
                 // Data
                 var dataPostions = GetTargetedStreamPositions(presentStream, dataStream);
-                var numDataValuesRead = ReadByteStream(dataStream, dataPostions, dataBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
+                var numDataValuesRead = ReadNumericStream(dataStream, dataPostions, isSigned: true, dataBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
 
                 var dataIndex = 0;
-                if (presentStreamRequired)
+                if (presentStream != null)
                 {
                     for (int idx = 0; idx < numPresentValuesRead; idx++)
                     {
@@ -50,7 +48,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes.Specialized
             finally
             {
                 ArrayPool<bool>.Shared.Return(presentBuffer);
-                ArrayPool<byte>.Shared.Return(dataBuffer);
+                ArrayPool<long>.Shared.Return(dataBuffer);
             }
         }
     }

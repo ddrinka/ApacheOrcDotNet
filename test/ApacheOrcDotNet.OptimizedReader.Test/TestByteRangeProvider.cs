@@ -1,3 +1,4 @@
+using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using ApacheOrcDotNet.Test.TestHelpers;
 using System;
 using System.Collections.Generic;
