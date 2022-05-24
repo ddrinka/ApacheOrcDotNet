@@ -24,7 +24,8 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
         {
             _readerContext = readerContext;
             _outputValuesRaw = ArrayPool<TOutput>.Shared.Rent((int)_readerContext.FileTail.Footer.RowIndexStride);
-            _numMaxValuesToRead = (int)Math.Min(_readerContext.FileTail.Footer.RowIndexStride, _readerContext.RowIndexEntry.Statistics.NumberOfValues);
+            //_numMaxValuesToRead = (int)Math.Min(_readerContext.FileTail.Footer.RowIndexStride, _readerContext.RowIndexEntry.Statistics.NumberOfValues);
+            _numMaxValuesToRead = (int)_readerContext.FileTail.Footer.RowIndexStride;
         }
 
         public Span<TOutput> Values => _outputValuesRaw.AsSpan().Slice(0, _numValuesRead);
@@ -127,6 +128,65 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                     var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
                     var dataReader = new SequenceReader<byte>(dataSequence);
 
+                    var numOfTotalBitsToSkip = (positions.ValuesToSkip * 8) + positions.RemainingBits;
+                    var numOfBytesToSkip = numOfTotalBitsToSkip / 8;
+                    var numValuesRead = 0;
+                    var skippedValues = 0;
+                    while (!dataReader.End)
+                    {
+                        var numByteValuesRead = OptimizedByteRunLengthEncodingReader.ReadValues(
+                            ref dataReader,
+                            valuesBufferSpan
+                        );
+
+                        for (int idx = 0; idx < numByteValuesRead; idx++)
+                        {
+                            if (skippedValues++ < numOfBytesToSkip)
+                                continue;
+
+                            var decodedByte = valuesBufferSpan[idx];
+
+                            // Skip remaining bits.
+                            if (numOfBytesToSkip % 8 != 0)
+                            {
+                                decodedByte = (byte)(decodedByte << (numOfTotalBitsToSkip % 8));
+                            }
+
+                            outputValues[numValuesRead++] = (decodedByte & 128) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+
+                            outputValues[numValuesRead++] = (decodedByte & 64) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+
+                            outputValues[numValuesRead++] = (decodedByte & 32) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+
+                            outputValues[numValuesRead++] = (decodedByte & 16) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+
+                            outputValues[numValuesRead++] = (decodedByte & 8) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+
+                            outputValues[numValuesRead++] = (decodedByte & 4) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+
+                            outputValues[numValuesRead++] = (decodedByte & 2) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+
+                            outputValues[numValuesRead++] = (decodedByte & 1) != 0;
+                            if (numValuesRead >= outputValues.Length)
+                                return numValuesRead;
+                        }
+                    }
+
+                    /*
                     var numValuesRead = 0;
                     var skippedValues = 0;
                     while (!dataReader.End)
@@ -143,39 +203,41 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 
                             var decodedByte = valuesBufferSpan[idx];
 
-                            outputValues[numValuesRead++] = (decodedByte & 0x80) != 0;
+                            //if (decodedByte <= 0x80)
+                            outputValues[numValuesRead++] = (decodedByte & 128) != 0;
                             if (numValuesRead >= outputValues.Length)
                                 return numValuesRead;
 
-                            outputValues[numValuesRead++] = (decodedByte & 0x40) != 0;
+                            outputValues[numValuesRead++] = (decodedByte & 64) != 0;
                             if (numValuesRead >= outputValues.Length)
                                 return numValuesRead;
 
-                            outputValues[numValuesRead++] = (decodedByte & 0x20) != 0;
+                            outputValues[numValuesRead++] = (decodedByte & 32) != 0;
                             if (numValuesRead >= outputValues.Length)
                                 return numValuesRead;
 
-                            outputValues[numValuesRead++] = (decodedByte & 0x10) != 0;
+                            outputValues[numValuesRead++] = (decodedByte & 16) != 0;
                             if (numValuesRead >= outputValues.Length)
                                 return numValuesRead;
 
-                            outputValues[numValuesRead++] = (decodedByte & 0x08) != 0;
+                            outputValues[numValuesRead++] = (decodedByte & 8) != 0;
                             if (numValuesRead >= outputValues.Length)
                                 return numValuesRead;
 
-                            outputValues[numValuesRead++] = (decodedByte & 0x04) != 0;
+                            outputValues[numValuesRead++] = (decodedByte & 4) != 0;
                             if (numValuesRead >= outputValues.Length)
                                 return numValuesRead;
 
-                            outputValues[numValuesRead++] = (decodedByte & 0x02) != 0;
+                            outputValues[numValuesRead++] = (decodedByte & 2) != 0;
                             if (numValuesRead >= outputValues.Length)
                                 return numValuesRead;
 
-                            outputValues[numValuesRead++] = (decodedByte & 0x01) != 0;
+                            outputValues[numValuesRead++] = (decodedByte & 1) != 0;
                             if (numValuesRead >= outputValues.Length)
                                 return numValuesRead;
                         }
                     }
+                    */
 
                     return numValuesRead;
                 }
@@ -315,7 +377,8 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 0),
 
-                _ => throw new NotImplementedException()
+                _ => GetRowEntryPosition(positionStep + 0)
+                //_ => throw new NotImplementedException()
             };
             int rowEntryOffset = (targetedStream.StreamKind, _readerContext.Column.ColumnType, targetedStream.EncodingKind) switch
             {
@@ -333,7 +396,8 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 1),
 
-                _ => throw new NotImplementedException()
+                _ => GetRowEntryPosition(positionStep + 1)
+                //_ => throw new NotImplementedException()
             };
             int valuesToSkip = (targetedStream.StreamKind, _readerContext.Column.ColumnType, targetedStream.EncodingKind) switch
             {
@@ -351,7 +415,8 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 2),
 
-                _ => throw new NotImplementedException()
+                _ => GetRowEntryPosition(positionStep + 2)
+                //_ => throw new NotImplementedException()
             };
 
             return new StreamPositions(rowGroupOffset, rowEntryOffset, valuesToSkip);

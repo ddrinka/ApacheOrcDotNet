@@ -56,15 +56,43 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                 {
                     var sourceReader = reader.CreateStringColumnReader(stripeId, rowEntryIndex, "source");
                     var symbolReader = reader.CreateStringColumnReader(stripeId, rowEntryIndex, "symbol");
-                    var timeReader = reader.CreateDecimalColumnReader(stripeId, rowEntryIndex, "time");
+                    var timeReader = reader.CreateDecimalColumnReaderAsDouble(stripeId, rowEntryIndex, "time");
                     var sizeReader = reader.CreateIntegerColumnReader(stripeId, rowEntryIndex, "size");
+                    //var dateReader = reader.CreateDateColumnReader(stripeId, rowEntryIndex, "date");
+                    //var doubleReader = reader.CreateDoubleColumnReader(stripeId, rowEntryIndex, "double");
+                    //var timeStampReader = reader.CreateTimestampColumnReader(stripeId, rowEntryIndex, "timeStamp");
+                    //var binaryReader = reader.CreateBinaryColumnReader(stripeId, rowEntryIndex, "binary");
+                    //var byteReader = reader.CreateByteColumnReader(stripeId, rowEntryIndex, "byte");
 
-                    Parallel.Invoke(
-                        () => sourceReader.FillBuffer(),
-                        () => symbolReader.FillBuffer(),
-                        () => timeReader.FillBuffer(),
-                        () => sizeReader.FillBuffer()
-                    );
+                    sourceReader.FillBuffer();
+                    symbolReader.FillBuffer();
+                    timeReader.FillBuffer();
+                    sizeReader.FillBuffer();
+                    //dateReader.FillBuffer();
+                    //doubleReader.FillBuffer();
+                    //timeStampReader.FillBuffer();
+                    //binaryReader.FillBuffer();
+                    //byteReader.FillBuffer();
+
+                    //foreach (var item in dateReader.Values)
+                    //    Console.WriteLine(item.HasValue ? item.Value.ToString("yyyy-MM-dd") : "");
+
+                    //var x = true;
+                    //if (x)
+                    //    continue;
+
+                    //Parallel.Invoke(
+                    //    () => sourceReader.FillBuffer(),
+                    //    () => symbolReader.FillBuffer(),
+                    //    () => timeReader.FillBuffer(),
+                    //    () => sizeReader.FillBuffer()
+
+                    //    () => dateReader.FillBuffer()
+                    //    () => doubleReader.FillBuffer(),
+                    //    () => timeStampReader.FillBuffer(),
+                    //    () => binaryReader.FillBuffer(),
+                    //    () => byteReader.FillBuffer()
+                    //);
 
                     for (int idx = 0; idx < sizeReader.Values.Length; idx++)
                     {
@@ -73,9 +101,26 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         var time = timeReader.Values[idx];
                         var size = sizeReader.Values[idx];
 
-                        if (source == lookupSource && symbol == lookupSymbol && time >= beginTime && time <= endTime)
+                        //var date = dateReader.Values[idx];
+                        //var dobl = doubleReader.Values[idx];
+                        //var timeStamp = timeStampReader.Values[idx];
+                        //var binary = binaryReader.Values[idx];
+                        //var tinyInt = byteReader.Values[idx];
+
+                        if (source == lookupSource && symbol == lookupSymbol && time >= (double)beginTime && time <= (double)endTime)
                         {
-                            Console.WriteLine($"{source},{symbol},{time.ToString().PadRight(15, '0')},{size}");
+                            Console.WriteLine($"" +
+                                $"{source}," +
+                                $"{symbol}," +
+                                $"{time.ToString().PadRight(15, '0')}," +
+                                $"{size}" +
+                                //$"{date}," +
+                                //$"{dobl}," +
+                                //$"{timeStamp}," +
+                                //$"{Encoding.ASCII.GetString(binary)}," +
+                                //$"{tinyInt}" +
+                                $""
+                            );
                         }
                     }
                 }

@@ -114,7 +114,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         public BaseColumnReader<double> CreateDecimalColumnReaderAsDouble(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            return new OptimizedDecimalReader2(readerContext);
+            return new OptimizedDecimalReaderAsDouble(readerContext);
         }
 
         public BaseColumnReader<double> CreateDoubleColumnReader(int stripeId, int rowEntryIndex, string columnName)
@@ -139,6 +139,12 @@ namespace ApacheOrcDotNet.OptimizedReader
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
             return new OptimizedStringReader(readerContext);
+        }
+
+        public BaseColumnReader<DateTime?> CreateTimestampColumnReader(int stripeId, int rowEntryIndex, string columnName)
+        {
+            var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
+            return new OptimizedTimestampReader(readerContext);
         }
 
         private SpanFileTail ReadFileTail()
