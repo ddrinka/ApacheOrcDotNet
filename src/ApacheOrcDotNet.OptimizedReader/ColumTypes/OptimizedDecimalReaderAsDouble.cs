@@ -5,9 +5,9 @@ using System.Numerics;
 
 namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 {
-    public class OptimizedDecimalReader2 : BaseColumnReader<double>
+    public class OptimizedDecimalReaderAsDouble : BaseColumnReader<double>
     {
-        public OptimizedDecimalReader2(ReaderContext readerContext) : base(readerContext)
+        public OptimizedDecimalReaderAsDouble(ReaderContext readerContext) : base(readerContext)
         {
         }
 
