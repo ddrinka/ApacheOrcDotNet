@@ -63,7 +63,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     var floatReader = reader.CreateFloatColumnReader(stripeId, rowEntryIndex, "float");
                     var timeStampReader = reader.CreateTimestampColumnReader(stripeId, rowEntryIndex, "timeStamp");
                     var binaryReader = reader.CreateBinaryColumnReader(stripeId, rowEntryIndex, "binary");
-                    //var byteReader = reader.CreateByteColumnReader(stripeId, rowEntryIndex, "byte");
+                    var byteReader = reader.CreateByteColumnReader(stripeId, rowEntryIndex, "byte");
 
                     sourceReader.FillBuffer();
                     symbolReader.FillBuffer();
@@ -74,7 +74,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     floatReader.FillBuffer();
                     timeStampReader.FillBuffer();
                     binaryReader.FillBuffer();
-                    //byteReader.FillBuffer();
+                    byteReader.FillBuffer();
 
                     //foreach (var item in dateReader.Values)
                     //    Console.WriteLine(item.HasValue ? item.Value.ToString("yyyy-MM-dd") : "");
@@ -108,7 +108,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         var sing = floatReader.Values[idx];
                         var timeStamp = timeStampReader.Values[idx];
                         var binary = binaryReader.Values[idx];
-                        //var tinyInt = byteReader.Values[idx];
+                        var tinyInt = byteReader.Values[idx];
 
                         if (source == lookupSource && symbol == lookupSymbol && time >= (double)beginTime && time <= (double)endTime)
                         {
@@ -122,8 +122,8 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                                 $"{dobl}," +
                                 $"{sing}," +
                                 $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)}," +
-                                $"{Encoding.ASCII.GetString(binary)}," +
-                                //$"{tinyInt}" +
+                                $"{(binary != null ? Encoding.ASCII.GetString(binary) : string.Empty)}," +
+                                $"{tinyInt}" +
                                 $""
                             );
                         }
