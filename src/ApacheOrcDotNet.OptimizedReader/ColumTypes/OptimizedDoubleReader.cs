@@ -1,4 +1,4 @@
-﻿using ApacheOrcDotNet.Encodings;
+﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using ApacheOrcDotNet.Protocol;
 using System;
 using System.Buffers;
@@ -17,7 +17,6 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
             var dataStream = GetStripeStream(StreamKind.Data);
 
             var presentBuffer = ArrayPool<bool>.Shared.Rent(_numMaxValuesToRead);
-            var dataBuffer = ArrayPool<byte>.Shared.Rent(_numMaxValuesToRead);
 
             try
             {
@@ -26,36 +25,52 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 var numPresentValuesRead = ReadBooleanStream(presentStream, presentPositions, presentBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
 
                 // Data
-                var dataPostions = GetTargetedStreamPositions(presentStream, dataStream);
-                var numDataValuesRead = ReadByteStream(dataStream, dataPostions, dataBuffer.AsSpan().Slice(0, _numMaxValuesToRead));
+                var dataStreamPostions = GetTargetedStreamPositions(presentStream, dataStream);
+                var dataBuffer = _readerContext.ByteRangeProvider.DecompressByteRange(
+                    offset: dataStream.FileOffset + dataStreamPostions.RowGroupOffset,
+                    compressedLength: dataStream.Length - dataStreamPostions.RowGroupOffset,
+                    compressionKind: _readerContext.CompressionKind,
+                    compressionBlockSize: _readerContext.CompressionBlockSize
+                );
 
-                var dataIndex = 0;
-                if (presentStream != null)
+                using (dataBuffer)
                 {
-                    for (int idx = 0; idx < numPresentValuesRead; idx++)
+                    var rowEntryLength = dataBuffer.Sequence.Length - dataStreamPostions.RowEntryOffset;
+                    var dataSequence = dataBuffer.Sequence.Slice(dataStreamPostions.RowEntryOffset, rowEntryLength);
+                    var dataReader = new SequenceReader<byte>(dataSequence);
+
+                    Span<byte> valueBuffer = stackalloc byte[8];
+                    if (presentStream != null)
                     {
-                        if (presentBuffer[idx])
+                        for (int idx = 0; idx < numPresentValuesRead; idx++)
                         {
-                            _outputValuesRaw[_numValuesRead++] = dataBuffer.ReadDouble(dataIndex);
-                            dataIndex += 8;
+                            if (presentBuffer[idx])
+                            {
+                                dataReader.TryCopyTo(valueBuffer);
+                                _outputValuesRaw[_numValuesRead++] = BitConverter.ToDouble(valueBuffer);
+                                dataReader.Advance(valueBuffer.Length);
+                            }
+                            else
+                                _outputValuesRaw[_numValuesRead++] = double.NaN;
                         }
-                        else
-                            _outputValuesRaw[_numValuesRead++] = double.NaN;
                     }
-                }
-                else
-                {
-                    for (int idx = 0; idx < numDataValuesRead; idx++)
-                    {
-                        _outputValuesRaw[_numValuesRead++] = dataBuffer.ReadDouble(dataIndex);
-                        dataIndex += 8;
+                    else
+                    { 
+                        while (dataReader.TryCopyTo(valueBuffer))
+                        {
+                            dataReader.Advance(valueBuffer.Length);
+
+                            _outputValuesRaw[_numValuesRead++] = BitConverter.ToDouble(valueBuffer);
+
+                            if (_numValuesRead >= _numMaxValuesToRead)
+                                break;
+                        }
                     }
                 }
             }
             finally
             {
                 ArrayPool<bool>.Shared.Return(presentBuffer);
-                ArrayPool<byte>.Shared.Return(dataBuffer);
             }
         }
     }

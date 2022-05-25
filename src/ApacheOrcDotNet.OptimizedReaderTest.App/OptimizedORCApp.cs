@@ -1,7 +1,6 @@
 ﻿using ApacheOrcDotNet.OptimizedReader;
 using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
-using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
@@ -58,8 +57,8 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     var symbolReader = reader.CreateStringColumnReader(stripeId, rowEntryIndex, "symbol");
                     var timeReader = reader.CreateDecimalColumnReaderAsDouble(stripeId, rowEntryIndex, "time");
                     var sizeReader = reader.CreateIntegerColumnReader(stripeId, rowEntryIndex, "size");
-                    //var dateReader = reader.CreateDateColumnReader(stripeId, rowEntryIndex, "date");
-                    //var doubleReader = reader.CreateDoubleColumnReader(stripeId, rowEntryIndex, "double");
+                    var dateReader = reader.CreateDateColumnReader(stripeId, rowEntryIndex, "date");
+                    var doubleReader = reader.CreateDoubleColumnReader(stripeId, rowEntryIndex, "double");
                     //var timeStampReader = reader.CreateTimestampColumnReader(stripeId, rowEntryIndex, "timeStamp");
                     //var binaryReader = reader.CreateBinaryColumnReader(stripeId, rowEntryIndex, "binary");
                     //var byteReader = reader.CreateByteColumnReader(stripeId, rowEntryIndex, "byte");
@@ -68,8 +67,8 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     symbolReader.FillBuffer();
                     timeReader.FillBuffer();
                     sizeReader.FillBuffer();
-                    //dateReader.FillBuffer();
-                    //doubleReader.FillBuffer();
+                    dateReader.FillBuffer();
+                    doubleReader.FillBuffer();
                     //timeStampReader.FillBuffer();
                     //binaryReader.FillBuffer();
                     //byteReader.FillBuffer();
@@ -101,8 +100,8 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         var time = timeReader.Values[idx];
                         var size = sizeReader.Values[idx];
 
-                        //var date = dateReader.Values[idx];
-                        //var dobl = doubleReader.Values[idx];
+                        var date = dateReader.Values[idx];
+                        var dobl = doubleReader.Values[idx];
                         //var timeStamp = timeStampReader.Values[idx];
                         //var binary = binaryReader.Values[idx];
                         //var tinyInt = byteReader.Values[idx];
@@ -113,9 +112,9 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                                 $"{source}," +
                                 $"{symbol}," +
                                 $"{time.ToString().PadRight(15, '0')}," +
-                                $"{size}" +
-                                //$"{date}," +
-                                //$"{dobl}," +
+                                $"{size}," +
+                                $"{(date.HasValue ? date.Value.ToString("yyyy-MM-dd") : string.Empty)}," +
+                                $"{dobl}," +
                                 //$"{timeStamp}," +
                                 //$"{Encoding.ASCII.GetString(binary)}," +
                                 //$"{tinyInt}" +
