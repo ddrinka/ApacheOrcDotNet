@@ -370,11 +370,13 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 2),
+                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 2),
 
                 (StreamKind.Data, ColumnTypeKind.Timestamp, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 0),
+                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Short, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Float, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Double, _) => GetRowEntryPosition(positionStep + 0),
@@ -393,10 +395,12 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 3),
+                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 3),
 
                 (StreamKind.Data, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 1),
+                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.Timestamp, _) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.Short, _) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.Double, _) => GetRowEntryPosition(positionStep + 1),
@@ -416,6 +420,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
 
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 4),
+                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 4),
 
                 (StreamKind.Data, ColumnTypeKind.Timestamp, _) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.Decimal, _) => 0,
@@ -423,6 +428,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 (StreamKind.Data, ColumnTypeKind.Float, _) => 0,
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => 0,
+                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => 0,
                 (StreamKind.Data, ColumnTypeKind.Short, _) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.Date, _) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 2),

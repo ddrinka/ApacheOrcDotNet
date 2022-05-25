@@ -53,7 +53,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                             if (presentBuffer[idx])
                             {
                                 var length = (int)lengthsBuffer[lengthIndex++];
-                                _outputValuesRaw[_numValuesRead++] = dataBuffer.Sequence.Slice(stringOffset, length).ToArray();
+                                _outputValuesRaw[_numValuesRead++] = dataSequence.Slice(stringOffset, length).ToArray();
                                 stringOffset += length;
                             }
                             else
