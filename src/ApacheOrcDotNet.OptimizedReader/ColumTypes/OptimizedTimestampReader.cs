@@ -43,8 +43,8 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                     {
                         if (presentBuffer[idx])
                         {
-                            var seconds = dataBuffer[idx];
-                            var nanosecondTicks = EncodedNanosToTicks(secondaryBuffer[idx]);
+                            var seconds = dataBuffer[secondaryIndex];
+                            var nanosecondTicks = EncodedNanosToTicks(secondaryBuffer[secondaryIndex]);
                             var totalTicks = seconds * TimeSpan.TicksPerSecond + (seconds >= 0 ? nanosecondTicks : -nanosecondTicks);
                             _outputValuesRaw[_numValuesRead++] = _orcEpoch.AddTicks(totalTicks);
                             secondaryIndex++;
@@ -55,9 +55,6 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 }
                 else
                 {
-                    if (numDataValuesRead != numSecondaryValuesRead)
-                        throw new InvalidOperationException("Number of values read from DATA and SECODARY streams do not match.");
-
                     for (int idx = 0; idx < numSecondaryValuesRead; idx++)
                     {
                         var seconds = dataBuffer[idx];

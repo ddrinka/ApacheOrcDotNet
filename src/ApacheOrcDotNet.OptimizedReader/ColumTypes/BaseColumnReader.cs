@@ -365,25 +365,30 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
             {
                 (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 0),
 
+                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => GetRowEntryPosition(positionStep + 3),
                 (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 2),
 
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 2),
 
+                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Short, _) => GetRowEntryPosition(positionStep + 0),
+                (StreamKind.Data, ColumnTypeKind.Float, _) => GetRowEntryPosition(positionStep + 0),
+                (StreamKind.Data, ColumnTypeKind.Double, _) => GetRowEntryPosition(positionStep + 0),
+                (StreamKind.Data, ColumnTypeKind.Date, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 0),
 
-                _ => GetRowEntryPosition(positionStep + 0)
-                //_ => throw new NotImplementedException()
+                _ => throw new NotImplementedException()
             };
             int rowEntryOffset = (targetedStream.StreamKind, _readerContext.Column.ColumnType, targetedStream.EncodingKind) switch
             {
                 (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
 
+                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => GetRowEntryPosition(positionStep + 4),
                 (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 3),
 
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
@@ -392,33 +397,38 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 (StreamKind.Data, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 1),
+                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.Short, _) => GetRowEntryPosition(positionStep + 1),
+                (StreamKind.Data, ColumnTypeKind.Double, _) => GetRowEntryPosition(positionStep + 1),
+                (StreamKind.Data, ColumnTypeKind.Float, _) => GetRowEntryPosition(positionStep + 1),
+                (StreamKind.Data, ColumnTypeKind.Date, _) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 1),
 
-                _ => GetRowEntryPosition(positionStep + 1)
-                //_ => throw new NotImplementedException()
+                _ => throw new NotImplementedException()
             };
             int valuesToSkip = (targetedStream.StreamKind, _readerContext.Column.ColumnType, targetedStream.EncodingKind) switch
             {
                 (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
 
+                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => GetRowEntryPosition(positionStep + 5),
                 (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => GetRowEntryPosition(positionStep + 4),
 
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 4),
 
+                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.Decimal, _) => 0,
                 (StreamKind.Data, ColumnTypeKind.Double, _) => 0,
                 (StreamKind.Data, ColumnTypeKind.Float, _) => 0,
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => 0,
                 (StreamKind.Data, ColumnTypeKind.Short, _) => GetRowEntryPosition(positionStep + 2),
+                (StreamKind.Data, ColumnTypeKind.Date, _) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 2),
 
-                _ => GetRowEntryPosition(positionStep + 2)
-                //_ => throw new NotImplementedException()
+                _ => throw new NotImplementedException()
             };
 
             return new StreamPositions(rowGroupOffset, rowEntryOffset, valuesToSkip);
