@@ -1,0 +1,401 @@
+﻿using ApacheOrcDotNet.Encodings;
+using ApacheOrcDotNet.OptimizedReader.Encodings;
+using ApacheOrcDotNet.OptimizedReader.Infrastructure;
+using ApacheOrcDotNet.Protocol;
+using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+
+namespace ApacheOrcDotNet.OptimizedReader.Buffers
+{
+    [SkipLocalsInit]
+    public abstract class BaseColumnBuffer<TOutput>
+    {
+        private protected readonly IByteRangeProvider _byteRangeProvider;
+        private protected readonly OrcContextNew _context;
+        private protected readonly OrcColumn _column;
+        private protected readonly TOutput[] _values;
+        private protected int _numValuesRead;
+        private long[] _numericStreamBuffer;
+        private byte[] _byteStreamBuffer;
+        private byte[] _boolStreamBuffer;
+
+        public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContextNew context, OrcColumn column)
+        {
+            _byteRangeProvider = byteRangeProvider;
+            _context = context;
+            _column = column;
+            _values = new TOutput[_context.MaxValuesToRead];
+
+            _numericStreamBuffer = new long[1000];
+            _byteStreamBuffer = new byte[1000];
+            _boolStreamBuffer = new byte[1000];
+        }
+
+        public OrcColumn Column => _column;
+        public ReadOnlySpan<TOutput> Values => _values.AsSpan().Slice(0, _numValuesRead);
+
+        public abstract void Fill(int stripeId, IEnumerable<StreamDetail> columnStreams, RowIndexEntry rowIndexEntry);
+
+        protected StreamDetail GetStripeStream(IEnumerable<StreamDetail> columnStreams, StreamKind streamKind, bool isRequired = true)
+        {
+            var stream = columnStreams.SingleOrDefault(stream =>
+                stream.StreamKind == streamKind
+            );
+
+            if (isRequired && stream == null)
+                throw new InvalidDataException($"The '{streamKind}' stream must be available");
+
+            return stream;
+        }
+
+        protected void ResetInnerBuffers()
+        {
+            _numValuesRead = 0;
+        }
+
+        [SkipLocalsInit]
+        private protected int ReadByteStream(StreamDetail stream, in BufferPositions positions, Span<byte> outputValues)
+        {
+            if (stream == null)
+                return 0;
+
+            var dataBuffer = _byteRangeProvider.DecompressByteRange(
+                offset: stream.FileOffset + positions.RowGroupOffset,
+                compressedLength: stream.Length - positions.RowGroupOffset,
+                compressionKind: _context.CompressionKind,
+                compressionBlockSize: _context.CompressionBlockSize
+            );
+
+            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
+            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+            var dataReader = new SequenceReader<byte>(dataSequence);
+
+            var numValuesRead = 0;
+            var skippedValues = 0;
+            while (!dataReader.End)
+            {
+                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref dataReader, _byteStreamBuffer);
+
+                for (int idx = 0; idx < numByteValuesRead; idx++)
+                {
+                    if (skippedValues++ < positions.ValuesToSkip)
+                        continue;
+
+                    outputValues[numValuesRead++] = _byteStreamBuffer[idx];
+
+                    if (numValuesRead >= outputValues.Length)
+                        return numValuesRead;
+                }
+            }
+
+            return numValuesRead;
+        }
+
+        [SkipLocalsInit]
+        private protected int ReadBooleanStream(StreamDetail stream, in BufferPositions positions, Span<bool> outputValues)
+        {
+            if (stream == null)
+                return 0;
+
+            var dataBuffer = _byteRangeProvider.DecompressByteRange(
+                offset: stream.FileOffset + positions.RowGroupOffset,
+                compressedLength: stream.Length - positions.RowGroupOffset,
+                compressionKind: _context.CompressionKind,
+                compressionBlockSize: _context.CompressionBlockSize
+            );
+
+            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
+            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+            var dataReader = new SequenceReader<byte>(dataSequence);
+
+            var numOfTotalBitsToSkip = positions.ValuesToSkip * 8 + positions.RemainingBits;
+            var numOfBytesToSkip = numOfTotalBitsToSkip / 8;
+            var numValuesRead = 0;
+            var skippedValues = 0;
+            while (!dataReader.End)
+            {
+                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref dataReader, _boolStreamBuffer);
+
+                for (int idx = 0; idx < numByteValuesRead; idx++)
+                {
+                    if (skippedValues++ < numOfBytesToSkip)
+                        continue;
+
+                    var decodedByte = _boolStreamBuffer[idx];
+
+                    // Skip remaining bits.
+                    if (numOfBytesToSkip % 8 != 0)
+                        decodedByte = (byte)(decodedByte << numOfTotalBitsToSkip % 8);
+
+                    outputValues[numValuesRead++] = (decodedByte & 128) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return numValuesRead;
+
+                    outputValues[numValuesRead++] = (decodedByte & 64) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return numValuesRead;
+
+                    outputValues[numValuesRead++] = (decodedByte & 32) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return numValuesRead;
+
+                    outputValues[numValuesRead++] = (decodedByte & 16) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return numValuesRead;
+
+                    outputValues[numValuesRead++] = (decodedByte & 8) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return numValuesRead;
+
+                    outputValues[numValuesRead++] = (decodedByte & 4) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return numValuesRead;
+
+                    outputValues[numValuesRead++] = (decodedByte & 2) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return numValuesRead;
+
+                    outputValues[numValuesRead++] = (decodedByte & 1) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return numValuesRead;
+                }
+            }
+
+            return numValuesRead;
+        }
+
+        [SkipLocalsInit]
+        private protected int ReadNumericStream(StreamDetail stream, in BufferPositions positions, bool isSigned, Span<long> outputValues)
+        {
+            if (stream == null)
+                return 0;
+
+            if (stream.EncodingKind != ColumnEncodingKind.DirectV2 && stream.EncodingKind != ColumnEncodingKind.DictionaryV2)
+                throw new NotImplementedException($"Unimplemented Numeric {nameof(ColumnEncodingKind)} {stream.EncodingKind}");
+
+            var dataBuffer = _byteRangeProvider.DecompressByteRange(
+                offset: stream.FileOffset + positions.RowGroupOffset,
+                compressedLength: stream.Length - positions.RowGroupOffset,
+                compressionKind: _context.CompressionKind,
+                compressionBlockSize: _context.CompressionBlockSize
+            );
+
+            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
+            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+            var dataReader = new SequenceReader<byte>(dataSequence);
+
+            var numValuesRead = 0;
+            var skippedValues = 0;
+            while (!dataReader.End)
+            {
+                var numNewValuesRead = OptimizedIntegerRLE.ReadValues(ref dataReader, isSigned, _numericStreamBuffer);
+
+                for (int idx = 0; idx < numNewValuesRead; idx++)
+                {
+                    if (skippedValues++ < positions.ValuesToSkip)
+                        continue;
+
+                    outputValues[numValuesRead++] = (int)_numericStreamBuffer[idx];
+
+                    if (numValuesRead >= outputValues.Length)
+                        return numValuesRead;
+                }
+            }
+
+            return numValuesRead;
+        }
+
+        [SkipLocalsInit]
+        private protected int ReadVarIntStream(StreamDetail stream, BufferPositions positions, Span<BigInteger> outputValues)
+        {
+            var numValuesRead = 0;
+
+            if (stream == null)
+                return numValuesRead;
+
+            var dataBuffer = _byteRangeProvider.DecompressByteRange(
+                offset: stream.FileOffset + positions.RowGroupOffset,
+                compressedLength: stream.Length - positions.RowGroupOffset,
+                compressionKind: _context.CompressionKind,
+                compressionBlockSize: _context.CompressionBlockSize
+            );
+
+            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
+            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+            var dataReader = new SequenceReader<byte>(dataSequence);
+
+            int skippedValues = 0;
+            while (!dataReader.End)
+            {
+                var bigInt = ReadBigVarInt(ref dataReader);
+
+                if (!bigInt.HasValue)
+                    break;
+
+                if (skippedValues++ < positions.ValuesToSkip)
+                    continue;
+
+                outputValues[numValuesRead++] = bigInt.Value;
+
+                if (numValuesRead >= outputValues.Length)
+                    break;
+            }
+
+            return numValuesRead;
+        }
+
+        private protected BufferPositions GetPresentStreamPositions(StreamDetail presentStream, RowIndexEntry rowIndexEntry)
+        {
+            if (presentStream == null)
+                return new();
+
+            return new((int)rowIndexEntry.Positions[0], (int)rowIndexEntry.Positions[1], (int)rowIndexEntry.Positions[2], (int)rowIndexEntry.Positions[3]);
+        }
+
+        private protected BufferPositions GetTargetedStreamPositions(StreamDetail presentStream, StreamDetail targetedStream, RowIndexEntry rowIndexEntry)
+        {
+            var positionStep = presentStream == null ? 0 : 4;
+
+            ulong rowGroupOffset = (targetedStream.StreamKind, _column.Type, targetedStream.EncodingKind) switch
+            {
+                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 0],
+
+                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 3],
+                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 2],
+
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 2],
+
+                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Short, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Float, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Double, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Date, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 0],
+
+                _ => throw new NotImplementedException()
+            };
+
+            ulong rowEntryOffset = (targetedStream.StreamKind, _column.Type, targetedStream.EncodingKind) switch
+            {
+                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
+
+                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 4],
+                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 3],
+
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 3],
+                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 3],
+
+                (StreamKind.Data, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Short, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Double, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Float, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Date, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 1],
+
+                _ => throw new NotImplementedException()
+            };
+
+            ulong valuesToSkip = (targetedStream.StreamKind, _column.Type, targetedStream.EncodingKind) switch
+            {
+                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
+
+                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 5],
+                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 4],
+
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 4],
+                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 4],
+
+                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Decimal, _) => 0,
+                (StreamKind.Data, ColumnTypeKind.Double, _) => 0,
+                (StreamKind.Data, ColumnTypeKind.Float, _) => 0,
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => 0,
+                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => 0,
+                (StreamKind.Data, ColumnTypeKind.Short, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Date, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 2],
+
+                _ => throw new NotImplementedException()
+            };
+
+            return new((int)rowGroupOffset, (int)rowEntryOffset, (int)valuesToSkip);
+        }
+
+        private protected double BigIntegerToDouble(BigInteger numerator, long scale)
+            => (double)BigIntegerToDecimal(numerator, scale);
+
+        private protected decimal BigIntegerToDecimal(BigInteger numerator, long scale)
+        {
+            if (scale < 0 || scale > 255)
+                throw new OverflowException("Scale must be positive number");
+
+            var decNumerator = (decimal)numerator; //This will throw for an overflow or underflow
+            var scaler = new decimal(1, 0, 0, false, (byte)scale);
+
+            return decNumerator * scaler;
+        }
+
+        private BigInteger? ReadBigVarInt(ref SequenceReader<byte> stream)
+        {
+            var value = BigInteger.Zero;
+            long currentLong = 0;
+            int bitCount = 0;
+
+            while (true)
+            {
+                if (!stream.TryRead(out var currentByte))
+                    return null; // Reached the end of the stream
+
+                currentLong |= ((long)currentByte & 0x7f) << bitCount % 63;
+                bitCount += 7;
+
+                if (bitCount % 63 == 0)
+                {
+                    if (bitCount == 63)
+                        value = new BigInteger(currentLong);
+                    else
+                        value |= new BigInteger(currentLong) << bitCount - 63;
+
+                    currentLong = 0;
+                }
+
+                // Done when the high bit is set
+                if (currentByte < 0x80)
+                    break;
+            }
+
+            if (currentLong != 0) // Some bits left to add to result
+            {
+                var shift = bitCount / 63 * 63;
+                value |= new BigInteger(currentLong) << shift;
+            }
+
+            // Un zig-zag
+            return ((long)value).ZigzagDecode();
+        }
+    }
+}

@@ -66,7 +66,6 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             optimizedORCApp.Run();
             stopWatch.Stop();
 
-            Console.WriteLine();
             Console.WriteLine($"Total execution time: {stopWatch.Elapsed}");
             Console.WriteLine();
         }

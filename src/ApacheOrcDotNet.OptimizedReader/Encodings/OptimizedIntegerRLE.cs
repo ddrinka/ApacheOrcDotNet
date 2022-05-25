@@ -5,7 +5,7 @@ using System.IO;
 
 namespace ApacheOrcDotNet.OptimizedReader.Encodings
 {
-    public static class OptimizedIntegerRunLengthEncodingV2
+    public static class OptimizedIntegerRLE
     {
         enum EncodingType { ShortRepeat, Direct, PatchedBase, Delta }
 

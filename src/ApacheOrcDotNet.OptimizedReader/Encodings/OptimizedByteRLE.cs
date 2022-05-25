@@ -3,7 +3,7 @@ using System.Buffers;
 
 namespace ApacheOrcDotNet.OptimizedReader.Encodings
 {
-    public static class OptimizedByteRunLengthEncodingReader
+    public static class OptimizedByteRLE
     {
         public static int ReadValues(ref SequenceReader<byte> reader, Span<byte> outputValues)
         {

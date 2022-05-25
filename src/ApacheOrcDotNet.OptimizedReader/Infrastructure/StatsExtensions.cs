@@ -6,6 +6,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public static class StatsExtensions
     {
+        public static bool InRange(this ColumnStatistics stats, OrcColumn column)
+        {
+            if (string.IsNullOrEmpty(column.Min) && string.IsNullOrEmpty(column.Max))
+                throw new InvalidOperationException($"Invalid lookup parameters for column '{column.Name}'.");
+
+            return stats.InRange(column.Type, column.Min, column.Max);
+        }
+
         public static bool InRange(this ColumnStatistics stats, ColumnTypeKind columnType, string min, string max)
         {
             switch (columnType)
