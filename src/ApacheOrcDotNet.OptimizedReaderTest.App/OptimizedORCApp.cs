@@ -1,6 +1,7 @@
 ﻿using ApacheOrcDotNet.OptimizedReader;
 using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
+using System.Text;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
@@ -61,7 +62,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     var doubleReader = reader.CreateDoubleColumnReader(stripeId, rowEntryIndex, "double");
                     var floatReader = reader.CreateFloatColumnReader(stripeId, rowEntryIndex, "float");
                     var timeStampReader = reader.CreateTimestampColumnReader(stripeId, rowEntryIndex, "timeStamp");
-                    //var binaryReader = reader.CreateBinaryColumnReader(stripeId, rowEntryIndex, "binary");
+                    var binaryReader = reader.CreateBinaryColumnReader(stripeId, rowEntryIndex, "binary");
                     //var byteReader = reader.CreateByteColumnReader(stripeId, rowEntryIndex, "byte");
 
                     sourceReader.FillBuffer();
@@ -72,7 +73,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     doubleReader.FillBuffer();
                     floatReader.FillBuffer();
                     timeStampReader.FillBuffer();
-                    //binaryReader.FillBuffer();
+                    binaryReader.FillBuffer();
                     //byteReader.FillBuffer();
 
                     //foreach (var item in dateReader.Values)
@@ -106,7 +107,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         var dobl = doubleReader.Values[idx];
                         var sing = floatReader.Values[idx];
                         var timeStamp = timeStampReader.Values[idx];
-                        //var binary = binaryReader.Values[idx];
+                        var binary = binaryReader.Values[idx];
                         //var tinyInt = byteReader.Values[idx];
 
                         if (source == lookupSource && symbol == lookupSymbol && time >= (double)beginTime && time <= (double)endTime)
@@ -121,7 +122,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                                 $"{dobl}," +
                                 $"{sing}," +
                                 $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)}," +
-                                //$"{Encoding.ASCII.GetString(binary)}," +
+                                $"{Encoding.ASCII.GetString(binary)}," +
                                 //$"{tinyInt}" +
                                 $""
                             );
