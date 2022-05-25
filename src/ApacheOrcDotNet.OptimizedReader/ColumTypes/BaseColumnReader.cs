@@ -383,6 +383,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 (StreamKind.Data, ColumnTypeKind.Date, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 0),
                 (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 0),
+                (StreamKind.Data, ColumnTypeKind.Byte, _) => GetRowEntryPosition(positionStep + 0),
 
                 _ => throw new NotImplementedException()
             };
@@ -408,6 +409,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 (StreamKind.Data, ColumnTypeKind.Date, _) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 1),
                 (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 1),
+                (StreamKind.Data, ColumnTypeKind.Byte, _) => GetRowEntryPosition(positionStep + 1),
 
                 _ => throw new NotImplementedException()
             };
@@ -433,6 +435,7 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 (StreamKind.Data, ColumnTypeKind.Date, _) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.Long, _) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.Int, _) => GetRowEntryPosition(positionStep + 2),
+                (StreamKind.Data, ColumnTypeKind.Byte, _) => GetRowEntryPosition(positionStep + 2),
 
                 _ => throw new NotImplementedException()
             };
