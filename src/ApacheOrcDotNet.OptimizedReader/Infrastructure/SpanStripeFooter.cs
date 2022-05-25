@@ -6,11 +6,11 @@ using System.Linq;
 
 namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
-    public record StreamDetail(int StreamId, int ColumnId, long FileOffset, int Length, ColumnTypeKind? ColumnType, StreamKind StreamKind, ColumnEncodingKind EncodingKind, int DictionarySize);
+    public record StreamDetail(int StreamId, int ColumnId, long FileOffset, int Length, StreamKind StreamKind, ColumnEncodingKind EncodingKind, int DictionarySize);
 
     public static class SpanStripeFooter
     {
-        public static IEnumerable<StreamDetail> ReadStreamDetails(ReadOnlySequence<byte> inputSequence, IEnumerable<ColumnDetail> columnDetails, long stripeOffset)
+        public static IEnumerable<StreamDetail> ReadStreamDetails(ReadOnlySequence<byte> inputSequence, long stripeOffset)
         {
             var stripeFooter = Serializer.Deserialize<StripeFooter>(inputSequence);
 
@@ -22,7 +22,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
                     ColumnId: (int)stream.Column,
                     FileOffset: stripeOffset,
                     Length: (int)stream.Length,
-                    ColumnType: columnDetails.FirstOrDefault(c => c.ColumnId == stream.Column)?.ColumnType,
                     StreamKind: stream.Kind,
                     EncodingKind: stripeFooter.Columns[(int)stream.Column].Kind,
                     DictionarySize: (int)stripeFooter.Columns[(int)stream.Column].DictionarySize

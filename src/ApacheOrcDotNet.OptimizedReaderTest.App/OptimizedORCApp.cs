@@ -1,7 +1,9 @@
 ﻿using ApacheOrcDotNet.OptimizedReader;
 using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
+using System.Diagnostics;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
@@ -30,85 +32,83 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
         public void Run()
         {
             //
-            var reader = new OrcOptimizedReader(
+            var watch = new Stopwatch();
+            var reader = new OptimizedReader.OrcReader(
                 new OrcOptimizedReaderConfiguration() { OptimisticFileTailReadLength = 1 },
                 _byteRangeProviderFactory.Create(_orcFileName)
             );
 
-            //
+            watch.Start();
+
+            // Args
             var lookupSource = _configuration.Source;
             var lookupSymbol = _configuration.Symbol;
             var beginTime = (decimal)_configuration.BeginTime.TotalSeconds;
             var endTime = (decimal)_configuration.EndTime.TotalSeconds;
 
-            //
-            var stripeIds = reader.GetStripeIds("source", lookupSource, lookupSource);
-            stripeIds = reader.GetStripeIds(stripeIds, "symbol", lookupSymbol, lookupSymbol);
-            stripeIds = reader.GetStripeIds(stripeIds, "time", $"{beginTime}", $"{endTime}");
+            // Columns
+            var sourceColumn = reader.CreateColumn("source", lookupSource, lookupSource);
+            var symbolColumn = reader.CreateColumn("symbol", lookupSymbol, lookupSymbol);
+            var timeColumn = reader.CreateColumn("time", $"{beginTime}", $"{endTime}");
+            var sizeColumn = reader.CreateColumn("size");
+            var dateColumn = reader.CreateColumn("date");
+            var doubleColumn = reader.CreateColumn("double");
+            var floatColumn = reader.CreateColumn("float");
+            var timeStampColumn = reader.CreateColumn("timeStamp");
+            var binaryColumn = reader.CreateColumn("binary");
+            var byteColumn = reader.CreateColumn("byte");
+
+            // Buffers
+            var sourceColumnBuffer = reader.CreateStringColumnBuffer(sourceColumn);
+            var symbolColumnBuffer = reader.CreateStringColumnBuffer(symbolColumn);
+            var timeColumnBuffer = reader.CreateDecimalColumnBufferAsDouble(timeColumn);
+            var sizeColumnBuffer = reader.CreateIntegerColumnBuffer(sizeColumn);
+            var dateColumnBuffer = reader.CreateDateColumnBuffer(dateColumn);
+            var doubleColumnBuffer = reader.CreateDoubleColumnBuffer(doubleColumn);
+            var floatColumnBuffer = reader.CreateFloatColumnBuffer(floatColumn);
+            var timeStampColumnBuffer = reader.CreateTimestampColumnBuffer(timeStampColumn);
+            var binaryColumnBuffer = reader.CreateBinaryColumnBuffer(binaryColumn);
+            var byteColumnBuffer = reader.CreateByteColumnBuffer(byteColumn);
+
+            // Filters
+            var stripeIds = reader.GetStripeIds(sourceColumn);
+            stripeIds = reader.GetStripeIds(stripeIds, symbolColumn);
+            stripeIds = reader.GetStripeIds(stripeIds, timeColumn);
 
             foreach (var stripeId in stripeIds)
             {
-                var rowGroupIndexes = reader.GetRowGroupIndexes(stripeId, "source", lookupSource, lookupSource);
-                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, "symbol", lookupSymbol, lookupSymbol);
-                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, "time", $"{beginTime}", $"{endTime}");
+                var rowGroupIndexes = reader.GetRowGroupIndexes(stripeId, sourceColumn);
+                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, symbolColumn);
+                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, timeColumn);
 
                 foreach (var rowEntryIndex in rowGroupIndexes)
                 {
-                    var sourceReader = reader.CreateStringColumnReader(stripeId, rowEntryIndex, "source");
-                    var symbolReader = reader.CreateStringColumnReader(stripeId, rowEntryIndex, "symbol");
-                    var timeReader = reader.CreateDecimalColumnReaderAsDouble(stripeId, rowEntryIndex, "time");
-                    var sizeReader = reader.CreateIntegerColumnReader(stripeId, rowEntryIndex, "size");
-                    var dateReader = reader.CreateDateColumnReader(stripeId, rowEntryIndex, "date");
-                    var doubleReader = reader.CreateDoubleColumnReader(stripeId, rowEntryIndex, "double");
-                    var floatReader = reader.CreateFloatColumnReader(stripeId, rowEntryIndex, "float");
-                    var timeStampReader = reader.CreateTimestampColumnReader(stripeId, rowEntryIndex, "timeStamp");
-                    var binaryReader = reader.CreateBinaryColumnReader(stripeId, rowEntryIndex, "binary");
-                    var byteReader = reader.CreateByteColumnReader(stripeId, rowEntryIndex, "byte");
+                    // Read Data
+                    Parallel.Invoke(
+                        () => reader.FillBuffer(stripeId, rowEntryIndex, sourceColumnBuffer),
+                        () => reader.FillBuffer(stripeId, rowEntryIndex, symbolColumnBuffer),
+                        () => reader.FillBuffer(stripeId, rowEntryIndex, timeColumnBuffer),
+                        () => reader.FillBuffer(stripeId, rowEntryIndex, sizeColumnBuffer),
+                        () => reader.FillBuffer(stripeId, rowEntryIndex, dateColumnBuffer),
+                        () => reader.FillBuffer(stripeId, rowEntryIndex, doubleColumnBuffer),
+                        () => reader.FillBuffer(stripeId, rowEntryIndex, floatColumnBuffer),
+                        () => reader.FillBuffer(stripeId, rowEntryIndex, timeStampColumnBuffer),
+                        () => reader.FillBuffer(stripeId, rowEntryIndex, binaryColumnBuffer),
+                        () => reader.FillBuffer(stripeId, rowEntryIndex, byteColumnBuffer)
+                    );
 
-                    sourceReader.FillBuffer();
-                    symbolReader.FillBuffer();
-                    timeReader.FillBuffer();
-                    sizeReader.FillBuffer();
-                    dateReader.FillBuffer();
-                    doubleReader.FillBuffer();
-                    floatReader.FillBuffer();
-                    timeStampReader.FillBuffer();
-                    binaryReader.FillBuffer();
-                    byteReader.FillBuffer();
-
-                    //foreach (var item in dateReader.Values)
-                    //    Console.WriteLine(item.HasValue ? item.Value.ToString("yyyy-MM-dd") : "");
-
-                    //var x = true;
-                    //if (x)
-                    //    continue;
-
-                    //Parallel.Invoke(
-                    //    () => sourceReader.FillBuffer(),
-                    //    () => symbolReader.FillBuffer(),
-                    //    () => timeReader.FillBuffer(),
-                    //    () => sizeReader.FillBuffer()
-
-                    //    () => dateReader.FillBuffer()
-                    //    () => doubleReader.FillBuffer(),
-                    //    () => timeStampReader.FillBuffer(),
-                    //    () => binaryReader.FillBuffer(),
-                    //    () => byteReader.FillBuffer()
-                    //);
-
-                    for (int idx = 0; idx < sizeReader.Values.Length; idx++)
+                    for (int idx = 0; idx < sizeColumnBuffer.Values.Length; idx++)
                     {
-                        var source = sourceReader.Values[idx];
-                        var symbol = symbolReader.Values[idx];
-                        var time = timeReader.Values[idx];
-                        var size = sizeReader.Values[idx];
-
-                        var date = dateReader.Values[idx];
-                        var dobl = doubleReader.Values[idx];
-                        var sing = floatReader.Values[idx];
-                        var timeStamp = timeStampReader.Values[idx];
-                        var binary = binaryReader.Values[idx];
-                        var tinyInt = byteReader.Values[idx];
+                        var source = sourceColumnBuffer.Values[idx];
+                        var symbol = symbolColumnBuffer.Values[idx];
+                        var time = timeColumnBuffer.Values[idx];
+                        var size = sizeColumnBuffer.Values[idx];
+                        var date = dateColumnBuffer.Values[idx];
+                        var dobl = doubleColumnBuffer.Values[idx];
+                        var sing = floatColumnBuffer.Values[idx];
+                        var timeStamp = timeStampColumnBuffer.Values[idx];
+                        var binary = binaryColumnBuffer.Values[idx];
+                        var tinyInt = byteColumnBuffer.Values[idx];
 
                         if (source == lookupSource && symbol == lookupSymbol && time >= (double)beginTime && time <= (double)endTime)
                         {
@@ -116,8 +116,8 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                                 $"{source}," +
                                 $"{symbol}," +
                                 $"{time.ToString().PadRight(15, '0')}," +
-                                $"{size,-7}" +
-                                $" |" +
+                                $"{size}" +
+                                $"     " +
                                 $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy") : string.Empty)}," +
                                 $"{dobl}," +
                                 $"{sing}," +
@@ -130,6 +130,10 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     }
                 }
             }
+
+            watch.Stop();
+            Console.WriteLine();
+            Console.WriteLine($"Read execution time: {watch.Elapsed}");
         }
     }
 }
