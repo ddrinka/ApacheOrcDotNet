@@ -123,10 +123,10 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new OptimizedDoubleReader(readerContext);
         }
 
-        public BaseColumnReader<double> CreateFloatColumnReader(int stripeId, int rowEntryIndex, string columnName)
+        public BaseColumnReader<float> CreateFloatColumnReader(int stripeId, int rowEntryIndex, string columnName)
         {
             var readerContext = GetReaderContext(stripeId, rowEntryIndex, columnName);
-            return new OptimizedDoubleReader(readerContext);
+            return new OptimizedFloatReader(readerContext);
         }
 
         public BaseColumnReader<long?> CreateIntegerColumnReader(int stripeId, int rowEntryIndex, string columnName)

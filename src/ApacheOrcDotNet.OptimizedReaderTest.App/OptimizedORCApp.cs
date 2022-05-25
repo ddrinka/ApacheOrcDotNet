@@ -59,7 +59,8 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     var sizeReader = reader.CreateIntegerColumnReader(stripeId, rowEntryIndex, "size");
                     var dateReader = reader.CreateDateColumnReader(stripeId, rowEntryIndex, "date");
                     var doubleReader = reader.CreateDoubleColumnReader(stripeId, rowEntryIndex, "double");
-                    //var timeStampReader = reader.CreateTimestampColumnReader(stripeId, rowEntryIndex, "timeStamp");
+                    var floatReader = reader.CreateFloatColumnReader(stripeId, rowEntryIndex, "float");
+                    var timeStampReader = reader.CreateTimestampColumnReader(stripeId, rowEntryIndex, "timeStamp");
                     //var binaryReader = reader.CreateBinaryColumnReader(stripeId, rowEntryIndex, "binary");
                     //var byteReader = reader.CreateByteColumnReader(stripeId, rowEntryIndex, "byte");
 
@@ -69,7 +70,8 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     sizeReader.FillBuffer();
                     dateReader.FillBuffer();
                     doubleReader.FillBuffer();
-                    //timeStampReader.FillBuffer();
+                    floatReader.FillBuffer();
+                    timeStampReader.FillBuffer();
                     //binaryReader.FillBuffer();
                     //byteReader.FillBuffer();
 
@@ -102,7 +104,8 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
                         var date = dateReader.Values[idx];
                         var dobl = doubleReader.Values[idx];
-                        //var timeStamp = timeStampReader.Values[idx];
+                        var sing = floatReader.Values[idx];
+                        var timeStamp = timeStampReader.Values[idx];
                         //var binary = binaryReader.Values[idx];
                         //var tinyInt = byteReader.Values[idx];
 
@@ -112,10 +115,12 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                                 $"{source}," +
                                 $"{symbol}," +
                                 $"{time.ToString().PadRight(15, '0')}," +
-                                $"{size}," +
-                                $"{(date.HasValue ? date.Value.ToString("yyyy-MM-dd") : string.Empty)}," +
+                                $"{size,-7}" +
+                                $" |" +
+                                $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy") : string.Empty)}," +
                                 $"{dobl}," +
-                                //$"{timeStamp}," +
+                                $"{sing}," +
+                                $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)}," +
                                 //$"{Encoding.ASCII.GetString(binary)}," +
                                 //$"{tinyInt}" +
                                 $""
