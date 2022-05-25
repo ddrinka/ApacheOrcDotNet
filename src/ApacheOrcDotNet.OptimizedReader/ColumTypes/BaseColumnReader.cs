@@ -409,6 +409,8 @@ namespace ApacheOrcDotNet.OptimizedReader.ColumTypes
                 (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => GetRowEntryPosition(positionStep + 4),
 
                 (StreamKind.Data, ColumnTypeKind.Decimal, _) => 0,
+                (StreamKind.Data, ColumnTypeKind.Double, _) => 0,
+                (StreamKind.Data, ColumnTypeKind.Float, _) => 0,
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => GetRowEntryPosition(positionStep + 2),
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => 0,
                 (StreamKind.Data, ColumnTypeKind.Short, _) => GetRowEntryPosition(positionStep + 2),
