@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private readonly bool[] _presentStreamBuffer;
         private readonly long[] _lengthStreamBuffer;
 
-        public BinaryColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContextNew context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public BinaryColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
             _lengthStreamBuffer = new long[_context.MaxValuesToRead];
@@ -24,58 +24,52 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             var lengthStream = GetStripeStream(columnStreams, StreamKind.Length);
             var dataStream = GetStripeStream(columnStreams, StreamKind.Data);
 
-            // Present
+            // Positions
             var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var numPresentValuesRead = ReadBooleanStream(presentStream, presentPositions, _presentStreamBuffer);
-
-            // Length
             var lengthPositions = GetTargetedStreamPositions(presentStream, lengthStream, rowIndexEntry);
-            var numLengthValuesRead = ReadNumericStream(lengthStream, lengthPositions, isSigned: false, _lengthStreamBuffer);
+            var dataPositions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
 
-            // Data
-            var dataStreamPostions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
-            var dataBuffer = _byteRangeProvider.DecompressByteRange(
-                offset: dataStream.FileOffset + dataStreamPostions.RowGroupOffset,
-                compressedLength: dataStream.Length - dataStreamPostions.RowGroupOffset,
-                compressionKind: _context.CompressionKind,
-                compressionBlockSize: _context.CompressionBlockSize
-            );
+            // Decompression
+            var presentMemory = _byteRangeProvider.DecompressByteRangeNew(_context, presentStream, in presentPositions).Sequence;
+            var lengthMemory = _byteRangeProvider.DecompressByteRangeNew(_context, lengthStream, in lengthPositions).Sequence;
+            var dataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dataStream, in dataPositions).Sequence;
 
-            using (dataBuffer)
+            // Processing
+            var numPresentValuesRead = ReadBooleanStream(in presentMemory, presentPositions, _presentStreamBuffer);
+            var numLengthValuesRead = ReadNumericStream(in lengthMemory, lengthPositions, isSigned: false, _lengthStreamBuffer);
+
+            var rowEntryLength = dataMemory.Length - dataPositions.RowEntryOffset;
+            var dataSequence = dataMemory.Slice(dataPositions.RowEntryOffset, rowEntryLength);
+
+            var stringOffset = 0;
+            if (presentStream != null)
             {
-                var rowEntryLength = dataBuffer.Sequence.Length - dataStreamPostions.RowEntryOffset;
-                var dataSequence = dataBuffer.Sequence.Slice(dataStreamPostions.RowEntryOffset, rowEntryLength);
-
-                var stringOffset = 0;
-                if (presentStream != null)
+                var lengthIndex = 0;
+                for (int idx = 0; idx < numPresentValuesRead; idx++)
                 {
-                    var lengthIndex = 0;
-                    for (int idx = 0; idx < numPresentValuesRead; idx++)
+                    if (_presentStreamBuffer[idx])
                     {
-                        if (_presentStreamBuffer[idx])
-                        {
-                            var length = (int)_lengthStreamBuffer[lengthIndex++];
-                            _values[_numValuesRead++] = dataSequence.Slice(stringOffset, length).ToArray();
-                            stringOffset += length;
-                        }
-                        else
-                            _values[_numValuesRead++] = null;
-
-                        if (_numValuesRead >= _values.Length)
-                            break;
-                    }
-                }
-                else
-                {
-                    for (int idx = 0; idx < numLengthValuesRead; idx++)
-                    {
-                        var length = (int)_lengthStreamBuffer[idx];
+                        var length = (int)_lengthStreamBuffer[lengthIndex++];
                         _values[_numValuesRead++] = dataSequence.Slice(stringOffset, length).ToArray();
                         stringOffset += length;
-
-                        if (_numValuesRead >= _values.Length)
-                            break;
                     }
+                    else
+                        _values[_numValuesRead++] = null;
+
+                    if (_numValuesRead >= _values.Length)
+                        break;
+                }
+            }
+            else
+            {
+                for (int idx = 0; idx < numLengthValuesRead; idx++)
+                {
+                    var length = (int)_lengthStreamBuffer[idx];
+                    _values[_numValuesRead++] = dataSequence.Slice(stringOffset, length).ToArray();
+                    stringOffset += length;
+
+                    if (_numValuesRead >= _values.Length)
+                        break;
                 }
             }
         }

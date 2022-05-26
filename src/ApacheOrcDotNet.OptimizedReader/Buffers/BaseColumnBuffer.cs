@@ -16,15 +16,20 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
     public abstract class BaseColumnBuffer<TOutput>
     {
         private protected readonly IByteRangeProvider _byteRangeProvider;
-        private protected readonly OrcContextNew _context;
+        private protected readonly OrcContext _context;
         private protected readonly OrcColumn _column;
         private protected readonly TOutput[] _values;
         private protected int _numValuesRead;
         private long[] _numericStreamBuffer;
         private byte[] _byteStreamBuffer;
         private byte[] _boolStreamBuffer;
+        //private byte[] _decompressBuffer1;
+        //private byte[] _decompressBuffer2;
+        //private byte[] _decompressBuffer3;
+        //private byte[] _decompressBuffer4;
+        //private byte[] _decompressBuffer5;
 
-        public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContextNew context, OrcColumn column)
+        public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column)
         {
             _byteRangeProvider = byteRangeProvider;
             _context = context;
@@ -34,6 +39,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             _numericStreamBuffer = new long[1000];
             _byteStreamBuffer = new byte[1000];
             _boolStreamBuffer = new byte[1000];
+
+            //var decompressBuffersLength = 4 * 1024 * 1024;
+
+            //_decompressBuffer1 = new byte[decompressBuffersLength];
+            //_decompressBuffer2 = new byte[decompressBuffersLength];
+            //_decompressBuffer3 = new byte[decompressBuffersLength];
+            //_decompressBuffer4 = new byte[decompressBuffersLength];
+            //_decompressBuffer5 = new byte[decompressBuffersLength];
         }
 
         public OrcColumn Column => _column;
@@ -59,20 +72,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         }
 
         [SkipLocalsInit]
-        private protected int ReadByteStream(StreamDetail stream, in BufferPositions positions, Span<byte> outputValues)
+        private protected int ReadByteStream(in ReadOnlySequence<byte> dataBuffer, in BufferPositions positions, Span<byte> outputValues)
         {
-            if (stream == null)
+            if (dataBuffer.IsEmpty)
                 return 0;
 
-            var dataBuffer = _byteRangeProvider.DecompressByteRange(
-                offset: stream.FileOffset + positions.RowGroupOffset,
-                compressedLength: stream.Length - positions.RowGroupOffset,
-                compressionKind: _context.CompressionKind,
-                compressionBlockSize: _context.CompressionBlockSize
-            );
-
-            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+            var rowEntryLength = dataBuffer.Length - positions.RowEntryOffset;
+            var dataSequence = dataBuffer.Slice(positions.RowEntryOffset, rowEntryLength);
             var dataReader = new SequenceReader<byte>(dataSequence);
 
             var numValuesRead = 0;
@@ -97,20 +103,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         }
 
         [SkipLocalsInit]
-        private protected int ReadBooleanStream(StreamDetail stream, in BufferPositions positions, Span<bool> outputValues)
+        private protected int ReadBooleanStream(in ReadOnlySequence<byte> dataBuffer, in BufferPositions positions, Span<bool> outputValues)
         {
-            if (stream == null)
+            if (dataBuffer.IsEmpty)
                 return 0;
 
-            var dataBuffer = _byteRangeProvider.DecompressByteRange(
-                offset: stream.FileOffset + positions.RowGroupOffset,
-                compressedLength: stream.Length - positions.RowGroupOffset,
-                compressionKind: _context.CompressionKind,
-                compressionBlockSize: _context.CompressionBlockSize
-            );
-
-            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+            var rowEntryLength = dataBuffer.Length - positions.RowEntryOffset;
+            var dataSequence = dataBuffer.Slice(positions.RowEntryOffset, rowEntryLength);
             var dataReader = new SequenceReader<byte>(dataSequence);
 
             var numOfTotalBitsToSkip = positions.ValuesToSkip * 8 + positions.RemainingBits;
@@ -170,23 +169,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         }
 
         [SkipLocalsInit]
-        private protected int ReadNumericStream(StreamDetail stream, in BufferPositions positions, bool isSigned, Span<long> outputValues)
+        private protected int ReadNumericStream(in ReadOnlySequence<byte> dataBuffer, in BufferPositions positions, bool isSigned, Span<long> outputValues)
         {
-            if (stream == null)
+            if (dataBuffer.IsEmpty)
                 return 0;
 
-            if (stream.EncodingKind != ColumnEncodingKind.DirectV2 && stream.EncodingKind != ColumnEncodingKind.DictionaryV2)
-                throw new NotImplementedException($"Unimplemented Numeric {nameof(ColumnEncodingKind)} {stream.EncodingKind}");
-
-            var dataBuffer = _byteRangeProvider.DecompressByteRange(
-                offset: stream.FileOffset + positions.RowGroupOffset,
-                compressedLength: stream.Length - positions.RowGroupOffset,
-                compressionKind: _context.CompressionKind,
-                compressionBlockSize: _context.CompressionBlockSize
-            );
-
-            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+            var rowEntryLength = dataBuffer.Length - positions.RowEntryOffset;
+            var dataSequence = dataBuffer.Slice(positions.RowEntryOffset, rowEntryLength);
             var dataReader = new SequenceReader<byte>(dataSequence);
 
             var numValuesRead = 0;
@@ -211,24 +200,16 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         }
 
         [SkipLocalsInit]
-        private protected int ReadVarIntStream(StreamDetail stream, BufferPositions positions, Span<BigInteger> outputValues)
+        private protected int ReadVarIntStream(in ReadOnlySequence<byte> dataBuffer, in BufferPositions positions, Span<BigInteger> outputValues)
         {
-            var numValuesRead = 0;
+            if (dataBuffer.IsEmpty)
+                return 0;
 
-            if (stream == null)
-                return numValuesRead;
-
-            var dataBuffer = _byteRangeProvider.DecompressByteRange(
-                offset: stream.FileOffset + positions.RowGroupOffset,
-                compressedLength: stream.Length - positions.RowGroupOffset,
-                compressionKind: _context.CompressionKind,
-                compressionBlockSize: _context.CompressionBlockSize
-            );
-
-            var rowEntryLength = dataBuffer.Sequence.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Sequence.Slice(positions.RowEntryOffset, rowEntryLength);
+            var rowEntryLength = dataBuffer.Length - positions.RowEntryOffset;
+            var dataSequence = dataBuffer.Slice(positions.RowEntryOffset, rowEntryLength);
             var dataReader = new SequenceReader<byte>(dataSequence);
 
+            var numValuesRead = 0;
             int skippedValues = 0;
             while (!dataReader.End)
             {

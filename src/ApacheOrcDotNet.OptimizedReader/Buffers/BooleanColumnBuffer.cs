@@ -9,7 +9,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private bool[] _presentStreamBuffer;
         private bool[] _dataStreamBuffer;
 
-        public BooleanColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContextNew context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public BooleanColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
             _dataStreamBuffer = new bool[_context.MaxValuesToRead];
@@ -24,11 +24,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             // Present
             var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var numPresentValuesRead = ReadBooleanStream(presentStream, presentPositions, _presentStreamBuffer);
+            var dataPositions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
 
-            // Data
-            var dataPostions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
-            var numDataValuesRead = ReadBooleanStream(dataStream, dataPostions, _dataStreamBuffer);
+            // Decompression
+            var presentMemory = _byteRangeProvider.DecompressByteRangeNew(_context, presentStream, in presentPositions).Sequence;
+            var dataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dataStream, in dataPositions).Sequence;
+
+            // Processing
+            var numPresentValuesRead = ReadBooleanStream(in presentMemory, presentPositions, _presentStreamBuffer);
+            var numDataValuesRead = ReadBooleanStream(in dataMemory, dataPositions, _dataStreamBuffer);
 
             var dataIndex = 0;
             if (presentStream != null)

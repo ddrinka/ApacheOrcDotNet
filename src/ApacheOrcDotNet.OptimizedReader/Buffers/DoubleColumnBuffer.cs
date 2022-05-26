@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
     {
         private bool[] _presentStreamBuffer;
 
-        public DoubleColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContextNew context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public DoubleColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
         }
@@ -22,51 +22,46 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             var presentStream = GetStripeStream(columnStreams, StreamKind.Present, isRequired: false);
             var dataStream = GetStripeStream(columnStreams, StreamKind.Data);
 
-            // Present
+            // Positions
             var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var numPresentValuesRead = ReadBooleanStream(presentStream, presentPositions, _presentStreamBuffer);
-
-            // Data
             var dataStreamPostions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
-            var dataBuffer = _byteRangeProvider.DecompressByteRange(
-                offset: dataStream.FileOffset + dataStreamPostions.RowGroupOffset,
-                compressedLength: dataStream.Length - dataStreamPostions.RowGroupOffset,
-                compressionKind: _context.CompressionKind,
-                compressionBlockSize: _context.CompressionBlockSize
-            );
 
-            using (dataBuffer)
+            // Decompression
+            var presentMemory = _byteRangeProvider.DecompressByteRangeNew(_context, presentStream, presentPositions).Sequence;
+            var dataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dataStream, dataStreamPostions).Sequence;
+
+            // Processing
+            var numPresentValuesRead = ReadBooleanStream(in presentMemory, presentPositions, _presentStreamBuffer);
+
+            var rowEntryLength = dataMemory.Length - dataStreamPostions.RowEntryOffset;
+            var dataSequence = dataMemory.Slice(dataStreamPostions.RowEntryOffset, rowEntryLength);
+            var dataReader = new SequenceReader<byte>(dataSequence);
+
+            Span<byte> valueBuffer = stackalloc byte[8];
+            if (presentStream != null)
             {
-                var rowEntryLength = dataBuffer.Sequence.Length - dataStreamPostions.RowEntryOffset;
-                var dataSequence = dataBuffer.Sequence.Slice(dataStreamPostions.RowEntryOffset, rowEntryLength);
-                var dataReader = new SequenceReader<byte>(dataSequence);
-
-                Span<byte> valueBuffer = stackalloc byte[8];
-                if (presentStream != null)
+                for (int idx = 0; idx < numPresentValuesRead; idx++)
                 {
-                    for (int idx = 0; idx < numPresentValuesRead; idx++)
+                    if (_presentStreamBuffer[idx])
                     {
-                        if (_presentStreamBuffer[idx])
-                        {
-                            dataReader.TryCopyTo(valueBuffer);
-                            _values[_numValuesRead++] = BitConverter.ToDouble(valueBuffer);
-                            dataReader.Advance(valueBuffer.Length);
-                        }
-                        else
-                            _values[_numValuesRead++] = double.NaN;
-                    }
-                }
-                else
-                {
-                    while (dataReader.TryCopyTo(valueBuffer))
-                    {
-                        dataReader.Advance(valueBuffer.Length);
-
+                        dataReader.TryCopyTo(valueBuffer);
                         _values[_numValuesRead++] = BitConverter.ToDouble(valueBuffer);
-
-                        if (_numValuesRead >= _values.Length)
-                            break;
+                        dataReader.Advance(valueBuffer.Length);
                     }
+                    else
+                        _values[_numValuesRead++] = double.NaN;
+                }
+            }
+            else
+            {
+                while (dataReader.TryCopyTo(valueBuffer))
+                {
+                    dataReader.Advance(valueBuffer.Length);
+
+                    _values[_numValuesRead++] = BitConverter.ToDouble(valueBuffer);
+
+                    if (_numValuesRead >= _values.Length)
+                        break;
                 }
             }
         }

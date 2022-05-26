@@ -12,7 +12,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private readonly long[] _dataStreamBuffer;
         private long[] _secondaryStreamBuffer;
 
-        public TimestampColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContextNew context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public TimestampColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
             _dataStreamBuffer = new long[_context.MaxValuesToRead];
@@ -27,17 +27,20 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             var dataStream = GetStripeStream(columnStreams, StreamKind.Data);
             var secondaryStream = GetStripeStream(columnStreams, StreamKind.Secondary);
 
-            // Present
+            // Positions
             var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var numPresentValuesRead = ReadBooleanStream(presentStream, presentPositions, _presentStreamBuffer);
-
-            // Data
-            var dataPostions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
-            var numDataValuesRead = ReadNumericStream(dataStream, dataPostions, isSigned: true, _dataStreamBuffer);
-
-            // Secondary
+            var dataPositions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
             var secondaryPostions = GetTargetedStreamPositions(presentStream, secondaryStream, rowIndexEntry);
-            var numSecondaryValuesRead = ReadNumericStream(secondaryStream, secondaryPostions, isSigned: false, _secondaryStreamBuffer);
+
+            // Decompression
+            var presentMemory = _byteRangeProvider.DecompressByteRangeNew(_context, presentStream, in presentPositions).Sequence;
+            var dataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dataStream, in dataPositions).Sequence;
+            var secondaryMemory = _byteRangeProvider.DecompressByteRangeNew(_context, secondaryStream, in secondaryPostions).Sequence;
+
+            // Processing
+            var numPresentValuesRead = ReadBooleanStream(in presentMemory, presentPositions, _presentStreamBuffer);
+            var numDataValuesRead = ReadNumericStream(in dataMemory, dataPositions, isSigned: true, _dataStreamBuffer);
+            _ = ReadNumericStream(in secondaryMemory, secondaryPostions, isSigned: false, _secondaryStreamBuffer);
 
             if (presentStream != null)
             {
@@ -58,7 +61,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
             else
             {
-                for (int idx = 0; idx < numSecondaryValuesRead; idx++)
+                for (int idx = 0; idx < numDataValuesRead; idx++)
                 {
                     var seconds = _dataStreamBuffer[idx];
                     var nanosecondTicks = EncodedNanosToTicks(_secondaryStreamBuffer[idx]);

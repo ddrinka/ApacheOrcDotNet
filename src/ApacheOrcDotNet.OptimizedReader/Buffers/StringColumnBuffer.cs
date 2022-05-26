@@ -16,7 +16,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private long[] _dataStreamBuffer;
         private long[] _lengthStreamBufferDirectV2;
 
-        public StringColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContextNew context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public StringColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
             _dataStreamBuffer = new long[_context.MaxValuesToRead];
@@ -46,58 +46,52 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             var lengthStream = GetStripeStream(columnStreams, StreamKind.Length);
             var dataStream = GetStripeStream(columnStreams, StreamKind.Data);
 
-            // Present
+            // Positions
             var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var numPresentValuesRead = ReadBooleanStream(presentStream, presentPositions, _presentStreamBuffer);
-
-            // Length
             var lengthPositions = GetTargetedStreamPositions(presentStream, lengthStream, rowIndexEntry);
-            var numLengthValuesRead = ReadNumericStream(lengthStream, lengthPositions, isSigned: false, _lengthStreamBufferDirectV2);
+            var dataPositions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
 
-            // Data
-            var dataStreamPostions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
-            var dataBuffer = _byteRangeProvider.DecompressByteRange(
-                offset: dataStream.FileOffset + dataStreamPostions.RowGroupOffset,
-                compressedLength: dataStream.Length - dataStreamPostions.RowGroupOffset,
-                compressionKind: _context.CompressionKind,
-                compressionBlockSize: _context.CompressionBlockSize
-            );
+            // Decompression
+            var presentMemory = _byteRangeProvider.DecompressByteRangeNew(_context, presentStream, in presentPositions).Sequence;
+            var lengthMemory = _byteRangeProvider.DecompressByteRangeNew(_context, lengthStream, in lengthPositions).Sequence;
+            var dataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dataStream, in dataPositions).Sequence;
 
-            using (dataBuffer)
+            // Processing
+            var numPresentValuesRead = ReadBooleanStream(in presentMemory, presentPositions, _presentStreamBuffer);
+            var numLengthValuesRead = ReadNumericStream(in lengthMemory, lengthPositions, isSigned: false, _lengthStreamBufferDirectV2);
+
+            var rowEntryLength = dataMemory.Length - dataPositions.RowEntryOffset;
+            var dataSequence = dataMemory.Slice(dataPositions.RowEntryOffset, rowEntryLength);
+
+            var stringOffset = 0;
+            if (presentStream != null)
             {
-                var rowEntryLength = dataBuffer.Sequence.Length - dataStreamPostions.RowEntryOffset;
-                var dataSequence = dataBuffer.Sequence.Slice(dataStreamPostions.RowEntryOffset, rowEntryLength);
-
-                var stringOffset = 0;
-                if (presentStream != null)
+                var lengthIndex = 0;
+                for (int idx = 0; idx < numPresentValuesRead; idx++)
                 {
-                    var lengthIndex = 0;
-                    for (int idx = 0; idx < numPresentValuesRead; idx++)
+                    if (_presentStreamBuffer[idx])
                     {
-                        if (_presentStreamBuffer[idx])
-                        {
-                            var length = (int)_lengthStreamBufferDirectV2[lengthIndex++];
-                            _values[_numValuesRead++] = Encoding.UTF8.GetString(dataSequence.Slice(stringOffset, length));
-                            stringOffset += length;
-                        }
-                        else
-                            _values[_numValuesRead++] = null;
-
-                        if (_numValuesRead >= _values.Length)
-                            break;
-                    }
-                }
-                else
-                {
-                    for (int idx = 0; idx < numLengthValuesRead; idx++)
-                    {
-                        var length = (int)_lengthStreamBufferDirectV2[idx];
+                        var length = (int)_lengthStreamBufferDirectV2[lengthIndex++];
                         _values[_numValuesRead++] = Encoding.UTF8.GetString(dataSequence.Slice(stringOffset, length));
                         stringOffset += length;
-
-                        if (_numValuesRead >= _values.Length)
-                            break;
                     }
+                    else
+                        _values[_numValuesRead++] = null;
+
+                    if (_numValuesRead >= _values.Length)
+                        break;
+                }
+            }
+            else
+            {
+                for (int idx = 0; idx < numLengthValuesRead; idx++)
+                {
+                    var length = (int)_lengthStreamBufferDirectV2[idx];
+                    _values[_numValuesRead++] = Encoding.UTF8.GetString(dataSequence.Slice(stringOffset, length));
+                    stringOffset += length;
+
+                    if (_numValuesRead >= _values.Length)
+                        break;
                 }
             }
         }
@@ -110,63 +104,56 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             var dataStream = GetStripeStream(columnStreams, StreamKind.Data);
             var dictionaryDataStream = GetStripeStream(columnStreams, StreamKind.DictionaryData);
 
-            // Present
+            // Positions
             var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var numPresentValuesRead = ReadBooleanStream(presentStream, in presentPositions, _presentStreamBuffer);
-
-            // Length
             var lengthPositions = GetTargetedStreamPositions(presentStream, lengthStream, rowIndexEntry);
-            var lengthStreamBuffer = GetLengthStreamBufferDictinaryV2(stripeId, lengthStream.DictionarySize);
-            var numLengthValuesRead = ReadNumericStream(lengthStream, in lengthPositions, isSigned: false, lengthStreamBuffer);
-
-            // Data
-            var dataPostions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
-            var numDataValuesRead = ReadNumericStream(dataStream, in dataPostions, isSigned: false, _dataStreamBuffer);
-
-            // Dictionary Data
+            var dataPositions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
             var dictionaryDataPositions = GetTargetedStreamPositions(presentStream, dictionaryDataStream, rowIndexEntry);
-            var decompressedBuffer = _byteRangeProvider.DecompressByteRange(
-                offset: dictionaryDataStream.FileOffset + dictionaryDataPositions.RowGroupOffset,
-                compressedLength: dictionaryDataStream.Length - dictionaryDataPositions.RowGroupOffset,
-                compressionKind: _context.CompressionKind,
-                compressionBlockSize: _context.CompressionBlockSize
-            );
 
-            using (decompressedBuffer)
+            // Decompression
+            var presentMemory = _byteRangeProvider.DecompressByteRangeNew(_context, presentStream, in presentPositions).Sequence;
+            var lengthMemory = _byteRangeProvider.DecompressByteRangeNew(_context, lengthStream, in lengthPositions).Sequence;
+            var dataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dataStream, in dataPositions).Sequence;
+            var dictionaryDataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dictionaryDataStream, in dictionaryDataPositions).Sequence;
+
+            // Processing
+            var lengthStreamBuffer = GetLengthStreamBufferDictinaryV2(stripeId, lengthStream.DictionarySize);
+            var numPresentValuesRead = ReadBooleanStream(in presentMemory, in presentPositions, _presentStreamBuffer);
+            var numLengthValuesRead = ReadNumericStream(in lengthMemory, in lengthPositions, isSigned: false, lengthStreamBuffer);
+            var numDataValuesRead = ReadNumericStream(in dataMemory, in dataPositions, isSigned: false, _dataStreamBuffer);
+
+            int stringOffset = 0;
+            List<string> stringsList = new(numLengthValuesRead);
+            for (int idx = 0; idx < numLengthValuesRead; idx++)
             {
-                int stringOffset = 0;
-                List<string> stringsList = new(numLengthValuesRead);
-                for (int idx = 0; idx < numLengthValuesRead; idx++)
+                var length = (int)lengthStreamBuffer[idx];
+                var value = Encoding.UTF8.GetString(dictionaryDataMemory.Slice(stringOffset, length));
+                stringOffset += length;
+                stringsList.Add(value);
+            }
+
+            if (presentStream != null)
+            {
+                var dataIndex = 0;
+                for (int idx = 0; idx < numPresentValuesRead; idx++)
                 {
-                    var length = (int)lengthStreamBuffer[idx];
-                    var value = Encoding.UTF8.GetString(decompressedBuffer.Sequence.Slice(stringOffset, length));
-                    stringOffset += length;
-                    stringsList.Add(value);
+                    if (_presentStreamBuffer[idx])
+                        _values[_numValuesRead++] = stringsList[(int)_dataStreamBuffer[dataIndex++]];
+                    else
+                        _values[_numValuesRead++] = null;
+
+                    if (_numValuesRead >= _values.Length)
+                        break;
                 }
-
-                if (presentStream != null)
+            }
+            else
+            {
+                for (int idx = 0; idx < numDataValuesRead; idx++)
                 {
-                    var dataIndex = 0;
-                    for (int idx = 0; idx < numPresentValuesRead; idx++)
-                    {
-                        if (_presentStreamBuffer[idx])
-                            _values[_numValuesRead++] = stringsList[(int)_dataStreamBuffer[dataIndex++]];
-                        else
-                            _values[_numValuesRead++] = null;
+                    _values[_numValuesRead++] = stringsList[(int)_dataStreamBuffer[idx]];
 
-                        if (_numValuesRead >= _values.Length)
-                            break;
-                    }
-                }
-                else
-                {
-                    for (int idx = 0; idx < numDataValuesRead; idx++)
-                    {
-                        _values[_numValuesRead++] = stringsList[(int)_dataStreamBuffer[idx]];
-
-                        if (_numValuesRead >= _values.Length)
-                            break;
-                    }
+                    if (_numValuesRead >= _values.Length)
+                        break;
                 }
             }
         }
