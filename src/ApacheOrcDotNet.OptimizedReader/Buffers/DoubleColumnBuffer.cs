@@ -1,52 +1,71 @@
 ﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using ApacheOrcDotNet.Protocol;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
+    [SkipLocalsInit]
     public class DoubleColumnBuffer : BaseColumnBuffer<double>
     {
         private bool[] _presentStreamBuffer;
+        private byte[] _presentInputBuffer;
+        private byte[] _presentOutputBuffer;
+        private byte[] _dataInputBuffer;
+        private byte[] _dataOutputBuffer;
 
         public DoubleColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
+
+            _presentInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
+            _presentOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
+
+            _dataInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
+            _dataOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
         }
 
         public override void Fill(int stripeId, IEnumerable<StreamDetail> columnStreams, RowIndexEntry rowIndexEntry)
         {
-            ResetInnerBuffers();
+            // Streams
+            var presentStream = GetColumnStream(columnStreams, StreamKind.Present, isRequired: false);
+            var dataStream = GetColumnStream(columnStreams, StreamKind.Data);
 
-            var presentStream = GetStripeStream(columnStreams, StreamKind.Present, isRequired: false);
-            var dataStream = GetStripeStream(columnStreams, StreamKind.Data);
-
-            // Positions
+            // Stream Positions
             var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var dataStreamPostions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
+            var dataPositions = GetTargetDataStreamPositions(presentStream, dataStream, rowIndexEntry);
 
-            // Decompression
-            var presentMemory = _byteRangeProvider.DecompressByteRangeNew(_context, presentStream, presentPositions).Sequence;
-            var dataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dataStream, dataStreamPostions).Sequence;
+            // Stream Byte Ranges
+            (int present, int data) rangeSizes = default;
+            Parallel.Invoke(
+                () => GetByteRange(_presentInputBuffer, presentStream, presentPositions, ref rangeSizes.present),
+                () => GetByteRange(_dataInputBuffer, dataStream, dataPositions, ref rangeSizes.data)
+            );
 
-            // Processing
-            var numPresentValuesRead = ReadBooleanStream(in presentMemory, presentPositions, _presentStreamBuffer);
+            // Decompress Byte Ranges
+            (int present, int data) decompressedSizes = default;
+            Parallel.Invoke(
+                () => DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present),
+                () => DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data)
+            );
 
-            var rowEntryLength = dataMemory.Length - dataStreamPostions.RowEntryOffset;
-            var dataSequence = dataMemory.Slice(dataStreamPostions.RowEntryOffset, rowEntryLength);
-            var dataReader = new SequenceReader<byte>(dataSequence);
+            // Parse Decompressed Bytes
+            int presentValuesRead = default;
+            ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref presentValuesRead);
+
+            var dataReader = new BufferReader(ResizeBuffer(_dataOutputBuffer, decompressedSizes.data, dataPositions));
 
             Span<byte> valueBuffer = stackalloc byte[8];
             if (presentStream != null)
             {
-                for (int idx = 0; idx < numPresentValuesRead; idx++)
+                for (int idx = 0; idx < presentValuesRead; idx++)
                 {
                     if (_presentStreamBuffer[idx])
                     {
                         dataReader.TryCopyTo(valueBuffer);
                         _values[_numValuesRead++] = BitConverter.ToDouble(valueBuffer);
-                        dataReader.Advance(valueBuffer.Length);
                     }
                     else
                         _values[_numValuesRead++] = double.NaN;
@@ -56,8 +75,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             {
                 while (dataReader.TryCopyTo(valueBuffer))
                 {
-                    dataReader.Advance(valueBuffer.Length);
-
                     _values[_numValuesRead++] = BitConverter.ToDouble(valueBuffer);
 
                     if (_numValuesRead >= _values.Length)

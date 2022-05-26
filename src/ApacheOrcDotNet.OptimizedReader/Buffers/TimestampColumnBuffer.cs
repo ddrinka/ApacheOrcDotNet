@@ -2,50 +2,81 @@
 using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
+    [SkipLocalsInit]
     public class TimestampColumnBuffer : BaseColumnBuffer<DateTime?>
     {
         readonly static DateTime _orcEpoch = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         private readonly bool[] _presentStreamBuffer;
         private readonly long[] _dataStreamBuffer;
         private long[] _secondaryStreamBuffer;
+        private byte[] _presentInputBuffer;
+        private byte[] _presentOutputBuffer;
+        private byte[] _dataInputBuffer;
+        private byte[] _dataOutputBuffer;
+        private byte[] _secondaryInputBuffer;
+        private byte[] _secondaryOutputBuffer;
 
         public TimestampColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
             _dataStreamBuffer = new long[_context.MaxValuesToRead];
             _secondaryStreamBuffer = new long[_context.MaxValuesToRead];
+
+            _presentInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
+            _presentOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
+
+            _dataInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
+            _dataOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
+
+            _secondaryInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
+            _secondaryOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
         }
 
         public override void Fill(int stripeId, IEnumerable<StreamDetail> columnStreams, RowIndexEntry rowIndexEntry)
         {
-            ResetInnerBuffers();
+            // Streams
+            var presentStream = GetColumnStream(columnStreams, StreamKind.Present, isRequired: false);
+            var dataStream = GetColumnStream(columnStreams, StreamKind.Data);
+            var secondaryStream = GetColumnStream(columnStreams, StreamKind.Secondary);
 
-            var presentStream = GetStripeStream(columnStreams, StreamKind.Present, isRequired: false);
-            var dataStream = GetStripeStream(columnStreams, StreamKind.Data);
-            var secondaryStream = GetStripeStream(columnStreams, StreamKind.Secondary);
-
-            // Positions
+            // Stream Positions
             var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var dataPositions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
-            var secondaryPostions = GetTargetedStreamPositions(presentStream, secondaryStream, rowIndexEntry);
+            var dataPositions = GetTargetDataStreamPositions(presentStream, dataStream, rowIndexEntry);
+            var secondaryPostions = GetTargetDataStreamPositions(presentStream, secondaryStream, rowIndexEntry);
 
-            // Decompression
-            var presentMemory = _byteRangeProvider.DecompressByteRangeNew(_context, presentStream, in presentPositions).Sequence;
-            var dataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dataStream, in dataPositions).Sequence;
-            var secondaryMemory = _byteRangeProvider.DecompressByteRangeNew(_context, secondaryStream, in secondaryPostions).Sequence;
+            // Stream Byte Ranges
+            (int present, int data, int secondary) rangeSizes = default;
+            Parallel.Invoke(
+                () => GetByteRange(_presentInputBuffer, presentStream, presentPositions, ref rangeSizes.present),
+                () => GetByteRange(_dataInputBuffer, dataStream, dataPositions, ref rangeSizes.data),
+                () => GetByteRange(_secondaryInputBuffer, secondaryStream, secondaryPostions, ref rangeSizes.secondary)
+            );
 
-            // Processing
-            var numPresentValuesRead = ReadBooleanStream(in presentMemory, presentPositions, _presentStreamBuffer);
-            var numDataValuesRead = ReadNumericStream(in dataMemory, dataPositions, isSigned: true, _dataStreamBuffer);
-            _ = ReadNumericStream(in secondaryMemory, secondaryPostions, isSigned: false, _secondaryStreamBuffer);
+            // Decompress Byte Ranges
+            (int present, int data, int secondary) decompressedSizes = default;
+            Parallel.Invoke(
+                () => DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present),
+                () => DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data),
+                () => DecompressByteRange(_secondaryInputBuffer, _secondaryOutputBuffer, secondaryStream, secondaryPostions, ref decompressedSizes.secondary)
+            );
+
+            // Parse Decompressed Bytes
+            (int present, int data, int secondary) valuesRead = default;
+            Parallel.Invoke(
+                () => ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present),
+                () => ReadNumericStream(_dataOutputBuffer, decompressedSizes.data, dataPositions, isSigned: true, _dataStreamBuffer, ref valuesRead.data),
+                () => ReadNumericStream(_secondaryOutputBuffer, decompressedSizes.secondary, secondaryPostions, isSigned: false, _secondaryStreamBuffer, ref valuesRead.secondary)
+            );
 
             if (presentStream != null)
             {
                 var secondaryIndex = 0;
-                for (int idx = 0; idx < numPresentValuesRead; idx++)
+                for (int idx = 0; idx < valuesRead.present; idx++)
                 {
                     if (_presentStreamBuffer[idx])
                     {
@@ -61,7 +92,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
             else
             {
-                for (int idx = 0; idx < numDataValuesRead; idx++)
+                for (int idx = 0; idx < valuesRead.data; idx++)
                 {
                     var seconds = _dataStreamBuffer[idx];
                     var nanosecondTicks = EncodedNanosToTicks(_secondaryStreamBuffer[idx]);

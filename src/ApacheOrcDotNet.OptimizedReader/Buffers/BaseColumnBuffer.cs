@@ -15,6 +15,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
     [SkipLocalsInit]
     public abstract class BaseColumnBuffer<TOutput>
     {
+        private protected readonly ArrayPool<byte> _arrayPool;
         private protected readonly IByteRangeProvider _byteRangeProvider;
         private protected readonly OrcContext _context;
         private protected readonly OrcColumn _column;
@@ -23,11 +24,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private long[] _numericStreamBuffer;
         private byte[] _byteStreamBuffer;
         private byte[] _boolStreamBuffer;
-        //private byte[] _decompressBuffer1;
-        //private byte[] _decompressBuffer2;
-        //private byte[] _decompressBuffer3;
-        //private byte[] _decompressBuffer4;
-        //private byte[] _decompressBuffer5;
 
         public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column)
         {
@@ -40,13 +36,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             _byteStreamBuffer = new byte[1000];
             _boolStreamBuffer = new byte[1000];
 
-            //var decompressBuffersLength = 4 * 1024 * 1024;
-
-            //_decompressBuffer1 = new byte[decompressBuffersLength];
-            //_decompressBuffer2 = new byte[decompressBuffersLength];
-            //_decompressBuffer3 = new byte[decompressBuffersLength];
-            //_decompressBuffer4 = new byte[decompressBuffersLength];
-            //_decompressBuffer5 = new byte[decompressBuffersLength];
+            _arrayPool = ArrayPool<byte>.Create(15 * 1024 * 1024, 8);
         }
 
         public OrcColumn Column => _column;
@@ -54,42 +44,22 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         public abstract void Fill(int stripeId, IEnumerable<StreamDetail> columnStreams, RowIndexEntry rowIndexEntry);
 
-        protected StreamDetail GetStripeStream(IEnumerable<StreamDetail> columnStreams, StreamKind streamKind, bool isRequired = true)
+        public void Reset() => _numValuesRead = 0;
+
+        private protected int ReadByteStream(ReadOnlySpan<byte> buffer, int length, in DataPositions positions, Span<byte> outputValues, ref int numValuesRead)
         {
-            var stream = columnStreams.SingleOrDefault(stream =>
-                stream.StreamKind == streamKind
-            );
+            numValuesRead = 0;
 
-            if (isRequired && stream == null)
-                throw new InvalidDataException($"The '{streamKind}' stream must be available");
+            var numSkipped = 0;
+            var bufferReader = new BufferReader(ResizeBuffer(buffer, length, in positions));
 
-            return stream;
-        }
-
-        protected void ResetInnerBuffers()
-        {
-            _numValuesRead = 0;
-        }
-
-        [SkipLocalsInit]
-        private protected int ReadByteStream(in ReadOnlySequence<byte> dataBuffer, in BufferPositions positions, Span<byte> outputValues)
-        {
-            if (dataBuffer.IsEmpty)
-                return 0;
-
-            var rowEntryLength = dataBuffer.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Slice(positions.RowEntryOffset, rowEntryLength);
-            var dataReader = new SequenceReader<byte>(dataSequence);
-
-            var numValuesRead = 0;
-            var skippedValues = 0;
-            while (!dataReader.End)
+            while (!bufferReader.Complete)
             {
-                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref dataReader, _byteStreamBuffer);
+                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref bufferReader, _byteStreamBuffer);
 
                 for (int idx = 0; idx < numByteValuesRead; idx++)
                 {
-                    if (skippedValues++ < positions.ValuesToSkip)
+                    if (numSkipped++ < positions.ValuesToSkip)
                         continue;
 
                     outputValues[numValuesRead++] = _byteStreamBuffer[idx];
@@ -102,27 +72,21 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             return numValuesRead;
         }
 
-        [SkipLocalsInit]
-        private protected int ReadBooleanStream(in ReadOnlySequence<byte> dataBuffer, in BufferPositions positions, Span<bool> outputValues)
+        private protected void ReadBooleanStream(ReadOnlySpan<byte> buffer, int length, in DataPositions positions, Span<bool> outputValues, ref int numValuesRead)
         {
-            if (dataBuffer.IsEmpty)
-                return 0;
+            numValuesRead = 0;
 
-            var rowEntryLength = dataBuffer.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Slice(positions.RowEntryOffset, rowEntryLength);
-            var dataReader = new SequenceReader<byte>(dataSequence);
-
+            var numSkipped = 0;
+            var bufferReader = new BufferReader(ResizeBuffer(buffer, length, in positions));
             var numOfTotalBitsToSkip = positions.ValuesToSkip * 8 + positions.RemainingBits;
             var numOfBytesToSkip = numOfTotalBitsToSkip / 8;
-            var numValuesRead = 0;
-            var skippedValues = 0;
-            while (!dataReader.End)
+            while (!bufferReader.Complete)
             {
-                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref dataReader, _boolStreamBuffer);
+                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref bufferReader, _boolStreamBuffer);
 
                 for (int idx = 0; idx < numByteValuesRead; idx++)
                 {
-                    if (skippedValues++ < numOfBytesToSkip)
+                    if (numSkipped++ < numOfBytesToSkip)
                         continue;
 
                     var decodedByte = _boolStreamBuffer[idx];
@@ -133,104 +97,100 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
                     outputValues[numValuesRead++] = (decodedByte & 128) != 0;
                     if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        return;
 
                     outputValues[numValuesRead++] = (decodedByte & 64) != 0;
                     if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        return;
 
                     outputValues[numValuesRead++] = (decodedByte & 32) != 0;
                     if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        return;
 
                     outputValues[numValuesRead++] = (decodedByte & 16) != 0;
                     if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        return;
 
                     outputValues[numValuesRead++] = (decodedByte & 8) != 0;
                     if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        return;
 
                     outputValues[numValuesRead++] = (decodedByte & 4) != 0;
                     if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        return;
 
                     outputValues[numValuesRead++] = (decodedByte & 2) != 0;
                     if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        return;
 
                     outputValues[numValuesRead++] = (decodedByte & 1) != 0;
                     if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        return;
                 }
             }
-
-            return numValuesRead;
         }
 
-        [SkipLocalsInit]
-        private protected int ReadNumericStream(in ReadOnlySequence<byte> dataBuffer, in BufferPositions positions, bool isSigned, Span<long> outputValues)
+        private protected void ReadNumericStream(ReadOnlySpan<byte> buffer, int length, in DataPositions positions, bool isSigned, Span<long> outputValues, ref int numValuesRead)
         {
-            if (dataBuffer.IsEmpty)
-                return 0;
+            numValuesRead = 0;
 
-            var rowEntryLength = dataBuffer.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Slice(positions.RowEntryOffset, rowEntryLength);
-            var dataReader = new SequenceReader<byte>(dataSequence);
+            var numSkipped = 0;
+            var bufferReader = new BufferReader(ResizeBuffer(buffer, length, in positions));
 
-            var numValuesRead = 0;
-            var skippedValues = 0;
-            while (!dataReader.End)
+            while (!bufferReader.Complete)
             {
-                var numNewValuesRead = OptimizedIntegerRLE.ReadValues(ref dataReader, isSigned, _numericStreamBuffer);
+                var numNewValuesRead = OptimizedIntegerRLE.ReadValues(ref bufferReader, isSigned, _numericStreamBuffer);
 
                 for (int idx = 0; idx < numNewValuesRead; idx++)
                 {
-                    if (skippedValues++ < positions.ValuesToSkip)
+                    if (numSkipped++ < positions.ValuesToSkip)
                         continue;
 
                     outputValues[numValuesRead++] = (int)_numericStreamBuffer[idx];
 
                     if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        return;
                 }
             }
-
-            return numValuesRead;
         }
 
-        [SkipLocalsInit]
-        private protected int ReadVarIntStream(in ReadOnlySequence<byte> dataBuffer, in BufferPositions positions, Span<BigInteger> outputValues)
+        private protected void ReadVarIntStream(ReadOnlySpan<byte> buffer, int length, in DataPositions positions, Span<BigInteger> outputValues, ref int numValuesRead)
         {
-            if (dataBuffer.IsEmpty)
-                return 0;
+            numValuesRead = 0;
 
-            var rowEntryLength = dataBuffer.Length - positions.RowEntryOffset;
-            var dataSequence = dataBuffer.Slice(positions.RowEntryOffset, rowEntryLength);
-            var dataReader = new SequenceReader<byte>(dataSequence);
+            int numSkipped = 0;
+            var bufferReader = new BufferReader(ResizeBuffer(buffer, length, in positions));
 
-            var numValuesRead = 0;
-            int skippedValues = 0;
-            while (!dataReader.End)
+            while (!bufferReader.Complete)
             {
-                var bigInt = ReadBigVarInt(ref dataReader);
+                var bigInt = ReadBigVarInt(ref bufferReader);
 
                 if (!bigInt.HasValue)
-                    break;
+                    return;
 
-                if (skippedValues++ < positions.ValuesToSkip)
+                if (numSkipped++ < positions.ValuesToSkip)
                     continue;
 
                 outputValues[numValuesRead++] = bigInt.Value;
 
                 if (numValuesRead >= outputValues.Length)
-                    break;
+                    return;
             }
-
-            return numValuesRead;
         }
 
-        private protected BufferPositions GetPresentStreamPositions(StreamDetail presentStream, RowIndexEntry rowIndexEntry)
+        private protected StreamDetail GetColumnStream(IEnumerable<StreamDetail> columnStreams, StreamKind streamKind, bool isRequired = true)
+        {
+            var stream = columnStreams.SingleOrDefault(stream =>
+                stream.StreamKind == streamKind
+            );
+
+            if (isRequired && stream == null)
+                throw new InvalidDataException($"The '{streamKind}' stream must be available");
+
+            return stream;
+        }
+
+        private protected DataPositions GetPresentStreamPositions(StreamDetail presentStream, RowIndexEntry rowIndexEntry)
         {
             if (presentStream == null)
                 return new();
@@ -238,7 +198,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             return new((int)rowIndexEntry.Positions[0], (int)rowIndexEntry.Positions[1], (int)rowIndexEntry.Positions[2], (int)rowIndexEntry.Positions[3]);
         }
 
-        private protected BufferPositions GetTargetedStreamPositions(StreamDetail presentStream, StreamDetail targetedStream, RowIndexEntry rowIndexEntry)
+        private protected DataPositions GetTargetDataStreamPositions(StreamDetail presentStream, StreamDetail targetedStream, RowIndexEntry rowIndexEntry)
         {
             var positionStep = presentStream == null ? 0 : 4;
 
@@ -326,6 +286,38 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             return new((int)rowGroupOffset, (int)rowEntryOffset, (int)valuesToSkip);
         }
 
+        private protected void GetByteRange(Span<byte> output, StreamDetail stream, in DataPositions positions, ref int rangeLength)
+        {
+            rangeLength = 0;
+
+            if (stream != null)
+            {
+                var offset = stream.FileOffset + positions.RowGroupOffset;
+                var compressedLength = stream.Length - positions.RowGroupOffset;
+
+                rangeLength = _byteRangeProvider.GetRange(output.Slice(0, compressedLength), offset);
+            }
+        }
+
+        private protected void DecompressByteRange(ReadOnlySpan<byte> compressedInput, Span<byte> decompressedOutput, StreamDetail stream, in DataPositions positions, ref int decompressedLength)
+        {
+            decompressedLength = 0;
+
+            if (stream != null)
+            {
+                var compressedLength = stream.Length - positions.RowGroupOffset;
+
+                decompressedLength = StreamData.Decompress(compressedInput.Slice(0, compressedLength), decompressedOutput, _context.CompressionKind);
+            }
+        }
+
+        private protected ReadOnlySpan<byte> ResizeBuffer(ReadOnlySpan<byte> buffer, int length, in DataPositions positions)
+        {
+            var rowentrylength = length - positions.RowEntryOffset;
+
+            return buffer.Slice(positions.RowEntryOffset, rowentrylength);
+        }
+
         private protected double BigIntegerToDouble(BigInteger numerator, long scale)
             => (double)BigIntegerToDecimal(numerator, scale);
 
@@ -340,7 +332,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             return decNumerator * scaler;
         }
 
-        private BigInteger? ReadBigVarInt(ref SequenceReader<byte> stream)
+        private BigInteger? ReadBigVarInt(ref BufferReader stream)
         {
             var value = BigInteger.Zero;
             long currentLong = 0;
