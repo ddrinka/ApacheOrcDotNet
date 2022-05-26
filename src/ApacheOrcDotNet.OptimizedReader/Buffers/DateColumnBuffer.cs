@@ -11,7 +11,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private readonly bool[] _presentStreamBuffer;
         private readonly long[] _dataStreamBuffer;
 
-        public DateColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContextNew context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public DateColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
             _dataStreamBuffer = new long[_context.MaxValuesToRead];
@@ -24,13 +24,17 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             var presentStream = GetStripeStream(columnStreams, StreamKind.Present, isRequired: false);
             var dataStream = GetStripeStream(columnStreams, StreamKind.Data);
 
-            // Present
+            // Positions
             var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var numPresentValuesRead = ReadBooleanStream(presentStream, presentPositions, _presentStreamBuffer);
+            var dataPositions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
 
-            // Data
-            var dataPostions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
-            var numDataValuesRead = ReadNumericStream(dataStream, dataPostions, isSigned: true, _dataStreamBuffer);
+            // Decompression
+            var presentMemory = _byteRangeProvider.DecompressByteRangeNew(_context, presentStream, in presentPositions).Sequence;
+            var dataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dataStream, in dataPositions).Sequence;
+
+            // Processing
+            var numPresentValuesRead = ReadBooleanStream(in presentMemory, presentPositions, _presentStreamBuffer);
+            var numDataValuesRead = ReadNumericStream(in dataMemory, dataPositions, isSigned: true, _dataStreamBuffer);
 
             if (presentStream != null)
             {

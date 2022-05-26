@@ -45,7 +45,16 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             }
         }
 
-        public ReadOnlySequence<byte> Sequence => new(_begin, 0, _end, _end.Memory.Length);
+        public ReadOnlySequence<byte> Sequence
+        {
+            get
+            {
+                if (_begin == default || _end == default)
+                    return new();
+
+                return new(_begin, 0, _end, _end.Memory.Length);
+            }
+        }
     }
 
     sealed class SequenceNode : ReadOnlySequenceSegment<byte>

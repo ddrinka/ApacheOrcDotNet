@@ -2,9 +2,9 @@
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
-    public class OrcContextNew
+    public class OrcContext
     {
-        public OrcContextNew(CompressionKind compressionKind, int compressionBlockSize, int maxValuesToRead)
+        public OrcContext(CompressionKind compressionKind, int compressionBlockSize, int maxValuesToRead)
         {
             CompressionKind = compressionKind;
             CompressionBlockSize = compressionBlockSize;

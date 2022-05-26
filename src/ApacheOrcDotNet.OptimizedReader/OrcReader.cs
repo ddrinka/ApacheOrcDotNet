@@ -68,67 +68,67 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public BaseColumnBuffer<byte[]> CreateBinaryColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new BinaryColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<bool?> CreateBooleanColumnReader(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new BooleanColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<byte?> CreateByteColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new ByteColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<DateTime?> CreateDateColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new DateColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<decimal?> CreateDecimalColumnReader(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new DecimalColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<double> CreateDecimalColumnBufferAsDouble(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new DecimalAsDoubleColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<double> CreateDoubleColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new DoubleColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<float> CreateFloatColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new FloatColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<long?> CreateIntegerColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new IntegerColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<string> CreateStringColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new StringColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<DateTime?> CreateTimestampColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContextNew(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new TimestampColumnBuffer(_byteRangeProvider, context, column);
         }
 

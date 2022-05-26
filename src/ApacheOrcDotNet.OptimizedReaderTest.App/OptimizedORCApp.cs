@@ -83,7 +83,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
                 foreach (var rowEntryIndex in rowGroupIndexes)
                 {
-                    // Read Data
+                    // Process
                     Parallel.Invoke(
                         () => reader.FillBuffer(stripeId, rowEntryIndex, sourceColumnBuffer),
                         () => reader.FillBuffer(stripeId, rowEntryIndex, symbolColumnBuffer),

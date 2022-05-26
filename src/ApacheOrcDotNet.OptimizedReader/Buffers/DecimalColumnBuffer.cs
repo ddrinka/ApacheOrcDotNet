@@ -12,7 +12,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private BigInteger[] _dataStreamBuffer;
         private long[] _secondaryStreamBuffer;
 
-        public DecimalColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContextNew context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public DecimalColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
             _dataStreamBuffer = new BigInteger[_context.MaxValuesToRead];
@@ -27,17 +27,20 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             var dataStream = GetStripeStream(columnStreams, StreamKind.Data);
             var secondaryStream = GetStripeStream(columnStreams, StreamKind.Secondary);
 
-            // Present
+            // Positions
             var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var numPresentValuesRead = ReadBooleanStream(presentStream, presentPositions, _presentStreamBuffer);
-
-            // Data
             var dataPostions = GetTargetedStreamPositions(presentStream, dataStream, rowIndexEntry);
-            var numDataValuesRead = ReadVarIntStream(dataStream, dataPostions, _dataStreamBuffer);
-
-            // Secondary
             var secondaryPostions = GetTargetedStreamPositions(presentStream, secondaryStream, rowIndexEntry);
-            var numSecondaryValuesRead = ReadNumericStream(secondaryStream, secondaryPostions, isSigned: true, _secondaryStreamBuffer);
+
+            // Decompression
+            var presentMemory = _byteRangeProvider.DecompressByteRangeNew(_context, presentStream, presentPositions).Sequence;
+            var dataMemory = _byteRangeProvider.DecompressByteRangeNew(_context, dataStream, dataPostions).Sequence;
+            var secondaryMemory = _byteRangeProvider.DecompressByteRangeNew(_context, secondaryStream, secondaryPostions).Sequence;
+
+            // Processing
+            var numPresentValuesRead = ReadBooleanStream(in presentMemory, presentPositions, _presentStreamBuffer);
+            var numDataValuesRead = ReadVarIntStream(in dataMemory, dataPostions, _dataStreamBuffer);
+            var numSecondaryValuesRead = ReadNumericStream(in secondaryMemory, secondaryPostions, isSigned: true, _secondaryStreamBuffer);
 
             var secondaryIndex = 0;
             if (presentStream != null)
