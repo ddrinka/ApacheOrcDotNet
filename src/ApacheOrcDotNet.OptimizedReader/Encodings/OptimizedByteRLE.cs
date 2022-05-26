@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Buffers;
 
 namespace ApacheOrcDotNet.OptimizedReader.Encodings
 {
     public static class OptimizedByteRLE
     {
-        public static int ReadValues(ref SequenceReader<byte> reader, Span<byte> outputValues)
+        public static int ReadValues(ref BufferReader reader, Span<byte> outputValues)
         {
             var numReadValues = 0;
 

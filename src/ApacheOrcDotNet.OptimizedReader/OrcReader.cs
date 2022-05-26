@@ -132,14 +132,6 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new TimestampColumnBuffer(_byteRangeProvider, context, column);
         }
 
-        public void FillBuffer<TOutput>(int stripeId, int rowEntryIndexId, BaseColumnBuffer<TOutput> columnBuffer)
-        {
-            var columnStreams = GetColumnStreams(columnBuffer.Column.Id, stripeId);
-            var rowIndexEntry = GetRowGroupIndex(columnBuffer.Column.Id, stripeId).Entry[rowEntryIndexId];
-
-            columnBuffer.Fill(stripeId, columnStreams, rowIndexEntry);
-        }
-
         public IEnumerable<int> GetStripeIds(OrcColumn column)
             => GetStripeIds(Enumerable.Range(0, _fileTail.Metadata.StripeStats.Count), column);
 
@@ -172,6 +164,17 @@ namespace ApacheOrcDotNet.OptimizedReader
                 var rowIndexEntry = rowIndex.Entry[index];
                 return rowIndexEntry.Statistics.InRange(column);
             });
+        }
+
+        public void FillBuffer<TOutput>(int stripeId, int rowEntryIndexId, BaseColumnBuffer<TOutput> columnBuffer, bool discardPreviousData = true)
+        {
+            if (discardPreviousData)
+                columnBuffer.Reset();
+
+            var columnStreams = GetColumnStreams(columnBuffer.Column.Id, stripeId);
+            var rowIndexEntry = GetRowGroupIndex(columnBuffer.Column.Id, stripeId).Entry[rowEntryIndexId];
+
+            columnBuffer.Fill(stripeId, columnStreams, rowIndexEntry);
         }
 
         private SpanFileTail ReadFileTail()

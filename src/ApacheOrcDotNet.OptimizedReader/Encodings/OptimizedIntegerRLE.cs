@@ -9,7 +9,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
     {
         enum EncodingType { ShortRepeat, Direct, PatchedBase, Delta }
 
-        public static int ReadValues(ref SequenceReader<byte> reader, bool isSigned, Span<long> outputValues)
+        public static int ReadValues(ref BufferReader reader, bool isSigned, Span<long> outputValues)
         {
             var numReadValues = 0;
 
@@ -39,7 +39,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             return numReadValues;
         }
 
-        private static int ReadShortRepeatValues(int firstByte, bool isSigned, ref SequenceReader<byte> reader, Span<long> outputValues, ref int numReadValues)
+        private static int ReadShortRepeatValues(int firstByte, bool isSigned, ref BufferReader reader, Span<long> outputValues, ref int numReadValues)
         {
             var width = ((firstByte >> 3) & 0x7) + 1;
             numReadValues = (firstByte & 0x7) + 3;
@@ -52,7 +52,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             return width;
         }
 
-        private static void ReadDirectValues(int firstByte, bool isSigned, ref SequenceReader<byte> reader, Span<long> outputValues, ref int numReadValues)
+        private static void ReadDirectValues(int firstByte, bool isSigned, ref BufferReader reader, Span<long> outputValues, ref int numReadValues)
         {
             var encodedWidth = (firstByte >> 1) & 0x1f;
             var width = encodedWidth.DecodeDirectWidth();
@@ -67,7 +67,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             ReadBitpackedIntegers(ref reader, isSigned, width, numReadValues, outputValues);
         }
 
-        private static void ReadPatchedBaseValues(int firstByte, bool isSigned, ref SequenceReader<byte> reader, Span<long> outputValues, ref int numReadValues)
+        private static void ReadPatchedBaseValues(int firstByte, bool isSigned, ref BufferReader reader, Span<long> outputValues, ref int numReadValues)
         {
             var encodedWidth = (firstByte >> 1) & 0x1f;
             var directBitWidth = encodedWidth.DecodeDirectWidth();
@@ -76,7 +76,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             Span<byte> nextBytes = stackalloc byte[3];
             if (!reader.TryCopyTo(nextBytes))
                 throw new InvalidOperationException("Read past end of stream");
-            reader.Advance(3);
+            //reader.Advance(3);
 
             numReadValues |= nextBytes[0];
             numReadValues += 1;
@@ -134,7 +134,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             }
         }
 
-        private static void ReadDeltaValues(int firstByte, bool isSigned, ref SequenceReader<byte> reader, Span<long> outputValues, ref int numReadValues)
+        private static void ReadDeltaValues(int firstByte, bool isSigned, ref BufferReader reader, Span<long> outputValues, ref int numReadValues)
         {
             int index = 0;
             int bitWidth = 0;
@@ -205,7 +205,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             gap += curGap;
         }
 
-        private static void ReadBitpackedIntegers(ref SequenceReader<byte> reader, bool isSigned, int bitWidth, int count, Span<long> outputValues)
+        private static void ReadBitpackedIntegers(ref BufferReader reader, bool isSigned, int bitWidth, int count, Span<long> outputValues)
         {
             byte currentByte = 0;
             int bitsAvailable = 0;
@@ -239,7 +239,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             }
         }
 
-        private static long ReadLongBE(ref SequenceReader<byte> reader, int numBytes, bool isSigned = false)
+        private static long ReadLongBE(ref BufferReader reader, int numBytes, bool isSigned = false)
         {
             long result = 0;
 
@@ -256,13 +256,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                 : result;
         }
 
-        private static long ReadVarIntSigned(ref SequenceReader<byte> reader)
+        private static long ReadVarIntSigned(ref BufferReader reader)
         {
             var unsigned = ReadVarIntUnsigned(ref reader);
             return unsigned.ZigzagDecode();
         }
 
-        private static long ReadVarIntUnsigned(ref SequenceReader<byte> reader)
+        private static long ReadVarIntUnsigned(ref BufferReader reader)
         {
             long result = 0;
             int bitCount = 0;

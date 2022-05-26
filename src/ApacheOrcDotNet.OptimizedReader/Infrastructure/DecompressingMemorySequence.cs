@@ -16,7 +16,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             while (position < compressedBuffer.Length)
             {
                 var compressedChunkLength = OrcCompressedBlock.GetChunkLength(compressionKind, compressedBuffer[position..]);
-                var decompressedSegment = ArrayPool<byte>.Shared.Rent(compressionBlockSize);
+                var decompressedSegment = new byte[compressionBlockSize];
                 var decompressedSegmentSpan = decompressedSegment.AsSpan().Slice(0, compressionBlockSize);
 
                 var chunkToDecompress = (position + compressedChunkLength) > compressedBuffer.Length
