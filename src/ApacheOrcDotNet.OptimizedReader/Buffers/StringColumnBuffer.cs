@@ -82,18 +82,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             // Decompress Byte Ranges
             (int present, int length, int data) decompressedSizes = default;
-            Parallel.Invoke(
-                () => DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present),
-                () => DecompressByteRange(_lengthInputBuffer, _lengthOutputBuffer, lengthStream, lengthPositions, ref decompressedSizes.length),
-                () => DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data)
-            );
+            DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present);
+            DecompressByteRange(_lengthInputBuffer, _lengthOutputBuffer, lengthStream, lengthPositions, ref decompressedSizes.length);
+            DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data);
 
             // Parse Decompressed Bytes
             (int present, int length) valuesRead = default;
-            Parallel.Invoke(
-                () => ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present),
-                () => ReadNumericStream(_lengthOutputBuffer, decompressedSizes.length, lengthPositions, isSigned: false, _lengthStreamBufferDirectV2, ref valuesRead.length)
-            );
+            ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present);
+            ReadNumericStream(_lengthOutputBuffer, decompressedSizes.length, lengthPositions, isSigned: false, _lengthStreamBufferDirectV2, ref valuesRead.length);
 
             var dataBuffer = ResizeBuffer(_dataOutputBuffer, decompressedSizes.data, dataPositions);
 
@@ -155,22 +151,17 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             // Decompress Byte Ranges
             (int present, int length, int data, int dictionary) decompressedSizes = default;
-            Parallel.Invoke(
-                () => DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present),
-                () => DecompressByteRange(_lengthInputBuffer, _lengthOutputBuffer, lengthStream, lengthPositions, ref decompressedSizes.length),
-                () => DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data),
-                () => DecompressByteRange(_dictionaryInputBuffer, _dictionaryOutputBuffer, dictionaryDataStream, dictionaryDataPositions, ref decompressedSizes.dictionary)
-            );
+            DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present);
+            DecompressByteRange(_lengthInputBuffer, _lengthOutputBuffer, lengthStream, lengthPositions, ref decompressedSizes.length);
+            DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data);
+            DecompressByteRange(_dictionaryInputBuffer, _dictionaryOutputBuffer, dictionaryDataStream, dictionaryDataPositions, ref decompressedSizes.dictionary);
 
             // Parse Decompressed Bytes
             (int present, int length, int data) valuesRead = default;
             var dictionaryV2LengthStreamBuffer = GetLengthStreamBufferDictinaryV2(stripeId, lengthStream.DictionarySize);
+            ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present);
             ReadNumericStream(_lengthOutputBuffer, decompressedSizes.length, lengthPositions, isSigned: false, dictionaryV2LengthStreamBuffer, ref valuesRead.length);
-
-            Parallel.Invoke(
-                () => ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present),
-                () => ReadNumericStream(_dataOutputBuffer, decompressedSizes.data, dataPositions, isSigned: false, _dataStreamBuffer, ref valuesRead.data)
-            );
+            ReadNumericStream(_dataOutputBuffer, decompressedSizes.data, dataPositions, isSigned: false, _dataStreamBuffer, ref valuesRead.data);
 
             int stringOffset = 0;
             List<string> stringsList = new(valuesRead.length);

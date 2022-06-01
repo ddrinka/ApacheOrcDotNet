@@ -55,18 +55,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             // Decompress Byte Ranges
             (int present, int length, int data) decompressedSizes = default;
-            Parallel.Invoke(
-                () => DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present),
-                () => DecompressByteRange(_lengthInputBuffer, _lengthOutputBuffer, lengthStream, lengthPositions, ref decompressedSizes.length),
-                () => DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data)
-            );
+            DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present);
+            DecompressByteRange(_lengthInputBuffer, _lengthOutputBuffer, lengthStream, lengthPositions, ref decompressedSizes.length);
+            DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data);
 
             // Parse Decompressed Bytes
             (int present, int length) valuesRead = default;
-            Parallel.Invoke(
-                () => ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present),
-                () => ReadNumericStream(_lengthOutputBuffer, decompressedSizes.length, lengthPositions, isSigned: false, _lengthStreamBuffer, ref valuesRead.length)
-            );
+            ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present);
+            ReadNumericStream(_lengthOutputBuffer, decompressedSizes.length, lengthPositions, isSigned: false, _lengthStreamBuffer, ref valuesRead.length);
 
             var dataBuffer = ResizeBuffer(_dataOutputBuffer, decompressedSizes.data, dataPositions);
 
