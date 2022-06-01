@@ -46,10 +46,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             // Decompress Byte Ranges
             (int present, int data) decompressedSizes = default;
-            Parallel.Invoke(
-                () => DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present),
-                () => DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data)
-            );
+            DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present);
+            DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data);
 
             // Parse Decompressed Bytes
             int presentValuesRead = default;

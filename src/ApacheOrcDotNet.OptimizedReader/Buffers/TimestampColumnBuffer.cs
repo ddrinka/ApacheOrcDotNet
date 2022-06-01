@@ -59,19 +59,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             // Decompress Byte Ranges
             (int present, int data, int secondary) decompressedSizes = default;
-            Parallel.Invoke(
-                () => DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present),
-                () => DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data),
-                () => DecompressByteRange(_secondaryInputBuffer, _secondaryOutputBuffer, secondaryStream, secondaryPostions, ref decompressedSizes.secondary)
-            );
+            DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present);
+            DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data);
+            DecompressByteRange(_secondaryInputBuffer, _secondaryOutputBuffer, secondaryStream, secondaryPostions, ref decompressedSizes.secondary);
 
             // Parse Decompressed Bytes
             (int present, int data, int secondary) valuesRead = default;
-            Parallel.Invoke(
-                () => ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present),
-                () => ReadNumericStream(_dataOutputBuffer, decompressedSizes.data, dataPositions, isSigned: true, _dataStreamBuffer, ref valuesRead.data),
-                () => ReadNumericStream(_secondaryOutputBuffer, decompressedSizes.secondary, secondaryPostions, isSigned: false, _secondaryStreamBuffer, ref valuesRead.secondary)
-            );
+            ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present);
+            ReadNumericStream(_dataOutputBuffer, decompressedSizes.data, dataPositions, isSigned: true, _dataStreamBuffer, ref valuesRead.data);
+            ReadNumericStream(_secondaryOutputBuffer, decompressedSizes.secondary, secondaryPostions, isSigned: false, _secondaryStreamBuffer, ref valuesRead.secondary);
 
             if (presentStream != null)
             {
