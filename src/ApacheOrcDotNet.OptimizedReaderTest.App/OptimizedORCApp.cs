@@ -2,6 +2,7 @@
 using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
 using System.Diagnostics;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
@@ -32,10 +33,9 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
         {
             //
             var watch = new Stopwatch();
-            var reader = new OptimizedReader.OrcReader(
-                new OrcOptimizedReaderConfiguration() { OptimisticFileTailReadLength = 1 },
-                _byteRangeProviderFactory.Create(_orcFileName)
-            );
+            var configs = new OrcOptimizedReaderConfiguration();
+            var rangeProvider = _byteRangeProviderFactory.Create(_orcFileName);
+            var reader = new OptimizedReader.OrcReader(configs, rangeProvider);
 
             watch.Start();
 
