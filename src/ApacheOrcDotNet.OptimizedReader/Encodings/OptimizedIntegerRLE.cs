@@ -172,7 +172,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                 {
                     ReadBitpackedIntegers(ref reader, isSigned: false, bitWidth, numReadValues - 1, deltaValuesSpan);
 
-                    for (int i = 0; i < deltaValues.Length; i++)
+                    for (int i = 0; i < deltaValuesSpan.Length; i++)
                     {
                         outputValues[index++] = deltaBase > 0
                             ? outputValues[index - 2] + deltaValues[i]

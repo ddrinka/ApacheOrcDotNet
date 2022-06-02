@@ -46,10 +46,10 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             var endTime = (decimal)_configuration.EndTime.TotalSeconds;
 
             // Columns
-            var sourceColumn = reader.CreateColumn("source", lookupSource, lookupSource);
-            var symbolColumn = reader.CreateColumn("symbol", lookupSymbol, lookupSymbol);
-            var timeColumn = reader.CreateColumn("time", $"{beginTime}", $"{endTime}");
-            var sizeColumn = reader.CreateColumn("size");
+            var sourceColumn = reader.GetColumn("source", lookupSource, lookupSource);
+            var symbolColumn = reader.GetColumn("symbol", lookupSymbol, lookupSymbol);
+            var timeColumn = reader.GetColumn("time", $"{beginTime}", $"{endTime}");
+            var sizeColumn = reader.GetColumn("size");
             //var dateColumn = reader.CreateColumn("date");
             //var doubleColumn = reader.CreateColumn("double");
             //var floatColumn = reader.CreateColumn("float");
