@@ -29,7 +29,6 @@ namespace ApacheOrcDotNet.OptimizedReader
         private readonly CompressionKind _compressionKind;
         private readonly int _compressionBlockSize;
         private readonly int _maxValuesToRead;
-        private int _nextColumnIndex = 0;
 
         public OrcReader(OrcOptimizedReaderConfiguration configuration, IByteRangeProvider byteRangeProvider)
         {
@@ -52,12 +51,22 @@ namespace ApacheOrcDotNet.OptimizedReader
             _maxValuesToRead = (int)_fileTail.Footer.RowIndexStride;
         }
 
-        public OrcColumn CreateColumn(string columnName, string min = null, string max = null)
+        public OrcColumn GetColumn(int columnId, string min = null, string max = null)
+        {
+            if (columnId == 0 || columnId >= _protoColumns.Count)
+                throw new InvalidOperationException($"The column Id '{columnId}' is invalid.");
+
+            var columnPair = _protoColumns.ElementAt(columnId - 1);
+
+            return GetColumn(columnPair.Value.Name, min, max);
+        }
+
+        public OrcColumn GetColumn(string columnName, string min = null, string max = null)
         {
             if (!_protoColumns.TryGetValue(columnName?.ToLower(), out var column))
-                throw new InvalidOperationException($"The column '{columnName}' is invalid.");
+                throw new InvalidOperationException($"The column name '{columnName}' is invalid.");
 
-            var orcColumn = new OrcColumn(column.Id, _nextColumnIndex++, column.Name, column.Type)
+            var orcColumn = new OrcColumn(column.Id, column.Name, column.Type)
             {
                 Min = min,
                 Max = max
@@ -177,6 +186,35 @@ namespace ApacheOrcDotNet.OptimizedReader
             columnBuffer.Fill(stripeId, columnStreams, rowIndexEntry);
         }
 
+        public ColumnStatistics GetFileColumnStatistics(int columnId)
+            => _fileTail.Footer.Statistics[columnId];
+
+        public ColumnStatistics GetStripeColumnStatistics(int columnId, int stripeId)
+            => _fileTail.Metadata.StripeStats[stripeId].ColStats[columnId];
+
+        public RowIndex GetRowGroupIndex(int columnId, int stripeId)
+        {
+            var key = (columnId, stripeId);
+
+            return _rowGroupIndexes.GetOrAdd(key, key =>
+            {
+                var streamDetails = GetStripeStreams(stripeId);
+                var rowIndexStream = streamDetails.Where(s =>
+                    s.StreamKind == StreamKind.RowIndex
+                    && s.ColumnId == columnId
+                ).Single();
+
+                var decompressedData = _byteRangeProvider.DecompressByteRange(
+                     rowIndexStream.FileOffset,
+                     rowIndexStream.Length,
+                     _fileTail.PostScript.Compression,
+                     (int)_fileTail.PostScript.CompressionBlockSize
+                 );
+
+                return Serializer.Deserialize<RowIndex>(decompressedData.Sequence);
+            });
+        }
+
         private SpanFileTail ReadFileTail()
         {
             int lengthToReadFromEnd = _configuration.OptimisticFileTailReadLength;
@@ -216,35 +254,6 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
 
             return _stripeStreams[stripeId];
-        }
-
-        private ColumnStatistics GetFileColumnStatistics(int columnId)
-            => _fileTail.Footer.Statistics[columnId];
-
-        private ColumnStatistics GetStripeColumnStatistics(int columnId, int stripeId)
-            => _fileTail.Metadata.StripeStats[stripeId].ColStats[columnId];
-
-        private RowIndex GetRowGroupIndex(int columnId, int stripeId)
-        {
-            var key = (columnId, stripeId);
-
-            return _rowGroupIndexes.GetOrAdd(key, key =>
-            {
-                var streamDetails = GetStripeStreams(stripeId);
-                var rowIndexStream = streamDetails.Where(s =>
-                    s.StreamKind == StreamKind.RowIndex
-                    && s.ColumnId == columnId
-                ).Single();
-
-                var decompressedData = _byteRangeProvider.DecompressByteRange(
-                     rowIndexStream.FileOffset,
-                     rowIndexStream.Length,
-                     _fileTail.PostScript.Compression,
-                     (int)_fileTail.PostScript.CompressionBlockSize
-                 );
-
-                return Serializer.Deserialize<RowIndex>(decompressedData.Sequence);
-            });
         }
 
         private IEnumerable<StreamDetail> GetColumnStreams(int columnId, int stripeId)
