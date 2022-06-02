@@ -23,44 +23,24 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
         public int GetRange(Span<byte> buffer, long position)
         {
-            var key = position;
-            if (!_cache.TryGetValue(key, out var bytes))
-            {
-                var request = CreateRangeRequest(position, position + buffer.Length);
-                var response = _httpClient.Send(request);
+            var request = CreateRangeRequest(position, position + buffer.Length);
+            var response = _httpClient.Send(request);
 
-                if (!response.Content.Headers.ContentRange.Length.HasValue)
-                    throw new InvalidOperationException("Range respose must include a length.");
+            if (!response.Content.Headers.ContentRange.Length.HasValue)
+                throw new InvalidOperationException("Range respose must include a length.");
 
-                DoRead(response.Content.ReadAsStream(), buffer);
-
-                bytes = buffer.ToArray();
-
-                _cache.TryAdd(key, bytes);
-            }
-
-            return bytes.Length;
+            return DoRead(response.Content.ReadAsStream(), buffer);
         }
 
         public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
         {
-            var key = positionFromEnd;
-            if (!_cache.TryGetValue(key, out var bytes))
-            {
-                var request = CreateRangeRequest(_length - positionFromEnd, (_length - positionFromEnd) + buffer.Length);
-                var response = _httpClient.Send(request);
+            var request = CreateRangeRequest(_length - positionFromEnd, (_length - positionFromEnd) + buffer.Length);
+            var response = _httpClient.Send(request);
 
-                if (!response.Content.Headers.ContentRange.Length.HasValue)
-                    throw new InvalidOperationException("Range respose must include a length.");
+            if (!response.Content.Headers.ContentRange.Length.HasValue)
+                throw new InvalidOperationException("Range respose must include a length.");
 
-                DoRead(response.Content.ReadAsStream(), buffer);
-
-                bytes = buffer.ToArray();
-
-                _cache.TryAdd(key, bytes);
-            }
-
-            return bytes.Length;
+            return DoRead(response.Content.ReadAsStream(), buffer);
         }
 
         private long GetLength()
