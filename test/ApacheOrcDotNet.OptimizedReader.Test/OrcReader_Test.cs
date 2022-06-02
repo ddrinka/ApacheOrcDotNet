@@ -151,7 +151,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         }
 
         [Fact]
-        public void IntegerRLE_100_Zeros()
+        public void ByteRLE_100_Zeros()
         {
             Span<byte> input = stackalloc byte[] { 0x61, 0x00 };
             Span<byte> expected = stackalloc byte[100];
@@ -166,7 +166,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         }
 
         [Fact]
-        public void IntegerRLE_Two_Values()
+        public void ByteRLE_Two_Values()
         {
             Span<byte> input = stackalloc byte[] { 0xfe, 0x44, 0x45 };
             Span<byte> expected = stackalloc byte[] { 68, 69 };
