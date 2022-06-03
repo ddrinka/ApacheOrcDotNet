@@ -90,37 +90,60 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                         continue;
 
                     var decodedByte = _boolStreamBuffer[idx];
+                    var isFinalByte = bufferReader.Complete && idx >= numByteValuesRead - 1;
 
                     // Skip remaining bits.
                     if (numOfBytesToSkip % 8 != 0)
                         decodedByte = (byte)(decodedByte << numOfTotalBitsToSkip % 8);
 
+                    if (isFinalByte && decodedByte == 0)
+                    {
+                        // Edge case where there is only one value for the row entry
+                        // and that value is null
+                        outputValues[numValuesRead++] = false;
+                        return;
+                    }
+
                     outputValues[numValuesRead++] = (decodedByte & 128) != 0;
                     if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 7)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 64) != 0;
                     if (numValuesRead >= outputValues.Length)
                         return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 6)
+                        return;
 
                     outputValues[numValuesRead++] = (decodedByte & 32) != 0;
                     if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 5)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 16) != 0;
                     if (numValuesRead >= outputValues.Length)
                         return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 4)
+                        return;
 
                     outputValues[numValuesRead++] = (decodedByte & 8) != 0;
                     if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 3)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 4) != 0;
                     if (numValuesRead >= outputValues.Length)
                         return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 2)
+                        return;
 
                     outputValues[numValuesRead++] = (decodedByte & 2) != 0;
                     if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 1)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 1) != 0;
@@ -225,6 +248,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 0],
                 (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 0],
                 (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 0],
 
                 _ => throw new NotImplementedException()
             };
@@ -252,6 +276,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 1],
                 (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 1],
                 (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 1],
 
                 _ => throw new NotImplementedException()
             };
@@ -269,21 +294,28 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
                 (StreamKind.Data, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 2],
                 (StreamKind.Data, ColumnTypeKind.Decimal, _) => 0,
-                (StreamKind.Data, ColumnTypeKind.Double, _) => 0,
-                (StreamKind.Data, ColumnTypeKind.Float, _) => 0,
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 2],
                 (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => 0,
                 (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => 0,
                 (StreamKind.Data, ColumnTypeKind.Short, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Double, _) => 0,
+                (StreamKind.Data, ColumnTypeKind.Float, _) => 0,
                 (StreamKind.Data, ColumnTypeKind.Date, _) => rowIndexEntry.Positions[positionStep + 2],
                 (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 2],
                 (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 2],
                 (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 2],
 
                 _ => throw new NotImplementedException()
             };
 
-            return new((int)rowGroupOffset, (int)rowEntryOffset, (int)valuesToSkip);
+            ulong remainingBits = (targetedStream.StreamKind, _column.Type, targetedStream.EncodingKind) switch
+            {
+                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 3],
+                _ => 0
+            };
+
+            return new((int)rowGroupOffset, (int)rowEntryOffset, (int)valuesToSkip, (int)remainingBits);
         }
 
         private protected void GetByteRange(Span<byte> output, StreamDetail stream, in DataPositions positions, ref int rangeLength)
@@ -370,5 +402,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             // Un zig-zag
             return ((long)value).ZigzagDecode();
         }
+
+        //private protected int CalculateNulls(int numPresentValues, int numReferenceValues)
+        //{
+        //    if (numPresentValues == _context.MaxValuesToRead)
+        //        return numPresentValues;
+
+        //    var diff = Math.Abs(numPresentValues - numReferenceValues);
+
+        //    return numPresentValues - diff;
+        //}
     }
 }

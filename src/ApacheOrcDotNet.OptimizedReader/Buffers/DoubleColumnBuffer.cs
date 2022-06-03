@@ -15,6 +15,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private byte[] _presentOutputBuffer;
         private byte[] _dataInputBuffer;
         private byte[] _dataOutputBuffer;
+        private byte[] _valueBuffer;
 
         public DoubleColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
@@ -25,6 +26,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             _dataInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
             _dataOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
+
+            _valueBuffer = new byte[8];
         }
 
         public override void Fill(int stripeId, IEnumerable<StreamDetail> columnStreams, RowIndexEntry rowIndexEntry)
@@ -55,15 +58,16 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             var dataReader = new BufferReader(ResizeBuffer(_dataOutputBuffer, decompressedSizes.data, dataPositions));
 
-            Span<byte> valueBuffer = stackalloc byte[8];
             if (presentStream != null)
             {
                 for (int idx = 0; idx < presentValuesRead; idx++)
                 {
                     if (_presentStreamBuffer[idx])
                     {
-                        dataReader.TryCopyTo(valueBuffer);
-                        _values[_numValuesRead++] = BitConverter.ToDouble(valueBuffer);
+                        if (!dataReader.TryCopyTo(_valueBuffer))
+                            throw new InvalidOperationException("Read past end of stream");
+
+                        _values[_numValuesRead++] = BitConverter.ToDouble(_valueBuffer);
                     }
                     else
                         _values[_numValuesRead++] = double.NaN;
@@ -71,9 +75,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
             else
             {
-                while (dataReader.TryCopyTo(valueBuffer))
+                while (dataReader.TryCopyTo(_valueBuffer))
                 {
-                    _values[_numValuesRead++] = BitConverter.ToDouble(valueBuffer);
+                    _values[_numValuesRead++] = BitConverter.ToDouble(_valueBuffer);
 
                     if (_numValuesRead >= _values.Length)
                         break;

@@ -76,7 +76,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             Span<byte> nextBytes = stackalloc byte[3];
             if (!reader.TryCopyTo(nextBytes))
                 throw new InvalidOperationException("Read past end of stream");
-            //reader.Advance(3);
 
             numReadValues |= nextBytes[0];
             numReadValues += 1;

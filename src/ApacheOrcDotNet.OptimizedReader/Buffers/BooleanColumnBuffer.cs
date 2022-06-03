@@ -55,9 +55,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present);
             ReadBooleanStream(_dataOutputBuffer, decompressedSizes.data, dataPositions, _dataStreamBuffer, ref valuesRead.data);
 
-            var dataIndex = 0;
             if (presentStream != null)
             {
+                var dataIndex = 0;
                 for (int idx = 0; idx < valuesRead.present; idx++)
                 {
                     if (_presentStreamBuffer[idx])
