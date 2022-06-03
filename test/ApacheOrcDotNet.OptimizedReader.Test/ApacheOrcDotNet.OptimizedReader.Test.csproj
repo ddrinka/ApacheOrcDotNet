@@ -17,11 +17,16 @@
 	  <None Remove="Data\optimized_reader_test_file-info.txt" />
 	  <None Remove="Data\optimized_reader_test_file.csv" />
 	  <None Remove="Data\optimized_reader_test_file.orc" />
+	  <None Remove="Data\optimized_reader_test_file_no_nulls.csv" />
+	  <None Remove="Data\optimized_reader_test_file_no_nulls.orc" />
+	  <None Remove="Data\optimized_reader_test_file_no_nulls.txt" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <EmbeddedResource Include="Data\optimized_reader_test_file_no_nulls.txt" />
 	  <EmbeddedResource Include="Data\optimized_reader_test_file-info.txt" />
 	  <EmbeddedResource Include="Data\optimized_reader_test_file.csv" />
+	  <EmbeddedResource Include="Data\optimized_reader_test_file_no_nulls.csv" />
 	</ItemGroup>
 
 </Project>
