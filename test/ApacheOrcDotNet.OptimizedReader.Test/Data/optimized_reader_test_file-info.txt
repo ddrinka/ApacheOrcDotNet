@@ -1,0 +1,143 @@
+Processing data file optimized_reader_test_file.orc [length: 139598]
+Structure for optimized_reader_test_file.orc
+File Version: 0.12 with ORC_14 by ORC Java 1.7.4
+
+Compression: ZLIB
+Compression size: 262144
+Calendar: Julian/Gregorian
+Rows: 10001
+
+Type: struct<
+    source:string,
+    symbol:string,
+    time:decimal(14,9),
+    size:bigint,
+    date:date,
+    double:double,
+    float:float,
+    timestamp:timestamp,
+    binary:binary,
+    byte:tinyint,
+    boolean:boolean
+>
+
+Stripe Statistics:
+  Stripe 1:
+    Column 0: count: 10001 hasNull: false
+    Column 1: count: 9998 hasNull: true bytesOnDisk: 68 min: CTSPillarNetworkA max: CTSPillarNetworkB sum: 169966
+    Column 2: count: 9998 hasNull: true bytesOnDisk: 18436 min: 0 max: SPY sum: 38864
+    Column 3: count: 9998 hasNull: true bytesOnDisk: 19011 min: 0 max: 35000.983917824 sum: 50680358.313112237
+    Column 4: count: 9997 hasNull: true bytesOnDisk: 483 min: 0 max: 9973 sum: 49736870
+    Column 5: count: 9996 hasNull: true bytesOnDisk: 99 min: Hybrid AD 1970-01-01 max: Hybrid AD 1997-05-19
+    Column 6: count: 9997 hasNull: true bytesOnDisk: 43257 min: 0.0 max: 999.7000000001588 sum: 4996503.000000527
+    Column 7: count: 9996 hasNull: true bytesOnDisk: 34041 min: 0.0 max: 999.5029907226562 sum: 4995359.573275469
+    Column 8: count: 9997 hasNull: true bytesOnDisk: 116 min: 2015-01-01 00:00:00.0 max: 2015-01-01 02:46:47.0
+    Column 9: count: 9997 hasNull: true bytesOnDisk: 22242 sum: 68776
+    Column 10: count: 9997 hasNull: true bytesOnDisk: 105 min: -6 max: 75 sum: 548310
+    Column 11: count: 10 hasNull: true bytesOnDisk: 27 true: 6
+
+File Statistics:
+  Column 0: count: 10001 hasNull: false
+  Column 1: count: 9998 hasNull: true bytesOnDisk: 68 min: CTSPillarNetworkA max: CTSPillarNetworkB sum: 169966
+  Column 2: count: 9998 hasNull: true bytesOnDisk: 18436 min: 0 max: SPY sum: 38864
+  Column 3: count: 9998 hasNull: true bytesOnDisk: 19011 min: 0 max: 35000.983917824 sum: 50680358.313112237
+  Column 4: count: 9997 hasNull: true bytesOnDisk: 483 min: 0 max: 9973 sum: 49736870
+  Column 5: count: 9996 hasNull: true bytesOnDisk: 99 min: Hybrid AD 1970-01-01 max: Hybrid AD 1997-05-19
+  Column 6: count: 9997 hasNull: true bytesOnDisk: 43257 min: 0.0 max: 999.7000000001588 sum: 4996503.000000527
+  Column 7: count: 9996 hasNull: true bytesOnDisk: 34041 min: 0.0 max: 999.5029907226562 sum: 4995359.573275469
+  Column 8: count: 9997 hasNull: true bytesOnDisk: 116 min: 2015-01-01 00:00:00.0 max: 2015-01-01 02:46:47.0
+  Column 9: count: 9997 hasNull: true bytesOnDisk: 22242 sum: 68776
+  Column 10: count: 9997 hasNull: true bytesOnDisk: 105 min: -6 max: 75 sum: 548310
+  Column 11: count: 10 hasNull: true bytesOnDisk: 27 true: 6
+
+Stripes:
+  Stripe: offset: 3 data: 137885 rows: 10001 tail: 233 index: 716
+    Stream: column 0 section ROW_INDEX start: 3 length 20
+    Stream: column 1 section ROW_INDEX start: 23 length 72
+    Stream: column 2 section ROW_INDEX start: 95 length 61
+    Stream: column 3 section ROW_INDEX start: 156 length 100
+    Stream: column 4 section ROW_INDEX start: 256 length 58
+    Stream: column 5 section ROW_INDEX start: 314 length 46
+    Stream: column 6 section ROW_INDEX start: 360 length 78
+    Stream: column 7 section ROW_INDEX start: 438 length 65
+    Stream: column 8 section ROW_INDEX start: 503 length 71
+    Stream: column 9 section ROW_INDEX start: 574 length 50
+    Stream: column 10 section ROW_INDEX start: 624 length 56
+    Stream: column 11 section ROW_INDEX start: 680 length 39
+    Stream: column 1 section PRESENT start: 719 length 15
+    Stream: column 1 section DATA start: 734 length 20
+    Stream: column 1 section LENGTH start: 754 length 7
+    Stream: column 1 section DICTIONARY_DATA start: 761 length 26
+    Stream: column 2 section PRESENT start: 787 length 15
+    Stream: column 2 section DATA start: 802 length 18391
+    Stream: column 2 section LENGTH start: 19193 length 30
+    Stream: column 3 section PRESENT start: 19223 length 15
+    Stream: column 3 section DATA start: 19238 length 18959
+    Stream: column 3 section SECONDARY start: 38197 length 37
+    Stream: column 4 section PRESENT start: 38234 length 19
+    Stream: column 4 section DATA start: 38253 length 464
+    Stream: column 5 section PRESENT start: 38717 length 19
+    Stream: column 5 section DATA start: 38736 length 80
+    Stream: column 6 section PRESENT start: 38816 length 18
+    Stream: column 6 section DATA start: 38834 length 43239
+    Stream: column 7 section PRESENT start: 82073 length 18
+    Stream: column 7 section DATA start: 82091 length 34023
+    Stream: column 8 section PRESENT start: 116114 length 18
+    Stream: column 8 section DATA start: 116132 length 83
+    Stream: column 8 section SECONDARY start: 116215 length 15
+    Stream: column 9 section PRESENT start: 116230 length 18
+    Stream: column 9 section DATA start: 116248 length 22191
+    Stream: column 9 section LENGTH start: 138439 length 33
+    Stream: column 10 section PRESENT start: 138472 length 18
+    Stream: column 10 section DATA start: 138490 length 87
+    Stream: column 11 section PRESENT start: 138577 length 21
+    Stream: column 11 section DATA start: 138598 length 6
+    Encoding column 0: DIRECT
+    Encoding column 1: DICTIONARY_V2[2]
+    Encoding column 2: DIRECT_V2
+    Encoding column 3: DIRECT_V2
+    Encoding column 4: DIRECT_V2
+    Encoding column 5: DIRECT_V2
+    Encoding column 6: DIRECT
+    Encoding column 7: DIRECT
+    Encoding column 8: DIRECT_V2
+    Encoding column 9: DIRECT_V2
+    Encoding column 10: DIRECT
+    Encoding column 11: DIRECT
+    Row group indices for column 1:
+      Entry 0: count: 9997 hasNull: true min: CTSPillarNetworkA max: CTSPillarNetworkB sum: 169949 positions: 0,0,0,0,0,0,0
+      Entry 1: count: 1 hasNull: false min: CTSPillarNetworkB max: CTSPillarNetworkB sum: 17 positions: 0,20,79,0,0,80,26
+    Row group indices for column 2:
+      Entry 0: count: 9997 hasNull: true min: 0 max: SPY sum: 38861 positions: 0,0,0,0,0,0,0,0,0
+      Entry 1: count: 1 hasNull: false min: SPY max: SPY sum: 3 positions: 0,20,79,0,0,38861,0,86,26
+    Row group indices for column 3:
+      Entry 0: count: 9997 hasNull: true min: 0 max: 35000.97880311 sum: 50645357.329194413 positions: 0,0,0,0,0,0,0,0,0
+      Entry 1: count: 1 hasNull: false min: 35000.983917824 max: 35000.983917824 sum: 35000.983917824 positions: 0,20,79,0,0,21834,0,99,1
+    Row group indices for column 4:
+      Entry 0: count: 9996 hasNull: true min: 0 max: 9973 sum: 49736817 positions: 0,0,0,0,0,0,0
+      Entry 1: count: 1 hasNull: false min: 53 max: 53 sum: 53 positions: 0,24,3,0,0,735,8
+    Row group indices for column 5:
+      Entry 0: count: 9996 hasNull: true min: Hybrid AD 1970-01-01 max: Hybrid AD 1997-05-19 positions: 0,0,0,0,0,0,0
+      Entry 1: count: 0 hasNull: true positions: 0,24,3,0,0,225,268
+    Row group indices for column 6:
+      Entry 0: count: 9996 hasNull: true min: 0.0 max: 999.6000000001587 sum: 4995503.300000527 positions: 0,0,0,0,0,0
+      Entry 1: count: 1 hasNull: false min: 999.7000000001588 max: 999.7000000001588 sum: 999.7000000001588 positions: 0,22,3,0,0,79968
+    Row group indices for column 7:
+      Entry 0: count: 9996 hasNull: true min: 0.0 max: 999.5029907226562 sum: 4995359.573275469 positions: 0,0,0,0,0,0
+      Entry 1: count: 0 hasNull: true sum: 0.0 positions: 0,22,3,0,0,39984
+    Row group indices for column 8:
+      Entry 0: count: 9996 hasNull: true min: 2015-01-01 00:00:00.0 max: 2015-01-01 02:46:40.0 positions: 0,0,0,0,0,0,0,0,0,0
+      Entry 1: count: 1 hasNull: false min: 2015-01-01 02:46:47.0 max: 2015-01-01 02:46:47.0 positions: 0,22,3,0,0,225,268,0,76,268
+    Row group indices for column 9:
+      Entry 0: count: 9996 hasNull: true sum: 68772 positions: 0,0,0,0,0,0,0,0,0
+      Entry 1: count: 1 hasNull: false sum: 4 positions: 0,22,3,0,0,68772,0,89,24
+    Row group indices for column 10:
+      Entry 0: count: 9996 hasNull: true min: -6 max: 75 sum: 548315 positions: 0,0,0,0,0,0,0
+      Entry 1: count: 1 hasNull: false min: -5 max: -5 sum: -5 positions: 0,22,3,0,0,10049,24
+    Row group indices for column 11:
+      Entry 0: count: 9 hasNull: true true: 5 positions: 0,0,0,0,0,0,0,0
+      Entry 1: count: 1 hasNull: false true: 1 positions: 0,25,3,0,0,0,1,1
+
+File length: 139598 bytes
+Padding length: 0 bytes
+Padding ratio: 0%

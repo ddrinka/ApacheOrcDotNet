@@ -12,14 +12,14 @@ using System.Linq;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
-    public class OrcOptimizedReaderConfiguration
+    public class OrcReaderConfiguration
     {
         public int OptimisticFileTailReadLength { get; set; } = 16 * 1024;
     }
 
     public sealed class OrcReader
     {
-        private readonly OrcOptimizedReaderConfiguration _configuration;
+        private readonly OrcReaderConfiguration _configuration;
         private readonly IByteRangeProvider _byteRangeProvider;
         private readonly SpanFileTail _fileTail;
         private readonly Dictionary<int, List<StreamDetail>> _stripeStreams = new();
@@ -30,7 +30,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         private readonly int _compressionBlockSize;
         private readonly int _maxValuesToRead;
 
-        public OrcReader(OrcOptimizedReaderConfiguration configuration, IByteRangeProvider byteRangeProvider)
+        public OrcReader(OrcReaderConfiguration configuration, IByteRangeProvider byteRangeProvider)
         {
             _configuration = configuration;
             _byteRangeProvider = byteRangeProvider;

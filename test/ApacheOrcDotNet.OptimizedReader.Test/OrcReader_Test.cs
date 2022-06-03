@@ -16,7 +16,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         [Fact]
         public void FileTail_DefaultOptomisticSize()
         {
-            var reader = new OrcReader(new OrcOptimizedReaderConfiguration(), _byteRangeProvider);
+            var reader = new OrcReader(new OrcReaderConfiguration(), _byteRangeProvider);
             var expectedColumns = new[]
             {
                 new OrcColumn(1, "Source", ColumnTypeKind.String),
@@ -35,7 +35,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         [Fact]
         public void FileTail_MinimumInitialReadSize()
         {
-            var reader = new OrcReader(new OrcOptimizedReaderConfiguration { OptimisticFileTailReadLength = 1 }, _byteRangeProvider);
+            var reader = new OrcReader(new OrcReaderConfiguration { OptimisticFileTailReadLength = 1 }, _byteRangeProvider);
             var expectedColumns = new[]
             {
                 new OrcColumn(1, "Source", ColumnTypeKind.String),
@@ -54,7 +54,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         [Fact]
         public void FileColumnStatistics()
         {
-            var reader = new OrcReader(new OrcOptimizedReaderConfiguration(), _byteRangeProvider);
+            var reader = new OrcReader(new OrcReaderConfiguration(), _byteRangeProvider);
             Assert.Equal("BZX", reader.GetFileColumnStatistics(1).StringStatistics.Minimum);
             Assert.Equal("UTDFNetworkC", reader.GetFileColumnStatistics(1).StringStatistics.Maximum);
             Assert.Equal(1, reader.GetFileColumnStatistics(2).IntStatistics.Minimum);
@@ -68,7 +68,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         [Fact]
         public void StripeColumnStatistics()
         {
-            var reader = new OrcReader(new OrcOptimizedReaderConfiguration(), _byteRangeProvider);
+            var reader = new OrcReader(new OrcReaderConfiguration(), _byteRangeProvider);
             Assert.Equal("BZX", reader.GetStripeColumnStatistics(1, 0).StringStatistics.Minimum);
             Assert.Equal("BZX", reader.GetStripeColumnStatistics(1, 0).StringStatistics.Maximum);
             Assert.Equal(1, reader.GetStripeColumnStatistics(2, 0).IntStatistics.Minimum);
@@ -82,7 +82,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         [Fact]
         public void RowGroupStatistics()
         {
-            var reader = new OrcReader(new OrcOptimizedReaderConfiguration(), _byteRangeProvider);
+            var reader = new OrcReader(new OrcReaderConfiguration(), _byteRangeProvider);
             var rowGroupEntry = reader.GetRowGroupIndex(columnId: 1, stripeId: 0).Entry[0];
             Assert.Equal("BZX", rowGroupEntry.Statistics.StringStatistics.Minimum);
             Assert.Equal("BZX", rowGroupEntry.Statistics.StringStatistics.Maximum);

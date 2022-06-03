@@ -13,4 +13,15 @@
 		<EmbeddedResource Include="Data\*.orc" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Remove="Data\optimized_reader_test_file-info.txt" />
+	  <None Remove="Data\optimized_reader_test_file.csv" />
+	  <None Remove="Data\optimized_reader_test_file.orc" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="Data\optimized_reader_test_file-info.txt" />
+	  <EmbeddedResource Include="Data\optimized_reader_test_file.csv" />
+	</ItemGroup>
+
 </Project>

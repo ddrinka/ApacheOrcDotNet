@@ -31,7 +31,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public bool TryCopyTo(Span<byte> buffer)
         {
-            if (_position + buffer.Length >= _buffer.Length)
+            if (_position + buffer.Length > _buffer.Length)
                 return false;
 
             _buffer.Slice(_position, buffer.Length).CopyTo(buffer);
