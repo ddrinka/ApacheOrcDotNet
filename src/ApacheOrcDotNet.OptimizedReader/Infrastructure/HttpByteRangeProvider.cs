@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -8,15 +7,12 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public sealed class HttpByteRangeProvider : IByteRangeProvider
     {
-        readonly ConcurrentDictionary<long, byte[]> _cache = new();
         readonly HttpClient _httpClient = new();
         readonly string _remoteLocation;
-        readonly long _length;
 
         internal HttpByteRangeProvider(string remoteLocation)
         {
             _remoteLocation = remoteLocation;
-            _length = GetLength();
         }
 
         public void Dispose() => _httpClient.Dispose();
@@ -34,7 +30,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
         public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
         {
-            var request = CreateRangeRequest(_length - positionFromEnd, (_length - positionFromEnd) + buffer.Length);
+            var request = CreateRangeRequest(null, positionFromEnd);
             var response = _httpClient.Send(request);
 
             if (!response.Content.Headers.ContentRange.Length.HasValue)
@@ -43,18 +39,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             return DoRead(response.Content.ReadAsStream(), buffer);
         }
 
-        private long GetLength()
-        {
-            var request = new HttpRequestMessage(HttpMethod.Head, _remoteLocation);
-            var response = _httpClient.Send(request);
-
-            if (!response.Content.Headers.ContentLength.HasValue)
-                throw new InvalidOperationException("Remote resouce length is required.");
-
-            return response.Content.Headers.ContentLength.Value;
-        }
-
-        private HttpRequestMessage CreateRangeRequest(long from, long to)
+        private HttpRequestMessage CreateRangeRequest(long? from, long? to)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, _remoteLocation);
             var rangeHeader = new RangeHeaderValue(from, to);
