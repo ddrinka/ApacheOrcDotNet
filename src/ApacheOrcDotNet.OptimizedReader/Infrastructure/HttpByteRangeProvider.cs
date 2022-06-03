@@ -6,14 +6,14 @@ using System.Net.Http.Headers;
 
 namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
-    public sealed class AmazonS3ByteRangeProvider : IByteRangeProvider
+    public sealed class HttpByteRangeProvider : IByteRangeProvider
     {
         readonly ConcurrentDictionary<long, byte[]> _cache = new();
         readonly HttpClient _httpClient = new();
         readonly string _remoteLocation;
         readonly long _length;
 
-        internal AmazonS3ByteRangeProvider(string remoteLocation)
+        internal HttpByteRangeProvider(string remoteLocation)
         {
             _remoteLocation = remoteLocation;
             _length = GetLength();

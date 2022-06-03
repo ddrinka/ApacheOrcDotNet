@@ -58,7 +58,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                 EndTime = parsedEndTime
             };
 
-            var fileByteRangeProviderFactory = new MemoryMappedFileRangeProviderFactory();
+            var fileByteRangeProviderFactory = new ByteRangeProviderFactory();
             var optimizedORCApp = new OptimizedORCApp(fileName, configs, fileByteRangeProviderFactory);
             var stopWatch = new Stopwatch();
 
