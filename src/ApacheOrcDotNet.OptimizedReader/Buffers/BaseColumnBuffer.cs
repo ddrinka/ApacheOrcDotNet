@@ -402,15 +402,5 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             // Un zig-zag
             return ((long)value).ZigzagDecode();
         }
-
-        //private protected int CalculateNulls(int numPresentValues, int numReferenceValues)
-        //{
-        //    if (numPresentValues == _context.MaxValuesToRead)
-        //        return numPresentValues;
-
-        //    var diff = Math.Abs(numPresentValues - numReferenceValues);
-
-        //    return numPresentValues - diff;
-        //}
     }
 }
