@@ -10,9 +10,9 @@ namespace ApacheOrcDotNet.OptimizedReader
         readonly object _syncRoot = new object();
         readonly Stream _stream;
 
-        internal TestByteRangeProviderParallel()
+        internal TestByteRangeProviderParallel(string fileName)
         {
-            var dataFileHelper = new DataFileHelper(typeof(TestByteRangeProvider), "optimized_reader_test_file.orc");
+            var dataFileHelper = new DataFileHelper(typeof(TestByteRangeProvider), fileName);
             _stream = dataFileHelper.GetStream();
         }
 

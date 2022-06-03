@@ -6,17 +6,34 @@ using System.IO;
 
 namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
 {
-    public abstract class _BaseColumnType
+    public abstract class _BaseColumnTypeWithNulls : BaseColumnTypes
+    {
+        public _BaseColumnTypeWithNulls() : base("optimized_reader_test_file")
+        {
+        }
+    }
+
+    public abstract class _BaseColumnTypeWithoutNulls : BaseColumnTypes
+    {
+        public _BaseColumnTypeWithoutNulls() : base("optimized_reader_test_file_no_nulls")
+        {
+        }
+    }
+
+    public abstract class BaseColumnTypes
     {
         private protected readonly CultureInfo _enUSCulture = CultureInfo.GetCultureInfo("en-US");
-        private protected readonly IByteRangeProvider _byteRangeProvider = new TestByteRangeProviderParallel();
         private protected readonly (List<string> sources, List<string> symbols, List<string> times, List<string> timesAsDouble, List<string> sizes, List<string> dates, List<string> doubles, List<string> floats, List<string> timestamps, List<string> binaries, List<string> bytes, List<string> booleans) _expectedValues
             = (new List<string>(), new List<string>(), new List<string>(), new List<string>(), new List<string>(), new List<string>(), new List<string>(), new List<string>(), new List<string>(), new List<string>(), new List<string>(), new List<string>());
+        private protected readonly IByteRangeProvider _byteRangeProvider;
+        private readonly DataFileHelper _expectedValuesFile;
 
-        private protected _BaseColumnType()
+        public BaseColumnTypes(string fileName)
         {
-            var expectedDataFile = new DataFileHelper(typeof(TestByteRangeProvider), "optimized_reader_test_file.csv");
-            var expectedDataStream = expectedDataFile.GetStream();
+            _byteRangeProvider = new TestByteRangeProviderParallel($"{fileName}.orc");
+            _expectedValuesFile = new DataFileHelper(typeof(TestByteRangeProvider), $"{fileName}.csv");
+
+            var expectedDataStream = _expectedValuesFile.GetStream();
             using (StreamReader reader = new StreamReader(expectedDataStream))
             {
                 while (!reader.EndOfStream)
@@ -40,7 +57,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
             }
         }
 
-        ~_BaseColumnType()
+        ~BaseColumnTypes()
         {
             _byteRangeProvider.Dispose();
         }

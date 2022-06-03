@@ -1,8 +1,8 @@
 ﻿using Xunit;
 
-namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
+namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
 {
-    public class BooleanColumn_Test : _BaseColumnType
+    public class BooleanColumn_Test : _BaseColumnTypeWithoutNulls
     {
         [Fact]
         public void Boolean_Column_10k_Values()

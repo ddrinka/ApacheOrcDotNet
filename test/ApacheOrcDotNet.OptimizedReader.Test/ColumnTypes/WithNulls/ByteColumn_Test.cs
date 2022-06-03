@@ -1,49 +1,48 @@
-﻿using System;
-using Xunit;
+﻿using Xunit;
 
-namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
+namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 {
-    public class DateColumn_Test : _BaseColumnType
+    public class ByteColumn_Test : _BaseColumnTypeWithNulls
     {
         [Fact]
-        public void Date_Column_10k_Values()
+        public void Byte_Column_10k_Values()
         {
             var config = new OrcReaderConfiguration();
             var reader = new OrcReader(config, _byteRangeProvider);
 
-            var column = reader.GetColumn("date");
-            var buffer = reader.CreateDateColumnBuffer(column);
+            var column = reader.GetColumn("byte");
+            var buffer = reader.CreateByteColumnBuffer(column);
             reader.FillBuffer(stripeId: 0, rowEntryIndexId: 0, buffer);
 
             Assert.Equal(10_000, buffer.Values.Length);
 
             for (int i = 0; i < buffer.Values.Length; i++)
             {
-                if (_expectedValues.dates[i] == null)
+                if (_expectedValues.bytes[i] == null)
                     Assert.Null(buffer.Values[i]);
                 else
-                    Assert.Equal(DateTime.Parse(_expectedValues.dates[i], _enUSCulture), buffer.Values[i]);
+                    Assert.Equal(byte.Parse(_expectedValues.bytes[i]), buffer.Values[i]);
             }
         }
 
         [Fact]
-        public void Date_Column_1_Value()
+        public void Byte_Column_1_Value()
         {
             var config = new OrcReaderConfiguration();
             var reader = new OrcReader(config, _byteRangeProvider);
 
             var column = reader.GetColumn("byte");
-            var buffer = reader.CreateDateColumnBuffer(column);
+            var buffer = reader.CreateByteColumnBuffer(column);
             reader.FillBuffer(stripeId: 0, rowEntryIndexId: 1, buffer);
 
             Assert.Equal(1, buffer.Values.Length);
 
             for (int i = 10_000; i < buffer.Values.Length; i++)
             {
-                if (_expectedValues.dates[i] == null)
+                if (_expectedValues.bytes[i] == null)
                     Assert.Null(buffer.Values[i]);
                 else
-                    Assert.Equal(DateTime.Parse(_expectedValues.dates[i], _enUSCulture), buffer.Values[i]);
+                    Assert.Equal(byte.Parse(_expectedValues.bytes[i]), buffer.Values[i]);
             }
         }
     }

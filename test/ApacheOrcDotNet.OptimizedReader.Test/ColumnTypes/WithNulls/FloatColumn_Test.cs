@@ -1,8 +1,8 @@
 ﻿using Xunit;
 
-namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
+namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 {
-    public class FloatColumn_Test : _BaseColumnType
+    public class FloatColumn_Test : _BaseColumnTypeWithNulls
     {
         [Fact]
         public void Float_Column_10k_Values()

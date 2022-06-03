@@ -116,18 +116,18 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         if (source == lookupSource && symbol == lookupSymbol && time >= beginTime && time <= endTime)
                         {
                             Console.WriteLine($"" +
-                                //$"{source}," +
-                                //$"{symbol}," +
-                                //$"{time.ToString().PadRight(15, '0')}," +
-                                //$"{size}" +
-                                //$"     " +
-                                //$"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy") : string.Empty)}," +
-                                //$"{dobl}," +
+                                $"{source}," +
+                                $"{symbol}," +
+                                $"{time.ToString().PadRight(15, '0')}," +
+                                $"{size}" +
+                                $"     " +
+                                $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy") : string.Empty)}," +
+                                $"{dobl}," +
                                 $"{sing}," +
-                                //$"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)}," +
-                                //$"{(binary != null ? Encoding.ASCII.GetString(binary) : string.Empty)}," +
-                                //$"{tinyInt}," +
-                                //$"{boolean}" +
+                                $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)}," +
+                                $"{(binary != null ? Encoding.ASCII.GetString(binary) : string.Empty)}," +
+                                $"{tinyInt}," +
+                                $"{boolean}" +
                                 $""
                             );
                         }
