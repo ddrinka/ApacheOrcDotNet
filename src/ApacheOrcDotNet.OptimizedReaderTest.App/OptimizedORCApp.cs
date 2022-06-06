@@ -2,7 +2,6 @@
 using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
 using System.Diagnostics;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
@@ -18,23 +17,23 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
     public class OptimizedORCApp
     {
-        private readonly string _orcFileName;
+        private readonly string _orcFileUri;
         private readonly OptimizedORCAppConfiguration _configuration;
         private readonly IByteRangeProviderFactory _byteRangeProviderFactory;
 
-        public OptimizedORCApp(string orcFileName, OptimizedORCAppConfiguration confituration, IByteRangeProviderFactory byteRangeProviderFactory)
+        public OptimizedORCApp(string orcFileUri, OptimizedORCAppConfiguration confituration, IByteRangeProviderFactory byteRangeProviderFactory)
         {
-            _orcFileName = orcFileName;
+            _orcFileUri = orcFileUri;
             _configuration = confituration;
             _byteRangeProviderFactory = byteRangeProviderFactory;
         }
 
-        public void Run()
+        public async Task Run()
         {
             //
             var watch = new Stopwatch();
             var configs = new OrcReaderConfiguration();
-            var rangeProvider = _byteRangeProviderFactory.Create(_orcFileName);
+            var rangeProvider = _byteRangeProviderFactory.Create(_orcFileUri);
             var reader = new OptimizedReader.OrcReader(configs, rangeProvider);
 
             watch.Start();
@@ -61,7 +60,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             // Buffers
             var sourceColumnBuffer = reader.CreateStringColumnBuffer(sourceColumn);
             var symbolColumnBuffer = reader.CreateStringColumnBuffer(symbolColumn);
-            var timeColumnBuffer = reader.CreateDecimalColumnReader(timeColumn);
+            var timeColumnBuffer = reader.CreateDecimalColumnBuffer(timeColumn);
             var sizeColumnBuffer = reader.CreateIntegerColumnBuffer(sizeColumn);
             //var dateColumnBuffer = reader.CreateDateColumnBuffer(dateColumn);
             //var doubleColumnBuffer = reader.CreateDoubleColumnBuffer(doubleColumn);
@@ -84,20 +83,31 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
                 foreach (var rowEntryIndex in rowGroupIndexes)
                 {
-                    // Process
-                    Parallel.Invoke(
-                        () => reader.FillBuffer(stripeId, rowEntryIndex, sourceColumnBuffer)
-                        , () => reader.FillBuffer(stripeId, rowEntryIndex, symbolColumnBuffer)
-                        , () => reader.FillBuffer(stripeId, rowEntryIndex, timeColumnBuffer)
-                        , () => reader.FillBuffer(stripeId, rowEntryIndex, sizeColumnBuffer)
-                        //, () => reader.FillBuffer(stripeId, rowEntryIndex, dateColumnBuffer)
-                        //, () => reader.FillBuffer(stripeId, rowEntryIndex, doubleColumnBuffer)
-                        //, () => reader.FillBuffer(stripeId, rowEntryIndex, floatColumnBuffer)
-                        //, () => reader.FillBuffer(stripeId, rowEntryIndex, timeStampColumnBuffer)
-                        //, () => reader.FillBuffer(stripeId, rowEntryIndex, binaryColumnBuffer)
-                        //, () => reader.FillBuffer(stripeId, rowEntryIndex, byteColumnBuffer)
-                        //, () => reader.FillBuffer(stripeId, rowEntryIndex, booleanColumnBuffer)
+                    await Task.WhenAll(
+                        reader.LoadDataAsync(stripeId, rowEntryIndex, sourceColumnBuffer),
+                        reader.LoadDataAsync(stripeId, rowEntryIndex, symbolColumnBuffer),
+                        reader.LoadDataAsync(stripeId, rowEntryIndex, timeColumnBuffer),
+                        reader.LoadDataAsync(stripeId, rowEntryIndex, sizeColumnBuffer)
+                        //reader.LoadDataAsync(stripeId, rowEntryIndex, dateColumnBuffer),
+                        //reader.LoadDataAsync(stripeId, rowEntryIndex, doubleColumnBuffer),
+                        //reader.LoadDataAsync(stripeId, rowEntryIndex, floatColumnBuffer),
+                        //reader.LoadDataAsync(stripeId, rowEntryIndex, timeStampColumnBuffer),
+                        //reader.LoadDataAsync(stripeId, rowEntryIndex, binaryColumnBuffer),
+                        //reader.LoadDataAsync(stripeId, rowEntryIndex, byteColumnBuffer),
+                        //reader.LoadDataAsync(stripeId, rowEntryIndex, booleanColumnBuffer)
                     );
+
+                    reader.Parse(sourceColumnBuffer);
+                    reader.Parse(symbolColumnBuffer);
+                    reader.Parse(timeColumnBuffer);
+                    reader.Parse(sizeColumnBuffer);
+                    //reader.Parse(dateColumnBuffer);
+                    //reader.Parse(doubleColumnBuffer);
+                    //reader.Parse(floatColumnBuffer);
+                    //reader.Parse(timeStampColumnBuffer);
+                    //reader.Parse(binaryColumnBuffer);
+                    //reader.Parse(byteColumnBuffer);
+                    //reader.Parse(booleanColumnBuffer);
 
                     for (int idx = 0; idx < sizeColumnBuffer.Values.Length; idx++)
                     {

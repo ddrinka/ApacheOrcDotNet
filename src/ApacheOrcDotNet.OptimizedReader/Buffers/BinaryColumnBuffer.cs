@@ -11,66 +11,40 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
     {
         private readonly bool[] _presentStreamBuffer;
         private readonly long[] _lengthStreamBuffer;
-        private byte[] _presentInputBuffer;
-        private byte[] _presentOutputBuffer;
-        private byte[] _lengthInputBuffer;
-        private byte[] _lengthOutputBuffer;
-        private byte[] _dataInputBuffer;
-        private byte[] _dataOutputBuffer;
 
         public BinaryColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
             _lengthStreamBuffer = new long[_context.MaxValuesToRead];
-
-            _presentInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
-            _presentOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
-
-            _lengthInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
-            _lengthOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
-
-            _dataInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
-            _dataOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
         }
 
-        public override void Fill(int stripeId, IEnumerable<StreamDetail> columnStreams, RowIndexEntry rowIndexEntry)
+        public override async Task LoadDataAsync(int stripeId, IEnumerable<StreamDetails> columnStreams, RowIndexEntry rowIndexEntry)
         {
-            // Streams
-            var presentStream = GetColumnStream(columnStreams, StreamKind.Present, isRequired: false);
-            var lengthStream = GetColumnStream(columnStreams, StreamKind.Length);
-            var dataStream = GetColumnStream(columnStreams, StreamKind.Data);
+            LoadStreams(columnStreams, rowIndexEntry, StreamKind.Length, StreamKind.Data);
 
-            // Stream Positions
-            var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var lengthPositions = GetTargetDataStreamPositions(presentStream, lengthStream, rowIndexEntry);
-            var dataPositions = GetTargetDataStreamPositions(presentStream, dataStream, rowIndexEntry);
-
-            // Stream Byte Ranges
-            (int present, int length, int data) rangeSizes = default;
-            Parallel.Invoke(
-                () => GetByteRange(_presentInputBuffer, presentStream, presentPositions, ref rangeSizes.present),
-                () => GetByteRange(_lengthInputBuffer, lengthStream, lengthPositions, ref rangeSizes.length),
-                () => GetByteRange(_dataInputBuffer, dataStream, dataPositions, ref rangeSizes.data)
+            _ = await Task.WhenAll(
+                GetByteRange(_presentStreamCompressedBuffer, _presentStream, _presentStreamPositions),
+                GetByteRange(_lengthStreamCompressedBuffer, _lengthStream, _lengthStreamPositions),
+                GetByteRange(_dataStreamCompressedBuffer, _dataStream, _dataStreamPositions)
             );
 
-            // Decompress Byte Ranges
-            (int present, int length, int data) decompressedSizes = default;
-            DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present);
-            DecompressByteRange(_lengthInputBuffer, _lengthOutputBuffer, lengthStream, lengthPositions, ref decompressedSizes.length);
-            DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data);
+            DecompressByteRange(_presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, _presentStream, _presentStreamPositions, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(_lengthStreamCompressedBuffer, _lengthStreamDecompressedBuffer, _lengthStream, _lengthStreamPositions, ref _lengthStreamDecompressedBufferLength);
+            DecompressByteRange(_dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, _dataStream, _dataStreamPositions, ref _dataStreamDecompressedBufferLength);
+        }
 
-            // Parse Decompressed Bytes
-            (int present, int length) valuesRead = default;
-            ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present);
-            ReadNumericStream(_lengthOutputBuffer, decompressedSizes.length, lengthPositions, isSigned: false, _lengthStreamBuffer, ref valuesRead.length);
+        public override void Parse()
+        {
+            ReadBooleanStream(_presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamPositions, _presentStreamBuffer, out var presentValuesRead);
+            ReadNumericStream(_lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, _lengthStreamPositions, isSigned: false, _lengthStreamBuffer, out var lengthValuesRead);
 
-            var dataBuffer = ResizeBuffer(_dataOutputBuffer, decompressedSizes.data, dataPositions);
+            var dataBuffer = ResizeBuffer(_dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, _dataStreamPositions);
 
             var stringOffset = 0;
-            if (presentStream != null)
+            if (_presentStream != null)
             {
                 var lengthIndex = 0;
-                for (int idx = 0; idx < valuesRead.present; idx++)
+                for (int idx = 0; idx < presentValuesRead; idx++)
                 {
                     if (_presentStreamBuffer[idx])
                     {
@@ -84,7 +58,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
             else
             {
-                for (int idx = 0; idx < valuesRead.length; idx++)
+                for (int idx = 0; idx < lengthValuesRead; idx++)
                 {
                     var length = (int)_lengthStreamBuffer[idx];
                     _values[_numValuesRead++] = dataBuffer.Slice(stringOffset, length).ToArray();

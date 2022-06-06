@@ -6,17 +6,15 @@ using System.Linq;
 
 namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
-    public record StreamDetail(int StreamId, int ColumnId, long FileOffset, int Length, StreamKind StreamKind, ColumnEncodingKind EncodingKind, int DictionarySize);
-
     public static class SpanStripeFooter
     {
-        public static IEnumerable<StreamDetail> ReadStreamDetails(ReadOnlySequence<byte> inputSequence, long stripeOffset)
+        public static IEnumerable<StreamDetails> ReadStreamDetails(ReadOnlySequence<byte> inputSequence, long stripeOffset)
         {
             var stripeFooter = Serializer.Deserialize<StripeFooter>(inputSequence);
 
             return stripeFooter.Streams.Select((stream, i) =>
             {
-                var result = new StreamDetail
+                var result = new StreamDetails
                 (
                     StreamId: i,
                     ColumnId: (int)stream.Column,

@@ -11,67 +11,48 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
     public class DateColumnBuffer : BaseColumnBuffer<DateTime?>
     {
         readonly static DateTime _unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        private readonly bool[] _presentStreamBuffer;
-        private readonly long[] _dataStreamBuffer;
-        private byte[] _presentInputBuffer;
-        private byte[] _presentOutputBuffer;
-        private byte[] _dataInputBuffer;
-        private byte[] _dataOutputBuffer;
+        private readonly bool[] _presentStreamValues;
+        private readonly long[] _dataStreamValues;
 
         public DateColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
-            _presentStreamBuffer = new bool[_context.MaxValuesToRead];
-            _dataStreamBuffer = new long[_context.MaxValuesToRead];
-
-            _presentInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
-            _presentOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
-
-            _dataInputBuffer = _arrayPool.Rent(_context.MaxCompressedBufferLength);
-            _dataOutputBuffer = _arrayPool.Rent(_context.MaxDecompresseBufferLength);
+            _presentStreamValues = new bool[_context.MaxValuesToRead];
+            _dataStreamValues = new long[_context.MaxValuesToRead];
         }
 
-        public override void Fill(int stripeId, IEnumerable<StreamDetail> columnStreams, RowIndexEntry rowIndexEntry)
+        public override async Task LoadDataAsync(int stripeId, IEnumerable<StreamDetails> columnStreams, RowIndexEntry rowIndexEntry)
         {
-            // Streams
-            var presentStream = GetColumnStream(columnStreams, StreamKind.Present, isRequired: false);
-            var dataStream = GetColumnStream(columnStreams, StreamKind.Data);
+            LoadStreams(columnStreams, rowIndexEntry, StreamKind.Data);
 
-            // Stream Positions
-            var presentPositions = GetPresentStreamPositions(presentStream, rowIndexEntry);
-            var dataPositions = GetTargetDataStreamPositions(presentStream, dataStream, rowIndexEntry);
-
-            // Stream Byte Ranges
-            (int present, int data) rangeSizes = default;
-            Parallel.Invoke(
-                () => GetByteRange(_presentInputBuffer, presentStream, presentPositions, ref rangeSizes.present),
-                () => GetByteRange(_dataInputBuffer, dataStream, dataPositions, ref rangeSizes.data)
+            _ = await Task.WhenAll(
+                GetByteRange(_presentStreamCompressedBuffer, _presentStream, _presentStreamPositions),
+                GetByteRange(_dataStreamCompressedBuffer, _dataStream, _dataStreamPositions)
             );
 
-            // Decompress Byte Ranges
-            (int present, int data) decompressedSizes = default;
-            DecompressByteRange(_presentInputBuffer, _presentOutputBuffer, presentStream, presentPositions, ref decompressedSizes.present);
-            DecompressByteRange(_dataInputBuffer, _dataOutputBuffer, dataStream, dataPositions, ref decompressedSizes.data);
+            DecompressByteRange(_presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, _presentStream, _presentStreamPositions, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(_dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, _dataStream, _dataStreamPositions, ref _dataStreamDecompressedBufferLength);
+        }
 
-            // Parse Decompressed Bytes
-            (int present, int data) valuesRead = default;
-            ReadBooleanStream(_presentOutputBuffer, decompressedSizes.present, presentPositions, _presentStreamBuffer, ref valuesRead.present);
-            ReadNumericStream(_dataOutputBuffer, decompressedSizes.data, dataPositions, isSigned: true, _dataStreamBuffer, ref valuesRead.data);
+        public override void Parse()
+        {
+            ReadBooleanStream(_presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamPositions, _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(_dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, _dataStreamPositions, isSigned: true, _dataStreamValues, out var dataValuesRead);
 
-            if (presentStream != null)
+            if (_presentStream != null)
             {
                 var dataIndex = 0;
-                for (int idx = 0; idx < valuesRead.present; idx++)
+                for (int idx = 0; idx < presentValuesRead; idx++)
                 {
-                    if (_presentStreamBuffer[idx])
-                        _values[_numValuesRead++] = _unixEpoch.AddTicks(_dataStreamBuffer[dataIndex++] * TimeSpan.TicksPerDay);
+                    if (_presentStreamValues[idx])
+                        _values[_numValuesRead++] = _unixEpoch.AddTicks(_dataStreamValues[dataIndex++] * TimeSpan.TicksPerDay);
                     else
                         _values[_numValuesRead++] = null;
                 }
             }
             else
             {
-                for (int idx = 0; idx < valuesRead.data; idx++)
-                    _values[_numValuesRead++] = _unixEpoch.AddTicks(_dataStreamBuffer[idx] * TimeSpan.TicksPerDay);
+                for (int idx = 0; idx < dataValuesRead; idx++)
+                    _values[_numValuesRead++] = _unixEpoch.AddTicks(_dataStreamValues[idx] * TimeSpan.TicksPerDay);
             }
         }
     }

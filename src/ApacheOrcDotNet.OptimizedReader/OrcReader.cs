@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
@@ -22,8 +23,8 @@ namespace ApacheOrcDotNet.OptimizedReader
         private readonly OrcReaderConfiguration _configuration;
         private readonly IByteRangeProvider _byteRangeProvider;
         private readonly SpanFileTail _fileTail;
-        private readonly Dictionary<int, List<StreamDetail>> _stripeStreams = new();
-        private readonly ConcurrentDictionary<(int columnId, int stripeId), List<StreamDetail>> _columnStreams = new();
+        private readonly Dictionary<int, List<StreamDetails>> _stripeStreams = new();
+        private readonly ConcurrentDictionary<(int columnId, int stripeId), List<StreamDetails>> _columnStreams = new();
         private readonly ConcurrentDictionary<(int columnId, int stripeId), RowIndex> _rowGroupIndexes = new();
         private readonly Dictionary<string, (int Id, string Name, ColumnTypeKind Type)> _protoColumns = new();
         private readonly CompressionKind _compressionKind;
@@ -99,16 +100,16 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new DateColumnBuffer(_byteRangeProvider, context, column);
         }
 
-        public BaseColumnBuffer<decimal?> CreateDecimalColumnReader(OrcColumn column)
-        {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new DecimalColumnBuffer(_byteRangeProvider, context, column);
-        }
-
         public BaseColumnBuffer<double> CreateDecimalColumnBufferAsDouble(OrcColumn column)
         {
             var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new DecimalAsDoubleColumnBuffer(_byteRangeProvider, context, column);
+        }
+
+        public BaseColumnBuffer<decimal?> CreateDecimalColumnBuffer(OrcColumn column)
+        {
+            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            return new DecimalColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<double> CreateDoubleColumnBuffer(OrcColumn column)
@@ -175,15 +176,20 @@ namespace ApacheOrcDotNet.OptimizedReader
             });
         }
 
-        public void FillBuffer<TOutput>(int stripeId, int rowEntryIndexId, BaseColumnBuffer<TOutput> columnBuffer, bool discardPreviousData = true)
+        public async Task LoadDataAsync<TOutput>(int stripeId, int rowEntryIndexId, BaseColumnBuffer<TOutput> columnBuffer)
+        {
+            var columnStreams = GetColumnStreams(columnBuffer.Column.Id, stripeId);
+            var rowIndexEntry = GetRowGroupIndex(columnBuffer.Column.Id, stripeId).Entry[rowEntryIndexId];
+
+            await columnBuffer.LoadDataAsync(stripeId, columnStreams, rowIndexEntry);
+        }
+
+        public void Parse<TOutput>(BaseColumnBuffer<TOutput> columnBuffer, bool discardPreviousData = true)
         {
             if (discardPreviousData)
                 columnBuffer.Reset();
 
-            var columnStreams = GetColumnStreams(columnBuffer.Column.Id, stripeId);
-            var rowIndexEntry = GetRowGroupIndex(columnBuffer.Column.Id, stripeId).Entry[rowEntryIndexId];
-
-            columnBuffer.Fill(stripeId, columnStreams, rowIndexEntry);
+            columnBuffer.Parse();
         }
 
         public ColumnStatistics GetFileColumnStatistics(int columnId)
@@ -222,6 +228,9 @@ namespace ApacheOrcDotNet.OptimizedReader
             {
                 var buffer = ArrayPool<byte>.Shared.Rent(lengthToReadFromEnd);
                 var bufferSpan = buffer.AsSpan()[..lengthToReadFromEnd];
+
+                //Console.WriteLine($"GetRangeFromEnd: {bufferSpan.Length}/{lengthToReadFromEnd}");
+
                 _byteRangeProvider.GetRangeFromEnd(bufferSpan, lengthToReadFromEnd);
                 var success = SpanFileTail.TryRead(bufferSpan, out var fileTail, out var additionalBytesRequired);
                 ArrayPool<byte>.Shared.Return(buffer);
@@ -233,7 +242,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        private IEnumerable<StreamDetail> GetStripeStreams(int stripeId)
+        private IEnumerable<StreamDetails> GetStripeStreams(int stripeId)
         {
             if (!_stripeStreams.ContainsKey(stripeId))
             {
@@ -256,7 +265,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return _stripeStreams[stripeId];
         }
 
-        private IEnumerable<StreamDetail> GetColumnStreams(int columnId, int stripeId)
+        private IEnumerable<StreamDetails> GetColumnStreams(int columnId, int stripeId)
         {
             var key = (columnId, stripeId);
 

@@ -2,6 +2,7 @@ using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using ApacheOrcDotNet.Test.TestHelpers;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
@@ -30,12 +31,30 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
+        public Task<int> GetRangeAsync(Memory<byte> buffer, long position)
+        {
+            lock (_syncRoot)
+            {
+                _stream.Seek(position, SeekOrigin.Begin);
+                return DoReadAsync(buffer);
+            }
+        }
+
         public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
         {
             lock (_syncRoot)
             {
                 _stream.Seek(-positionFromEnd, SeekOrigin.End);
                 return DoRead(buffer);
+            }
+        }
+
+        public Task<int> GetRangeFromEndAsync(Memory<byte> buffer, long positionFromEnd)
+        {
+            lock (_syncRoot)
+            {
+                _stream.Seek(-positionFromEnd, SeekOrigin.End);
+                return DoReadAsync(buffer);
             }
         }
 
@@ -46,6 +65,22 @@ namespace ApacheOrcDotNet.OptimizedReader
             while (bytesRemaining > 0)
             {
                 int count = _stream.Read(buffer[bytesRead..]);
+                if (count == 0)
+                    break;
+
+                bytesRead += count;
+                bytesRemaining -= count;
+            }
+            return bytesRead;
+        }
+
+        private async Task<int> DoReadAsync(Memory<byte> buffer)
+        {
+            int bytesRead = 0;
+            int bytesRemaining = buffer.Length;
+            while (bytesRemaining > 0)
+            {
+                int count = await _stream.ReadAsync(buffer[bytesRead..]);
                 if (count == 0)
                     break;
 
