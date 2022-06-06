@@ -12,17 +12,18 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var reader = new OrcReader(config, _byteRangeProvider);
 
             var column = reader.GetColumn("binary");
-            var buffer = reader.CreateBinaryColumnBuffer(column);
-            reader.FillBuffer(stripeId: 0, rowEntryIndexId: 0, buffer);
+            var columnBuffer = reader.CreateBinaryColumnBuffer(column);
+            reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
+            reader.Parse(columnBuffer);
 
-            Assert.Equal(10_000, buffer.Values.Length);
+            Assert.Equal(10_000, columnBuffer.Values.Length);
 
-            for (int i = 0; i < buffer.Values.Length; i++)
+            for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
                 if (_expectedValues.binaries[i] == null)
-                    Assert.Null(buffer.Values[i]);
+                    Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.binaries[i], Encoding.UTF8.GetString(buffer.Values[i]));
+                    Assert.Equal(_expectedValues.binaries[i], Encoding.UTF8.GetString(columnBuffer.Values[i]));
             }
         }
 
@@ -33,17 +34,18 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var reader = new OrcReader(config, _byteRangeProvider);
 
             var column = reader.GetColumn("binary");
-            var buffer = reader.CreateBinaryColumnBuffer(column);
-            reader.FillBuffer(stripeId: 0, rowEntryIndexId: 1, buffer);
+            var columnBuffer = reader.CreateBinaryColumnBuffer(column);
+            reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
+            reader.Parse(columnBuffer);
 
-            Assert.Equal(1, buffer.Values.Length);
+            Assert.Equal(1, columnBuffer.Values.Length);
 
-            for (int i = 10_000; i < buffer.Values.Length; i++)
+            for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
                 if (_expectedValues.binaries[i] == null)
-                    Assert.Null(buffer.Values[i]);
+                    Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.binaries[i], Encoding.UTF8.GetString(buffer.Values[i]));
+                    Assert.Equal(_expectedValues.binaries[i], Encoding.UTF8.GetString(columnBuffer.Values[i]));
             }
         }
     }

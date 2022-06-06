@@ -3,6 +3,7 @@ using ApacheOrcDotNet.Test.TestHelpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
@@ -47,6 +48,11 @@ namespace ApacheOrcDotNet.OptimizedReader
             return buffer.Length;
         }
 
+        public Task<int> GetRangeAsync(Memory<byte> buffer, long position)
+        {
+            throw new NotImplementedException();
+        }
+
         public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
         {
             var reader = GetOpenStreamForRange(true, positionFromEnd, buffer.Length);
@@ -64,6 +70,11 @@ namespace ApacheOrcDotNet.OptimizedReader
                 }
             }
             return buffer.Length;
+        }
+
+        public Task<int> GetRangeFromEndAsync(Memory<byte> buffer, long positionFromEnd)
+        {
+            throw new NotImplementedException();
         }
 
         Stream GetOpenStreamForRange(bool isFromEnd, long position, int length)

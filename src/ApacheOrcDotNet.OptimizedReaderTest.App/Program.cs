@@ -3,12 +3,13 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var cultureInfo = CultureInfo.GetCultureInfo("en-US");
 
@@ -22,7 +23,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                 .Build()
             ;
 
-            var fileName = config.GetValue("fileName", string.Empty);
+            var uri = config.GetValue("uri", string.Empty);
             var date = config.GetValue("date", DateTime.Now.ToString("d"));
             var source = config.GetValue("source", string.Empty);
             var symbol = config.GetValue("symbol", string.Empty);
@@ -33,16 +34,20 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             var isValidBeginTime = TimeSpan.TryParse(beginTime, out var parsedBeginTime);
             var isValidEndTime = TimeSpan.TryParse(endTime, out var parsedEndTime);
 
-            if (fileName.Length ==0 || !isValidDate || source.Length == 0 || symbol.Length == 0 || !isValidBeginTime || !isValidEndTime || (parsedEndTime < parsedBeginTime))
+            if (uri.Length ==0 || !isValidDate || source.Length == 0 || symbol.Length == 0 || !isValidBeginTime || !isValidEndTime || (parsedEndTime < parsedBeginTime))
             {
-                Console.WriteLine("Usage: --fileName orcFileName --date m/d/yyyy --source sourceName --symbol symbolName --beginTime hh:mm:ss --endTime hh:mm:ss");
+                Console.WriteLine("Usage: --uri orcFileUri --date m/d/yyyy --source sourceName --symbol symbolName --beginTime hh:mm:ss --endTime hh:mm:ss");
+                Console.WriteLine();
+                Console.WriteLine("Examples:");
+                Console.WriteLine(@"   dotnet run --uri file://c:/path/to/testFile.orc --source CTSPillarNetworkB --symbol SPY --beginTime 09:43:20 --endTime 09:43:21");
+                Console.WriteLine(@"   dotnet run --uri https://s3.amazonaws.com/some/path/testFile.orc --source CTSPillarNetworkB --symbol SPY --beginTime 09:43:20 --endTime 09:43:21");
+                Console.WriteLine();
                 Environment.Exit(-1);
             }
 
             Console.WriteLine("Running.. CTRL+C to exit.");
             Console.WriteLine();
             Console.WriteLine($"Pid: {Environment.ProcessId}");
-            Console.WriteLine($"date: '{date}'");
             Console.WriteLine($"source: '{source}'");
             Console.WriteLine($"symbol: '{symbol}'");
             Console.WriteLine($"beginTime: '{beginTime}'");
@@ -59,11 +64,11 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             };
 
             var fileByteRangeProviderFactory = new ByteRangeProviderFactory();
-            var optimizedORCApp = new OptimizedORCApp(fileName, configs, fileByteRangeProviderFactory);
+            var optimizedORCApp = new OptimizedORCApp(uri, configs, fileByteRangeProviderFactory);
             var stopWatch = new Stopwatch();
 
             stopWatch.Start();
-            optimizedORCApp.Run();
+            await optimizedORCApp.Run();
             stopWatch.Stop();
 
             Console.WriteLine($"Total execution time: {stopWatch.Elapsed}");
