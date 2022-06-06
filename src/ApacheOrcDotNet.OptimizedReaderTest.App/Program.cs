@@ -42,6 +42,10 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                 Console.WriteLine(@"   dotnet run --uri file://c:/path/to/testFile.orc --source CTSPillarNetworkB --symbol SPY --beginTime 09:43:20 --endTime 09:43:21");
                 Console.WriteLine(@"   dotnet run --uri https://s3.amazonaws.com/some/path/testFile.orc --source CTSPillarNetworkB --symbol SPY --beginTime 09:43:20 --endTime 09:43:21");
                 Console.WriteLine();
+                Console.WriteLine(@"   You can use files under ApacheOrcDotNet.OptimizedReader.Test/Data to test the readers:");
+                Console.WriteLine(@"      - optimized_reader_test_file.orc");
+                Console.WriteLine(@"      - optimized_reader_test_file_no_nulls.orc");
+                Console.WriteLine();
                 Environment.Exit(-1);
             }
 

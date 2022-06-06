@@ -1,6 +1,4 @@
 ﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
-using ApacheOrcDotNet.Protocol;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -12,36 +10,59 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private readonly bool[] _presentStreamBuffer;
         private readonly long[] _lengthStreamBuffer;
 
+        private byte[] _dataStreamCompressedBuffer;
+        private byte[] _dataStreamDecompressedBuffer;
+        private int _dataStreamDecompressedBufferLength;
+
+        private byte[] _lengthStreamCompressedBuffer;
+        private byte[] _lengthStreamDecompressedBuffer;
+        private int _lengthStreamDecompressedBufferLength;
+
+        private byte[] _presentStreamCompressedBuffer;
+        private byte[] _presentStreamDecompressedBuffer;
+        private int _presentStreamDecompressedBufferLength;
+
+        private ColumnDataStreams _streams;
+
         public BinaryColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
             _lengthStreamBuffer = new long[_context.MaxValuesToRead];
+
+            _dataStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
+            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+
+            _lengthStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
+            _lengthStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+
+            _presentStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
+            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
         }
 
-        public override async Task LoadDataAsync(int stripeId, IEnumerable<StreamDetails> columnStreams, RowIndexEntry rowIndexEntry)
+        public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
         {
-            LoadStreams(columnStreams, rowIndexEntry, StreamKind.Length, StreamKind.Data);
+            _streams = streams;
 
             _ = await Task.WhenAll(
-                GetByteRange(_presentStreamCompressedBuffer, _presentStream, _presentStreamPositions),
-                GetByteRange(_lengthStreamCompressedBuffer, _lengthStream, _lengthStreamPositions),
-                GetByteRange(_dataStreamCompressedBuffer, _dataStream, _dataStreamPositions)
+                GetByteRangeAsync(_streams.Present, _presentStreamCompressedBuffer),
+                GetByteRangeAsync(_streams.Length, _lengthStreamCompressedBuffer),
+                GetByteRangeAsync(_streams.Data, _dataStreamCompressedBuffer)
             );
 
-            DecompressByteRange(_presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, _presentStream, _presentStreamPositions, ref _presentStreamDecompressedBufferLength);
-            DecompressByteRange(_lengthStreamCompressedBuffer, _lengthStreamDecompressedBuffer, _lengthStream, _lengthStreamPositions, ref _lengthStreamDecompressedBufferLength);
-            DecompressByteRange(_dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, _dataStream, _dataStreamPositions, ref _dataStreamDecompressedBufferLength);
+            DecompressByteRange(_streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(_streams.Length, _lengthStreamCompressedBuffer, _lengthStreamDecompressedBuffer, ref _lengthStreamDecompressedBufferLength);
+            DecompressByteRange(_streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
         }
 
-        public override void Parse()
+        public override void Fill()
         {
-            ReadBooleanStream(_presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamPositions, _presentStreamBuffer, out var presentValuesRead);
-            ReadNumericStream(_lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, _lengthStreamPositions, isSigned: false, _lengthStreamBuffer, out var lengthValuesRead);
+            ReadBooleanStream(_streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamBuffer, out var presentValuesRead);
+            ReadNumericStream(_streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, _lengthStreamBuffer, out var lengthValuesRead);
 
-            var dataBuffer = ResizeBuffer(_dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, _dataStreamPositions);
+            var dataBuffer = ResizeBuffer(_streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength);
 
             var stringOffset = 0;
-            if (_presentStream != null)
+            if (presentValuesRead > 0)
             {
                 var lengthIndex = 0;
                 for (int idx = 0; idx < presentValuesRead; idx++)
