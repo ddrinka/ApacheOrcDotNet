@@ -14,19 +14,36 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="Data\optimized_reader_test_file-info.txt" />
 	  <None Remove="Data\optimized_reader_test_file.csv" />
 	  <None Remove="Data\optimized_reader_test_file.orc" />
+	  <None Remove="Data\optimized_reader_test_file.orc.txt" />
 	  <None Remove="Data\optimized_reader_test_file_no_nulls.csv" />
 	  <None Remove="Data\optimized_reader_test_file_no_nulls.orc" />
-	  <None Remove="Data\optimized_reader_test_file_no_nulls.txt" />
+	  <None Remove="Data\optimized_reader_test_file_no_nulls.orc.txt" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="Data\optimized_reader_test_file_no_nulls.txt" />
-	  <EmbeddedResource Include="Data\optimized_reader_test_file-info.txt" />
-	  <EmbeddedResource Include="Data\optimized_reader_test_file.csv" />
-	  <EmbeddedResource Include="Data\optimized_reader_test_file_no_nulls.csv" />
+	  <EmbeddedResource Include="Data\optimized_reader_test_file_no_nulls.orc.txt">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	  <EmbeddedResource Include="Data\optimized_reader_test_file.orc.txt">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	  <EmbeddedResource Include="Data\optimized_reader_test_file.csv">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	  <EmbeddedResource Include="Data\optimized_reader_test_file_no_nulls.csv">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Data\optimized_reader_test_file.orc">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	  <EmbeddedResource Update="Data\optimized_reader_test_file_no_nulls.orc">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </EmbeddedResource>
 	</ItemGroup>
 
 </Project>
