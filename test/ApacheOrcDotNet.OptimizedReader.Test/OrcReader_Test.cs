@@ -83,7 +83,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         public void RowGroupStatistics()
         {
             var reader = new OrcReader(new OrcReaderConfiguration(), _byteRangeProvider);
-            var rowGroupEntry = reader.GetRowGroupIndex(columnId: 1, stripeId: 0).Entry[0];
+            var rowGroupEntry = reader.GetColumnRowIndex(columnId: 1, stripeId: 0).Entry[0];
             Assert.Equal("BZX", rowGroupEntry.Statistics.StringStatistics.Minimum);
             Assert.Equal("BZX", rowGroupEntry.Statistics.StringStatistics.Maximum);
             Assert.Equal(0ul, rowGroupEntry.Positions[0]);

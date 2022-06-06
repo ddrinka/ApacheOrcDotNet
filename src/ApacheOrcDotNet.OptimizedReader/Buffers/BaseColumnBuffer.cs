@@ -16,7 +16,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
     [SkipLocalsInit]
     public abstract class BaseColumnBuffer<TOutput>
     {
-        //private protected readonly BufferStream[] _bufferStreams;
+        private readonly long[] _numericStreamBuffer;
+        private readonly byte[] _byteStreamBuffer;
+        private readonly byte[] _boolStreamBuffer;
+
         private protected readonly IByteRangeProvider _byteRangeProvider;
         private protected readonly OrcContext _context;
         private protected readonly OrcColumn _column;
@@ -24,41 +27,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private protected readonly ArrayPool<byte> _pool;
 
-        private protected StreamDetails _dataStream;
-        private protected StreamPositions _dataStreamPositions;
-        private protected byte[] _dataStreamCompressedBuffer;
-        private protected byte[] _dataStreamDecompressedBuffer;
-        private protected int _dataStreamDecompressedBufferLength;
-
-        private protected StreamDetails _dictionaryStream;
-        private protected StreamPositions _dictionaryStreamPositions;
-        private protected byte[] _dictionaryStreanCompressedBuffer;
-        private protected byte[] _dictionaryStreamDecompressedBuffer;
-        private protected int _dictionaryStreamDecompressedBufferLength;
-
-        private protected StreamDetails _lengthStream;
-        private protected StreamPositions _lengthStreamPositions;
-        private protected byte[] _lengthStreamCompressedBuffer;
-        private protected byte[] _lengthStreamDecompressedBuffer;
-        private protected int _lengthStreamDecompressedBufferLength;
-
-        private protected StreamDetails _presentStream;
-        private protected StreamPositions _presentStreamPositions;
-        private protected byte[] _presentStreamCompressedBuffer;
-        private protected byte[] _presentStreamDecompressedBuffer;
-        private protected int _presentStreamDecompressedBufferLength;
-
-        private protected StreamDetails _secondaryStream;
-        private protected StreamPositions _secondaryStreamPositions;
-        private protected byte[] _secondaryStreamCompressedBuffer;
-        private protected byte[] _secondaryStreamDecompressedBuffer;
-        private protected int _secondaryStreamDecompressedBufferLength;
-
         private protected int _numValuesRead;
-
-        private long[] _numericStreamBuffer;
-        private byte[] _byteStreamBuffer;
-        private byte[] _boolStreamBuffer;
 
         public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column)
         {
@@ -69,33 +38,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             _pool = ArrayPool<byte>.Create(15 * 1024 * 1024, 8);
 
-            _dataStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
-
-            _dictionaryStreanCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dictionaryStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
-
-            _lengthStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _lengthStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
-
-            _presentStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
-
-            _secondaryStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _secondaryStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
-
-            //var streamKinds = Enum.GetValues<StreamKind>();
-            //_bufferStreams = new BufferStream[streamKinds.Length];
-
-            //foreach (var kind in streamKinds)
-            //{
-            //    _bufferStreams[(int)kind] = new BufferStream()
-            //    {
-            //        CompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength),
-            //        DecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength)
-            //    };
-            //}
-
             _numericStreamBuffer = new long[1000];
             _byteStreamBuffer = new byte[1000];
             _boolStreamBuffer = new byte[1000];
@@ -104,17 +46,32 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         public OrcColumn Column => _column;
         public ReadOnlySpan<TOutput> Values => _values.AsSpan().Slice(0, _numValuesRead);
 
-        public abstract Task LoadDataAsync(int stripeId, IEnumerable<StreamDetails> columnStreams, RowIndexEntry rowIndexEntry);
-        public abstract void Parse();
+        public abstract Task LoadDataAsync(int stripeId, ColumnDataStreams streams);
+        public abstract void Fill();
 
         public void Reset() => _numValuesRead = 0;
 
-        private protected int ReadByteStream(ReadOnlySpan<byte> buffer, int length, in StreamPositions positions, Span<byte> outputValues, out int numValuesRead)
+        private protected StreamDetail GetStripeStream(IEnumerable<StreamDetail> columnStreams, StreamKind streamKind, bool isRequired = true)
+        {
+            var stream = columnStreams.SingleOrDefault(stream =>
+                stream.StreamKind == streamKind
+            );
+
+            if (isRequired && stream == null)
+                throw new InvalidDataException($"The '{streamKind}' stream must be available");
+
+            return stream;
+        }
+
+        private protected void ReadByteStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<byte> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
+            if (stream == null)
+                return;
+
             var numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(buffer, length, in positions));
+            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
 
             while (!bufferReader.Complete)
             {
@@ -122,26 +79,27 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
                 for (int idx = 0; idx < numByteValuesRead; idx++)
                 {
-                    if (numSkipped++ < positions.ValuesToSkip)
+                    if (numSkipped++ < stream.Positions.ValuesToSkip)
                         continue;
 
                     outputValues[numValuesRead++] = _byteStreamBuffer[idx];
 
                     if (numValuesRead >= outputValues.Length)
-                        return numValuesRead;
+                        return;
                 }
             }
-
-            return numValuesRead;
         }
 
-        private protected void ReadBooleanStream(ReadOnlySpan<byte> buffer, int length, in StreamPositions positions, Span<bool> outputValues, out int numValuesRead)
+        private protected void ReadBooleanStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<bool> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
+            if (stream == null)
+                return;
+
             var numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(buffer, length, in positions));
-            var numOfTotalBitsToSkip = positions.ValuesToSkip * 8 + positions.RemainingBits;
+            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
+            var numOfTotalBitsToSkip = stream.Positions.ValuesToSkip * 8 + stream.Positions.RemainingBits;
             var numOfBytesToSkip = numOfTotalBitsToSkip / 8;
             while (!bufferReader.Complete)
             {
@@ -180,12 +138,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void ReadNumericStream(ReadOnlySpan<byte> buffer, int length, in StreamPositions positions, bool isSigned, Span<long> outputValues, out int numValuesRead)
+        private protected void ReadNumericStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, bool isSigned, Span<long> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
+            if (stream == null)
+                return;
+
             var numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(buffer, length, in positions));
+            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
 
             while (!bufferReader.Complete)
             {
@@ -193,7 +154,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
                 for (int idx = 0; idx < numNewValuesRead; idx++)
                 {
-                    if (numSkipped++ < positions.ValuesToSkip)
+                    if (numSkipped++ < stream.Positions.ValuesToSkip)
                         continue;
 
                     outputValues[numValuesRead++] = (int)_numericStreamBuffer[idx];
@@ -204,12 +165,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void ReadVarIntStream(ReadOnlySpan<byte> buffer, int length, in StreamPositions positions, Span<BigInteger> outputValues, out int numValuesRead)
+        private protected void ReadVarIntStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<BigInteger> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
+            if (stream == null)
+                return;
+
             int numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(buffer, length, in positions));
+            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
 
             while (!bufferReader.Complete)
             {
@@ -218,7 +182,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 if (!bigInt.HasValue)
                     return;
 
-                if (numSkipped++ < positions.ValuesToSkip)
+                if (numSkipped++ < stream.Positions.ValuesToSkip)
                     continue;
 
                 outputValues[numValuesRead++] = bigInt.Value;
@@ -228,84 +192,32 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void LoadStreams(IEnumerable<StreamDetails> columnStreams, RowIndexEntry rowIndexEntry, params StreamKind[] requiredStreams)
-        {
-            var missingStreams = requiredStreams.ToList();
-
-            _presentStream = columnStreams.SingleOrDefault(stream => stream.StreamKind == StreamKind.Present);
-            _presentStreamPositions = GetPresentStreamPositions(_presentStream, rowIndexEntry);
-            missingStreams.Remove(StreamKind.Present);
-
-            foreach (var stream in columnStreams)
-            {
-                switch (stream.StreamKind)
-                {
-                    case StreamKind.Present:
-                    case StreamKind.RowIndex:
-                        continue;
-                    case StreamKind.Secondary:
-                        _secondaryStream = stream;
-                        _secondaryStreamPositions = GetRequiredStreamPositions(stream, rowIndexEntry);
-                        missingStreams.Remove(stream.StreamKind);
-                        break;
-                    case StreamKind.DictionaryData:
-                        _dictionaryStream = stream;
-                        _dictionaryStreamPositions = GetRequiredStreamPositions(stream, rowIndexEntry);
-                        missingStreams.Remove(stream.StreamKind);
-                        break;
-                    case StreamKind.Length:
-                        _lengthStream = stream;
-                        _lengthStreamPositions = GetRequiredStreamPositions(stream, rowIndexEntry);
-                        missingStreams.Remove(stream.StreamKind);
-                        break;
-                    case StreamKind.Data:
-                        _dataStream = stream;
-                        _dataStreamPositions = GetRequiredStreamPositions(stream, rowIndexEntry);
-                        missingStreams.Remove(stream.StreamKind);
-                        break;
-                    default:
-                        throw new NotImplementedException($"Unable to set stream '{stream.StreamKind}'");
-                }
-            }
-
-            if (missingStreams.Count > 0)
-                throw new InvalidDataException($"The following streams must be available: {string.Join(", ", missingStreams)}");
-        }
-
-        private protected async Task<int> GetByteRange(Memory<byte> output, StreamDetails stream, StreamPositions positions)
+        private protected async Task<int> GetByteRangeAsync(StreamDetail stream, Memory<byte> output)
         {
             var rangeLength = 0;
 
             if (stream != null)
-            {
-                var offset = stream.FileOffset + positions.RowGroupOffset;
-                var compressedLength = stream.Length - positions.RowGroupOffset;
-
-                //Console.WriteLine($"GetByteRangeAsync for '{_column.Name}': {compressedLength}/{offset}");
-
-                rangeLength = await _byteRangeProvider.GetRangeAsync(output.Slice(0, compressedLength), offset);
-            }
+                rangeLength = await _byteRangeProvider.GetRangeAsync(output.Slice(0, stream.Range.Length), stream.Range.Offset);
 
             return rangeLength;
         }
 
-        private protected void DecompressByteRange(ReadOnlySpan<byte> compressedInput, Span<byte> decompressedOutput, StreamDetails stream, in StreamPositions positions, ref int decompressedLength)
+        private protected void DecompressByteRange(StreamDetail stream, ReadOnlySpan<byte> compressedInput, Span<byte> decompressedOutput, ref int decompressedLength)
         {
             decompressedLength = 0;
 
             if (stream != null)
-            {
-                var compressedLength = stream.Length - positions.RowGroupOffset;
-
-                decompressedLength = StreamData.Decompress(compressedInput.Slice(0, compressedLength), decompressedOutput, _context.CompressionKind);
-            }
+                decompressedLength = StreamData.Decompress(compressedInput.Slice(0, stream.Range.Length), decompressedOutput, _context.CompressionKind);
         }
 
-        private protected ReadOnlySpan<byte> ResizeBuffer(ReadOnlySpan<byte> buffer, int length, in StreamPositions positions)
+        /// <summary>
+        /// Applies the offset position into the decompressed data.
+        /// </summary>
+        private protected ReadOnlySpan<byte> ResizeBuffer(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, int decompressedBufferLength)
         {
-            var rowentrylength = length - positions.RowEntryOffset;
+            var rowEntryLength = decompressedBufferLength - stream.Positions.RowEntryOffset;
 
-            return buffer.Slice(positions.RowEntryOffset, rowentrylength);
+            return decompressedBuffer.Slice(stream.Positions.RowEntryOffset, rowEntryLength);
         }
 
         private protected double BigIntegerToDouble(BigInteger numerator, long scale)
@@ -320,111 +232,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             var scaler = new decimal(1, 0, 0, false, (byte)scale);
 
             return decNumerator * scaler;
-        }
-
-        private StreamPositions GetPresentStreamPositions(StreamDetails presentStream, RowIndexEntry rowIndexEntry)
-        {
-            if (presentStream == null)
-                return new();
-
-            return new((int)rowIndexEntry.Positions[0], (int)rowIndexEntry.Positions[1], (int)rowIndexEntry.Positions[2], (int)rowIndexEntry.Positions[3]);
-        }
-
-        private StreamPositions GetRequiredStreamPositions(StreamDetails targetedStream, RowIndexEntry rowIndexEntry)
-        {
-            var positionStep = _presentStream == null ? 0 : 4;
-
-            ulong rowGroupOffset = (targetedStream.StreamKind, _column.Type, targetedStream.EncodingKind) switch
-            {
-                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 0],
-
-                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 3],
-                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 2],
-
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 2],
-                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 2],
-
-                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.Short, _) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.Float, _) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.Double, _) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.Date, _) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 0],
-                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 0],
-
-                _ => throw new NotImplementedException()
-            };
-
-            ulong rowEntryOffset = (targetedStream.StreamKind, _column.Type, targetedStream.EncodingKind) switch
-            {
-                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
-
-                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 4],
-                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 3],
-
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 3],
-                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 3],
-
-                (StreamKind.Data, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.Short, _) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.Double, _) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.Float, _) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.Date, _) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 1],
-                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 1],
-
-                _ => throw new NotImplementedException()
-            };
-
-            ulong valuesToSkip = (targetedStream.StreamKind, _column.Type, targetedStream.EncodingKind) switch
-            {
-                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
-
-                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 5],
-                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 4],
-
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
-                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 4],
-                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 4],
-
-                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 2],
-                (StreamKind.Data, ColumnTypeKind.Decimal, _) => 0,
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 2],
-                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => 0,
-                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => 0,
-                (StreamKind.Data, ColumnTypeKind.Short, _) => rowIndexEntry.Positions[positionStep + 2],
-                (StreamKind.Data, ColumnTypeKind.Double, _) => 0,
-                (StreamKind.Data, ColumnTypeKind.Float, _) => 0,
-                (StreamKind.Data, ColumnTypeKind.Date, _) => rowIndexEntry.Positions[positionStep + 2],
-                (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 2],
-                (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 2],
-                (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 2],
-                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 2],
-
-                _ => throw new NotImplementedException()
-            };
-
-            ulong remainingBits = (targetedStream.StreamKind, _column.Type, targetedStream.EncodingKind) switch
-            {
-                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 3],
-                _ => 0
-            };
-
-            return new((int)rowGroupOffset, (int)rowEntryOffset, (int)valuesToSkip, (int)remainingBits);
         }
 
         private BigInteger? ReadBigVarInt(ref BufferReader stream)

@@ -8,13 +8,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public static class SpanStripeFooter
     {
-        public static IEnumerable<StreamDetails> ReadStreamDetails(ReadOnlySequence<byte> inputSequence, long stripeOffset)
+        public static IEnumerable<StreamDetail> ReadStreamDetails(ReadOnlySequence<byte> inputSequence, long stripeOffset)
         {
             var stripeFooter = Serializer.Deserialize<StripeFooter>(inputSequence);
 
             return stripeFooter.Streams.Select((stream, i) =>
             {
-                var result = new StreamDetails
+                var result = new StreamDetail
                 (
                     StreamId: i,
                     ColumnId: (int)stream.Column,

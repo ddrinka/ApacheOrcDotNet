@@ -14,7 +14,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var column = reader.GetColumn("binary");
             var columnBuffer = reader.CreateBinaryColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
-            reader.Parse(columnBuffer);
+            reader.Fill(columnBuffer);
 
             Assert.Equal(10_000, columnBuffer.Values.Length);
 
@@ -36,7 +36,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var column = reader.GetColumn("binary");
             var columnBuffer = reader.CreateBinaryColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
-            reader.Parse(columnBuffer);
+            reader.Fill(columnBuffer);
 
             Assert.Equal(1, columnBuffer.Values.Length);
 

@@ -23,8 +23,8 @@ namespace ApacheOrcDotNet.OptimizedReader
         private readonly OrcReaderConfiguration _configuration;
         private readonly IByteRangeProvider _byteRangeProvider;
         private readonly SpanFileTail _fileTail;
-        private readonly Dictionary<int, List<StreamDetails>> _stripeStreams = new();
-        private readonly ConcurrentDictionary<(int columnId, int stripeId), List<StreamDetails>> _columnStreams = new();
+        private readonly Dictionary<int, List<StreamDetail>> _stripeStreams = new();
+        private readonly ConcurrentDictionary<(int columnId, int stripeId), List<StreamDetail>> _columnStreams = new();
         private readonly ConcurrentDictionary<(int columnId, int stripeId), RowIndex> _rowGroupIndexes = new();
         private readonly Dictionary<string, (int Id, string Name, ColumnTypeKind Type)> _protoColumns = new();
         private readonly CompressionKind _compressionKind;
@@ -51,6 +51,8 @@ namespace ApacheOrcDotNet.OptimizedReader
             _compressionBlockSize = (int)_fileTail.PostScript.CompressionBlockSize;
             _maxValuesToRead = (int)_fileTail.Footer.RowIndexStride;
         }
+
+        public int NumValues { get; set; }
 
         public OrcColumn GetColumn(int columnId, string min = null, string max = null)
         {
@@ -161,13 +163,13 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public IEnumerable<int> GetRowGroupIndexes(int stripeId, OrcColumn column)
         {
-            var rowIndex = GetRowGroupIndex(column.Id, stripeId);
+            var rowIndex = GetColumnRowIndex(column.Id, stripeId);
             return GetRowGroupIndexes(Enumerable.Range(0, rowIndex.Entry.Count), stripeId, column);
         }
 
         public IEnumerable<int> GetRowGroupIndexes(IEnumerable<int> lookupIndexes, int stripeId, OrcColumn column)
         {
-            var rowIndex = GetRowGroupIndex(column.Id, stripeId);
+            var rowIndex = GetColumnRowIndex(column.Id, stripeId);
 
             return lookupIndexes.Where(index =>
             {
@@ -178,18 +180,21 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public async Task LoadDataAsync<TOutput>(int stripeId, int rowEntryIndexId, BaseColumnBuffer<TOutput> columnBuffer)
         {
-            var columnStreams = GetColumnStreams(columnBuffer.Column.Id, stripeId);
-            var rowIndexEntry = GetRowGroupIndex(columnBuffer.Column.Id, stripeId).Entry[rowEntryIndexId];
+            var rowIndex = GetColumnRowIndex(columnBuffer.Column.Id, stripeId);
+            var columnStreams = GetColumnDataStreams(stripeId, columnBuffer.Column, rowIndex, rowEntryIndexId);
 
-            await columnBuffer.LoadDataAsync(stripeId, columnStreams, rowIndexEntry);
+            await columnBuffer.LoadDataAsync(stripeId, columnStreams);
         }
 
-        public void Parse<TOutput>(BaseColumnBuffer<TOutput> columnBuffer, bool discardPreviousData = true)
+        public void Fill<TOutput>(BaseColumnBuffer<TOutput> columnBuffer, bool discardPreviousData = true)
         {
             if (discardPreviousData)
                 columnBuffer.Reset();
 
-            columnBuffer.Parse();
+            columnBuffer.Fill();
+
+            if (NumValues == 0 || NumValues > columnBuffer.Values.Length)
+                NumValues = columnBuffer.Values.Length;
         }
 
         public ColumnStatistics GetFileColumnStatistics(int columnId)
@@ -198,7 +203,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         public ColumnStatistics GetStripeColumnStatistics(int columnId, int stripeId)
             => _fileTail.Metadata.StripeStats[stripeId].ColStats[columnId];
 
-        public RowIndex GetRowGroupIndex(int columnId, int stripeId)
+        public RowIndex GetColumnRowIndex(int columnId, int stripeId)
         {
             var key = (columnId, stripeId);
 
@@ -226,14 +231,13 @@ namespace ApacheOrcDotNet.OptimizedReader
             int lengthToReadFromEnd = _configuration.OptimisticFileTailReadLength;
             while (true)
             {
-                var buffer = ArrayPool<byte>.Shared.Rent(lengthToReadFromEnd);
-                var bufferSpan = buffer.AsSpan()[..lengthToReadFromEnd];
+                var fileTailBufferRaw = ArrayPool<byte>.Shared.Rent(lengthToReadFromEnd);
+                var fileTailBuffer = fileTailBufferRaw.AsSpan()[..lengthToReadFromEnd];
 
-                //Console.WriteLine($"GetRangeFromEnd: {bufferSpan.Length}/{lengthToReadFromEnd}");
+                _byteRangeProvider.GetRangeFromEnd(fileTailBuffer, lengthToReadFromEnd);
 
-                _byteRangeProvider.GetRangeFromEnd(bufferSpan, lengthToReadFromEnd);
-                var success = SpanFileTail.TryRead(bufferSpan, out var fileTail, out var additionalBytesRequired);
-                ArrayPool<byte>.Shared.Return(buffer);
+                var success = SpanFileTail.TryRead(fileTailBuffer, out var fileTail, out var additionalBytesRequired);
+                ArrayPool<byte>.Shared.Return(fileTailBufferRaw);
 
                 if (success)
                     return fileTail;
@@ -242,7 +246,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        private IEnumerable<StreamDetails> GetStripeStreams(int stripeId)
+        private IEnumerable<StreamDetail> GetStripeStreams(int stripeId)
         {
             if (!_stripeStreams.ContainsKey(stripeId))
             {
@@ -265,17 +269,229 @@ namespace ApacheOrcDotNet.OptimizedReader
             return _stripeStreams[stripeId];
         }
 
-        private IEnumerable<StreamDetails> GetColumnStreams(int columnId, int stripeId)
+        private ColumnDataStreams GetColumnDataStreams(int stripeId, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
         {
-            var key = (columnId, stripeId);
-
-            return _columnStreams.GetOrAdd(key, key =>
+            var key = (column.Id, stripeId);
+            var rowIndexEntry = rowIndex.Entry[rowEntryIndex];
+            var columnStreams = _columnStreams.GetOrAdd(key, key =>
             {
                 var stripeStreams = GetStripeStreams(stripeId);
                 return stripeStreams.Where(s =>
-                    s.ColumnId == columnId
+                    s.ColumnId == column.Id
+                    && s.StreamKind != StreamKind.RowIndex
                 ).ToList();
             });
+
+            var result = new ColumnDataStreams();
+
+            var present = columnStreams.SingleOrDefault(s => s.StreamKind == StreamKind.Present);
+            if (present != null)
+            {
+                result.Present = present with
+                {
+                    Positions = GetPresentStreamPositions(present, rowIndexEntry),
+                    Range = CalculatePresentRange(present, column, rowIndex, rowEntryIndex)
+                };
+            }
+
+            foreach (var stream in columnStreams)
+            {
+                if (stream.StreamKind == StreamKind.Present)
+                    continue;
+
+                result.EncodingKind = stream.EncodingKind;
+
+                switch (stream.StreamKind)
+                {
+                    case StreamKind.Data:
+                        result.Data = stream with
+                        {
+                            Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
+                            Range = CalculateDataRange(present, stream, column, rowIndex, rowEntryIndex)
+                        };
+                        break;
+                    case StreamKind.DictionaryData:
+                        result.DictionaryData = stream with
+                        {
+                            Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
+                            Range = CalculateDataRange(present, stream, column, rowIndex, rowEntryIndex)
+                        };
+                        break;
+                    case StreamKind.Length:
+                        result.Length = stream with
+                        {
+                            Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
+                            Range = CalculateDataRange(present, stream, column, rowIndex, rowEntryIndex)
+                        };
+                        break;
+                    case StreamKind.Secondary:
+                        result.Secondary = stream with
+                        {
+                            Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
+                            Range = CalculateDataRange(present, stream, column, rowIndex, rowEntryIndex)
+                        };
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Stream kind {stream.StreamKind} is not supported.");
+                }
+            }
+
+            return result;
+        }
+
+        private StreamPositions GetPresentStreamPositions(StreamDetail presentStream, RowIndexEntry rowIndexEntry)
+        {
+            if (presentStream == null)
+                return new();
+
+            return new((int)rowIndexEntry.Positions[0], (int)rowIndexEntry.Positions[1], (int)rowIndexEntry.Positions[2], (int)rowIndexEntry.Positions[3]);
+        }
+
+        private StreamPositions GetRequiredStreamPositions(StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndexEntry rowIndexEntry)
+        {
+            var positionStep = presentStream == null ? 0 : 4;
+
+            ulong rowGroupOffset = (targetedStream.StreamKind, column.Type, targetedStream.EncodingKind) switch
+            {
+                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 0],
+
+                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 3],
+                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 2],
+
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 2],
+
+                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Short, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Float, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Double, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Date, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 0],
+                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 0],
+
+                _ => throw new NotImplementedException()
+            };
+
+            ulong rowEntryOffset = (targetedStream.StreamKind, column.Type, targetedStream.EncodingKind) switch
+            {
+                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
+
+                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 4],
+                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 3],
+
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 3],
+                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 3],
+
+                (StreamKind.Data, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Short, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Double, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Float, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Date, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 1],
+                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 1],
+
+                _ => throw new NotImplementedException()
+            };
+
+            ulong valuesToSkip = (targetedStream.StreamKind, column.Type, targetedStream.EncodingKind) switch
+            {
+                (StreamKind.DictionaryData, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
+
+                (StreamKind.Secondary, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 5],
+                (StreamKind.Secondary, ColumnTypeKind.Decimal, _) => rowIndexEntry.Positions[positionStep + 4],
+
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => 0,
+                (StreamKind.Length, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 4],
+                (StreamKind.Length, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => rowIndexEntry.Positions[positionStep + 4],
+
+                (StreamKind.Data, ColumnTypeKind.Timestamp, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Decimal, _) => 0,
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DictionaryV2) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.String, ColumnEncodingKind.DirectV2) => 0,
+                (StreamKind.Data, ColumnTypeKind.Binary, ColumnEncodingKind.DirectV2) => 0,
+                (StreamKind.Data, ColumnTypeKind.Short, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Double, _) => 0,
+                (StreamKind.Data, ColumnTypeKind.Float, _) => 0,
+                (StreamKind.Data, ColumnTypeKind.Date, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Long, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Int, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Byte, _) => rowIndexEntry.Positions[positionStep + 2],
+                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 2],
+
+                _ => throw new NotImplementedException()
+            };
+
+            ulong remainingBits = (targetedStream.StreamKind, column.Type, targetedStream.EncodingKind) switch
+            {
+                (StreamKind.Data, ColumnTypeKind.Boolean, _) => rowIndexEntry.Positions[positionStep + 3],
+                _ => 0
+            };
+
+            return new((int)rowGroupOffset, (int)rowEntryOffset, (int)valuesToSkip, (int)remainingBits);
+        }
+
+        private StreamRange CalculatePresentRange(StreamDetail presentStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
+        {
+            var rangeLength = 0;
+            var currentEntry = rowIndex.Entry[rowEntryIndex];
+            var currentPositions = GetPresentStreamPositions(presentStream, currentEntry);
+
+            // Change in the current position marks the start of another entry.
+            for (int idx = rowEntryIndex; idx < rowIndex.Entry.Count; idx++)
+            {
+                var nextOffset = GetPresentStreamPositions(presentStream, rowIndex.Entry[idx]);
+
+                if (nextOffset.RowGroupOffset != currentPositions.RowGroupOffset)
+                {
+                    // Calculate the range length, adding possible bytes that might have been included into the next compressed chunk.
+                    rangeLength = (nextOffset.RowGroupOffset - currentPositions.RowGroupOffset) + nextOffset.RowEntryOffset;
+                    break;
+                }
+            }
+
+            if (rangeLength == 0)
+                rangeLength = presentStream.Length - currentPositions.RowGroupOffset;
+
+            return new(presentStream.FileOffset + currentPositions.RowGroupOffset, rangeLength);
+        }
+
+        private StreamRange CalculateDataRange(StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
+        {
+            var rangeLength = 0;
+            var currentEntry = rowIndex.Entry[rowEntryIndex];
+            var currentPositions = GetRequiredStreamPositions(presentStream, targetedStream, column, currentEntry);
+
+            // Change in the current position marks the start of another entry.
+            for (int idx = rowEntryIndex; idx < rowIndex.Entry.Count; idx++)
+            {
+                var nextOffset = GetRequiredStreamPositions(presentStream, targetedStream, column, rowIndex.Entry[idx]);
+
+                if (nextOffset.RowGroupOffset != currentPositions.RowGroupOffset)
+                {
+                    // Calculate the range length, adding possible bytes that might have been included into the next compressed chunk.
+                    rangeLength = (nextOffset.RowGroupOffset - currentPositions.RowGroupOffset) + nextOffset.RowEntryOffset;
+                    break;
+                }
+            }
+
+            if (rangeLength == 0)
+                rangeLength = targetedStream.Length - currentPositions.RowGroupOffset;
+
+            return new(targetedStream.FileOffset + currentPositions.RowGroupOffset, rangeLength);
         }
     }
 }
