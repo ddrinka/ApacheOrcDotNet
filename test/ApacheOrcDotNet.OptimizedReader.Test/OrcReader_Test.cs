@@ -1,5 +1,6 @@
 ﻿using ApacheOrcDotNet.Protocol;
 using System;
+using System.Globalization;
 using System.Linq;
 using Xunit;
 
@@ -49,8 +50,8 @@ namespace ApacheOrcDotNet.OptimizedReader
             Assert.Equal(35, reader.GetFileColumnStatistics(2).IntStatistics.Maximum);
             Assert.Equal(311, reader.GetFileColumnStatistics(3).IntStatistics.Minimum);
             Assert.Equal(596293502, reader.GetFileColumnStatistics(3).IntStatistics.Maximum);
-            Assert.Equal(9.392m, decimal.Parse(reader.GetFileColumnStatistics(5).DecimalStatistics.Minimum));
-            Assert.Equal(72041.725554m, decimal.Parse(reader.GetFileColumnStatistics(5).DecimalStatistics.Maximum));
+            Assert.Equal(9.392m, decimal.Parse(reader.GetFileColumnStatistics(5).DecimalStatistics.Minimum, CultureInfo.InvariantCulture));
+            Assert.Equal(72041.725554m, decimal.Parse(reader.GetFileColumnStatistics(5).DecimalStatistics.Maximum, CultureInfo.InvariantCulture));
         }
 
         [Fact]
@@ -63,8 +64,8 @@ namespace ApacheOrcDotNet.OptimizedReader
             Assert.Equal(35, reader.GetStripeColumnStatistics(2, 0).IntStatistics.Maximum);
             Assert.Equal(311, reader.GetStripeColumnStatistics(3, 0).IntStatistics.Minimum);
             Assert.Equal(16690225, reader.GetStripeColumnStatistics(3, 0).IntStatistics.Maximum);
-            Assert.Equal(25200.063318m, decimal.Parse(reader.GetStripeColumnStatistics(5, 0).DecimalStatistics.Minimum));
-            Assert.Equal(71979.49409m, decimal.Parse(reader.GetStripeColumnStatistics(5, 0).DecimalStatistics.Maximum));
+            Assert.Equal(25200.063318m, decimal.Parse(reader.GetStripeColumnStatistics(5, 0).DecimalStatistics.Minimum, CultureInfo.InvariantCulture));
+            Assert.Equal(71979.49409m, decimal.Parse(reader.GetStripeColumnStatistics(5, 0).DecimalStatistics.Maximum, CultureInfo.InvariantCulture));
         }
 
         [Fact]
