@@ -290,7 +290,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 result.Present = present with
                 {
                     Positions = GetPresentStreamPositions(present, rowIndexEntry),
-                    Range = CalculatePresentRange(present, column, rowIndex, rowEntryIndex)
+                    Range = CalculatePresentRange(stripeId, present, column, rowIndex, rowEntryIndex)
                 };
             }
 
@@ -307,28 +307,28 @@ namespace ApacheOrcDotNet.OptimizedReader
                         result.Data = stream with
                         {
                             Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
-                            Range = CalculateDataRange(present, stream, column, rowIndex, rowEntryIndex)
+                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex)
                         };
                         break;
                     case StreamKind.DictionaryData:
                         result.DictionaryData = stream with
                         {
                             Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
-                            Range = CalculateDataRange(present, stream, column, rowIndex, rowEntryIndex)
+                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex)
                         };
                         break;
                     case StreamKind.Length:
                         result.Length = stream with
                         {
                             Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
-                            Range = CalculateDataRange(present, stream, column, rowIndex, rowEntryIndex)
+                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex)
                         };
                         break;
                     case StreamKind.Secondary:
                         result.Secondary = stream with
                         {
                             Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
-                            Range = CalculateDataRange(present, stream, column, rowIndex, rowEntryIndex)
+                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex)
                         };
                         break;
                     default:
@@ -444,7 +444,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new((int)rowGroupOffset, (int)rowEntryOffset, (int)valuesToSkip, (int)remainingBits);
         }
 
-        private StreamRange CalculatePresentRange(StreamDetail presentStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
+        private StreamRange CalculatePresentRange(int stripeId, StreamDetail presentStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
         {
             var rangeLength = 0;
             var currentEntry = rowIndex.Entry[rowEntryIndex];
@@ -466,10 +466,10 @@ namespace ApacheOrcDotNet.OptimizedReader
             if (rangeLength == 0)
                 rangeLength = presentStream.Length - currentPositions.RowGroupOffset;
 
-            return new(presentStream.FileOffset + currentPositions.RowGroupOffset, rangeLength);
+            return new(stripeId, presentStream.FileOffset + currentPositions.RowGroupOffset, rangeLength);
         }
 
-        private StreamRange CalculateDataRange(StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
+        private StreamRange CalculateDataRange(int stripeId, StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
         {
             var rangeLength = 0;
             var currentEntry = rowIndex.Entry[rowEntryIndex];
@@ -491,7 +491,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             if (rangeLength == 0)
                 rangeLength = targetedStream.Length - currentPositions.RowGroupOffset;
 
-            return new(targetedStream.FileOffset + currentPositions.RowGroupOffset, rangeLength);
+            return new(stripeId, targetedStream.FileOffset + currentPositions.RowGroupOffset, rangeLength);
         }
     }
 }
