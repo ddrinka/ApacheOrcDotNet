@@ -115,9 +115,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                     }
                     else
                         _values[_numValuesRead++] = null;
-
-                    if (_numValuesRead >= _values.Length)
-                        break;
                 }
             }
             else
@@ -127,9 +124,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                     var length = (int)_lengthStreamValues[idx];
                     _values[_numValuesRead++] = Encoding.UTF8.GetString(dataBuffer.Slice(stringOffset, length));
                     stringOffset += length;
-
-                    if (_numValuesRead >= _values.Length)
-                        break;
                 }
             }
         }
