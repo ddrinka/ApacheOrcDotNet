@@ -16,9 +16,6 @@ namespace ApacheOrcDotNet.OptimizedReader
         public string Name { get; }
         public ColumnTypeKind Type { get; }
 
-        public string Min { get; init; }
-        public string Max { get; init; }
-
         public override bool Equals(object obj)
         {
             if (obj is OrcColumn)

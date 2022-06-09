@@ -45,9 +45,9 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             var endTime = (decimal)_configuration.EndTime.TotalSeconds;
 
             // Columns
-            var sourceColumn = reader.GetColumn("source", lookupSource, lookupSource);
-            var symbolColumn = reader.GetColumn("symbol", lookupSymbol, lookupSymbol);
-            var timeColumn = reader.GetColumn("time", $"{beginTime}", $"{endTime}");
+            var sourceColumn = reader.GetColumn("source");
+            var symbolColumn = reader.GetColumn("symbol");
+            var timeColumn = reader.GetColumn("time");
             var sizeColumn = reader.GetColumn("size");
             //var dateColumn = reader.GetColumn("date");
             //var doubleColumn = reader.GetColumn("double");
@@ -71,15 +71,15 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             //var booleanColumnBuffer = reader.CreateBooleanColumnReader(booleanColumn);
 
             // Filters
-            var stripeIds = reader.GetStripeIds(sourceColumn);
-            stripeIds = reader.GetStripeIds(stripeIds, symbolColumn);
-            stripeIds = reader.GetStripeIds(stripeIds, timeColumn);
+            var stripeIds = reader.GetStripeIds(sourceColumn, lookupSource, lookupSource);
+            stripeIds = reader.GetStripeIds(stripeIds, symbolColumn, lookupSymbol, lookupSymbol);
+            stripeIds = reader.GetStripeIds(stripeIds, timeColumn, $"{beginTime}", $"{endTime}");
 
             foreach (var stripeId in stripeIds)
             {
-                var rowGroupIndexes = reader.GetRowGroupIndexes(stripeId, sourceColumn);
-                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, symbolColumn);
-                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, timeColumn);
+                var rowGroupIndexes = reader.GetRowGroupIndexes(stripeId, sourceColumn, lookupSource, lookupSource);
+                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, symbolColumn, lookupSymbol, lookupSymbol);
+                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, timeColumn, $"{beginTime}", $"{endTime}");
 
                 foreach (var rowEntryIndex in rowGroupIndexes)
                 {

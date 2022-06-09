@@ -1,17 +1,18 @@
 ﻿using ApacheOrcDotNet.Protocol;
 using ApacheOrcDotNet.Statistics;
 using System;
+using System.Globalization;
 
 namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public static class StatsExtensions
     {
-        public static bool InRange(this ColumnStatistics stats, OrcColumn column)
+        public static bool InRange(this ColumnStatistics stats, OrcColumn column, string min, string max)
         {
-            if (string.IsNullOrEmpty(column.Min) && string.IsNullOrEmpty(column.Max))
+            if (string.IsNullOrEmpty(min) && string.IsNullOrEmpty(max))
                 throw new InvalidOperationException($"Invalid lookup parameters for column '{column.Name}'.");
 
-            return stats.InRange(column.Type, column.Min, column.Max);
+            return stats.InRange(column.Type, min, max);
         }
 
         public static bool InRange(this ColumnStatistics stats, ColumnTypeKind columnType, string min, string max)
@@ -45,9 +46,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
                         var minVal = decimal.Parse(min);
                         var maxVal = decimal.Parse(max);
                         //TODO it would be better to do a numeric string comparison in the future
-                        if (!decimal.TryParse(stats.DecimalStatistics.Minimum, out var statsMinVal))
+                        if (!decimal.TryParse(stats.DecimalStatistics.Minimum, NumberStyles.Number, CultureInfo.InvariantCulture, out var statsMinVal))
                             throw new ArgumentOutOfRangeException($"Unable to parse: '{stats.DecimalStatistics.Minimum}'");
-                        if (!decimal.TryParse(stats.DecimalStatistics.Maximum, out var statsMaxVal))
+                        if (!decimal.TryParse(stats.DecimalStatistics.Maximum, NumberStyles.Number, CultureInfo.InvariantCulture, out var statsMaxVal))
                             throw new ArgumentOutOfRangeException($"Unable to parse: '{stats.DecimalStatistics.Maximum}'");
                         return stats.InRangeDecimal(minVal, maxVal);
                     }
@@ -78,9 +79,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
         public static bool InRangeDecimal(this ColumnStatistics stats, decimal min, decimal max)
         {
-            if (!decimal.TryParse(stats.DecimalStatistics.Minimum, out var statsMin))
+            if (!decimal.TryParse(stats.DecimalStatistics.Minimum, NumberStyles.Number, CultureInfo.InvariantCulture, out var statsMin))
                 throw new ArgumentOutOfRangeException($"Unable to parse: '{stats.DecimalStatistics.Minimum}'");
-            if (!decimal.TryParse(stats.DecimalStatistics.Maximum, out var statsMax))
+            if (!decimal.TryParse(stats.DecimalStatistics.Maximum, NumberStyles.Number, CultureInfo.InvariantCulture, out var statsMax))
                 throw new ArgumentOutOfRangeException($"Unable to parse: '{stats.DecimalStatistics.Maximum}'");
 
             return min <= statsMax && max >= statsMin;

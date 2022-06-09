@@ -54,28 +54,22 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public int NumValues { get; set; }
 
-        public OrcColumn GetColumn(int columnId, string min = null, string max = null)
+        public OrcColumn GetColumn(int columnId)
         {
             if (columnId == 0 || columnId >= _protoColumns.Count)
                 throw new InvalidOperationException($"The column Id '{columnId}' is invalid.");
 
             var columnPair = _protoColumns.ElementAt(columnId - 1);
 
-            return GetColumn(columnPair.Value.Name, min, max);
+            return GetColumn(columnPair.Value.Name);
         }
 
-        public OrcColumn GetColumn(string columnName, string min = null, string max = null)
+        public OrcColumn GetColumn(string columnName)
         {
             if (!_protoColumns.TryGetValue(columnName?.ToLower(), out var column))
                 throw new InvalidOperationException($"The column name '{columnName}' is invalid.");
 
-            var orcColumn = new OrcColumn(column.Id, column.Name, column.Type)
-            {
-                Min = min,
-                Max = max
-            };
-
-            return orcColumn;
+            return new OrcColumn(column.Id, column.Name, column.Type);
         }
 
         public BaseColumnBuffer<byte[]> CreateBinaryColumnBuffer(OrcColumn column)
@@ -144,37 +138,37 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new TimestampColumnBuffer(_byteRangeProvider, context, column);
         }
 
-        public IEnumerable<int> GetStripeIds(OrcColumn column)
-            => GetStripeIds(Enumerable.Range(0, _fileTail.Metadata.StripeStats.Count), column);
+        public IEnumerable<int> GetStripeIds(OrcColumn column, string min, string max)
+            => GetStripeIds(Enumerable.Range(0, _fileTail.Metadata.StripeStats.Count), column, min, max);
 
-        public IEnumerable<int> GetStripeIds(IEnumerable<int> lookupStripeIds, OrcColumn column)
+        public IEnumerable<int> GetStripeIds(IEnumerable<int> lookupStripeIds, OrcColumn column, string min, string max)
         {
             var columnStats = GetFileColumnStatistics(column.Id);
 
-            if (!columnStats.InRange(column.Type, column.Min, column.Max))
+            if (!columnStats.InRange(column.Type, min, max))
                 return Enumerable.Empty<int>();
 
             return lookupStripeIds.Where(stripeId =>
             {
                 var stripeColumnStats = GetStripeColumnStatistics(column.Id, stripeId);
-                return stripeColumnStats.InRange(column);
+                return stripeColumnStats.InRange(column, min, max);
             });
         }
 
-        public IEnumerable<int> GetRowGroupIndexes(int stripeId, OrcColumn column)
+        public IEnumerable<int> GetRowGroupIndexes(int stripeId, OrcColumn column, string min, string max)
         {
             var rowIndex = GetColumnRowIndex(column.Id, stripeId);
-            return GetRowGroupIndexes(Enumerable.Range(0, rowIndex.Entry.Count), stripeId, column);
+            return GetRowGroupIndexes(Enumerable.Range(0, rowIndex.Entry.Count), stripeId, column, min, max);
         }
 
-        public IEnumerable<int> GetRowGroupIndexes(IEnumerable<int> lookupIndexes, int stripeId, OrcColumn column)
+        public IEnumerable<int> GetRowGroupIndexes(IEnumerable<int> lookupIndexes, int stripeId, OrcColumn column, string min, string max)
         {
             var rowIndex = GetColumnRowIndex(column.Id, stripeId);
 
             return lookupIndexes.Where(index =>
             {
                 var rowIndexEntry = rowIndex.Entry[index];
-                return rowIndexEntry.Statistics.InRange(column);
+                return rowIndexEntry.Statistics.InRange(column, min, max);
             });
         }
 
