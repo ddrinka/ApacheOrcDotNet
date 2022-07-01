@@ -19,10 +19,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.symbols[i] == null)
+                if (ExpectedSymbols[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.symbols[i], columnBuffer.Values[i]);
+                    Assert.Equal(ExpectedSymbols[i], columnBuffer.Values[i]);
             }
         }
 
@@ -41,10 +41,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.symbols[i] == null)
+                if (ExpectedSymbols[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.symbols[i], columnBuffer.Values[i]);
+                    Assert.Equal(ExpectedSymbols[i], columnBuffer.Values[i]);
             }
         }
 
@@ -63,10 +63,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.sources[i] == null)
+                if (ExpectedSources[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.sources[i], columnBuffer.Values[i]);
+                    Assert.Equal(ExpectedSources[i], columnBuffer.Values[i]);
             }
         }
 
@@ -85,10 +85,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.sources[i] == null)
+                if (ExpectedSources[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.sources[i], columnBuffer.Values[i]);
+                    Assert.Equal(ExpectedSources[i], columnBuffer.Values[i]);
             }
         }
     }

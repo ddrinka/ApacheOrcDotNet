@@ -19,10 +19,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.booleans[i] == null)
+                if (ExpectedBooleans[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(bool.Parse(_expectedValues.booleans[i]), columnBuffer.Values[i]);
+                    Assert.Equal(bool.Parse(ExpectedBooleans[i]), columnBuffer.Values[i]);
             }
         }
 
@@ -41,10 +41,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.booleans[i] == null)
+                if (ExpectedBooleans[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(bool.Parse(_expectedValues.booleans[i]), columnBuffer.Values[i]);
+                    Assert.Equal(bool.Parse(ExpectedBooleans[i]), columnBuffer.Values[i]);
             }
         }
     }

@@ -19,10 +19,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.doubles[i] == null)
+                if (ExpectedDoubles[i] == null)
                     Assert.Equal(double.NaN, columnBuffer.Values[i]);
                 else
-                    Assert.Equal(double.Parse(_expectedValues.doubles[i], _enUSCulture), columnBuffer.Values[i]);
+                    Assert.Equal(double.Parse(ExpectedDoubles[i], _enUSCulture), columnBuffer.Values[i]);
             }
         }
 
@@ -41,10 +41,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
 
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.doubles[i] == null)
+                if (ExpectedDoubles[i] == null)
                     Assert.Equal(double.NaN, columnBuffer.Values[i]);
                 else
-                    Assert.Equal(double.Parse(_expectedValues.doubles[i], _enUSCulture), columnBuffer.Values[i]);
+                    Assert.Equal(double.Parse(ExpectedDoubles[i], _enUSCulture), columnBuffer.Values[i]);
             }
         }
     }

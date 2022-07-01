@@ -19,10 +19,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.sizes[i] == null)
+                if (ExpectedSizes[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(long.Parse(_expectedValues.sizes[i], _enUSCulture), columnBuffer.Values[i]);
+                    Assert.Equal(long.Parse(ExpectedSizes[i], _enUSCulture), columnBuffer.Values[i]);
             }
         }
 
@@ -41,10 +41,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 
             for (int i = 10_000; i < buffer.Values.Length; i++)
             {
-                if (_expectedValues.sizes[i] == null)
+                if (ExpectedSizes[i] == null)
                     Assert.Null(buffer.Values[i]);
                 else
-                    Assert.Equal(long.Parse(_expectedValues.sizes[i], _enUSCulture), buffer.Values[i]);
+                    Assert.Equal(long.Parse(ExpectedSizes[i], _enUSCulture), buffer.Values[i]);
             }
         }
     }

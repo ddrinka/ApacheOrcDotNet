@@ -20,10 +20,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.binaries[i] == null)
+                if (ExpectedBinaries[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.binaries[i], Encoding.UTF8.GetString(columnBuffer.Values[i]));
+                    Assert.Equal(ExpectedBinaries[i], Encoding.UTF8.GetString(columnBuffer.Values[i]));
             }
         }
 
@@ -42,10 +42,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.binaries[i] == null)
+                if (ExpectedBinaries[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.binaries[i], Encoding.UTF8.GetString(columnBuffer.Values[i]));
+                    Assert.Equal(ExpectedBinaries[i], Encoding.UTF8.GetString(columnBuffer.Values[i]));
             }
         }
     }
