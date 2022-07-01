@@ -21,7 +21,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private readonly byte[] _boolStreamBuffer;
 
         private protected readonly IByteRangeProvider _byteRangeProvider;
-        private protected readonly OrcContext _context;
+        private protected readonly OrcFileProperties _context;
         private protected readonly OrcColumn _column;
         private protected readonly TOutput[] _values;
 
@@ -32,7 +32,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private StreamRange _lastRange;
         private int _lastRangeLength;
 
-        public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column)
+        public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties context, OrcColumn column)
         {
             _byteRangeProvider = byteRangeProvider;
             _context = context;
@@ -74,7 +74,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             var numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
 
             while (!bufferReader.Complete)
             {
@@ -101,7 +101,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             var numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
             var numOfTotalBitsToSkip = stream.Positions.ValuesToSkip * 8 + stream.Positions.RemainingBits;
             var numOfBytesToSkip = numOfTotalBitsToSkip / 8;
             while (!bufferReader.Complete)
@@ -149,7 +149,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             var numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
 
             while (!bufferReader.Complete)
             {
@@ -176,7 +176,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             int numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
 
             while (!bufferReader.Complete)
             {
@@ -222,7 +222,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         /// <summary>
         /// Applies the offset position into the decompressed data.
         /// </summary>
-        private protected ReadOnlySpan<byte> ResizeBuffer(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, int decompressedBufferLength)
+        private protected ReadOnlySpan<byte> GetDataStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, int decompressedBufferLength)
         {
             var rowEntryLength = decompressedBufferLength - stream.Positions.RowEntryOffset;
 

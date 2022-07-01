@@ -8,7 +8,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public sealed class TestByteRangeProviderParallel : IByteRangeProvider
     {
-        readonly object _syncRoot = new object();
+        readonly object _streamLock = new object();
         readonly Stream _stream;
 
         internal TestByteRangeProviderParallel(string fileName)
@@ -24,7 +24,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public int GetRange(Span<byte> buffer, long position)
         {
-            lock (_syncRoot)
+            lock (_streamLock)
             {
                 _stream.Seek(position, SeekOrigin.Begin);
                 return DoRead(buffer);
@@ -33,7 +33,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public Task<int> GetRangeAsync(Memory<byte> buffer, long position)
         {
-            lock (_syncRoot)
+            lock (_streamLock)
             {
                 _stream.Seek(position, SeekOrigin.Begin);
                 return DoReadAsync(buffer);
@@ -42,7 +42,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
         {
-            lock (_syncRoot)
+            lock (_streamLock)
             {
                 _stream.Seek(-positionFromEnd, SeekOrigin.End);
                 return DoRead(buffer);
@@ -51,7 +51,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public Task<int> GetRangeFromEndAsync(Memory<byte> buffer, long positionFromEnd)
         {
-            lock (_syncRoot)
+            lock (_streamLock)
             {
                 _stream.Seek(-positionFromEnd, SeekOrigin.End);
                 return DoReadAsync(buffer);

@@ -21,16 +21,16 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private ColumnDataStreams _streams;
 
-        public BooleanColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public BooleanColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamValues = new bool[_context.MaxValuesToRead];
             _dataStreamValues = new bool[_context.MaxValuesToRead];
 
             _dataStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
 
             _presentStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
         }
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)

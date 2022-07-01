@@ -24,19 +24,19 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private ColumnDataStreams _streams;
 
-        public BinaryColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public BinaryColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamBuffer = new bool[_context.MaxValuesToRead];
             _lengthStreamBuffer = new long[_context.MaxValuesToRead];
 
             _dataStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
 
             _lengthStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _lengthStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _lengthStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
 
             _presentStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
         }
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
@@ -59,7 +59,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             ReadBooleanStream(_streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamBuffer, out var presentValuesRead);
             ReadNumericStream(_streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, _lengthStreamBuffer, out var lengthValuesRead);
 
-            var dataBuffer = ResizeBuffer(_streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength);
+            var dataBuffer = GetDataStream(_streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength);
 
             var stringOffset = 0;
             if (presentValuesRead > 0)

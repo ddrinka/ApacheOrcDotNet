@@ -74,74 +74,74 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public BaseColumnBuffer<byte[]> CreateBinaryColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new BinaryColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<bool?> CreateBooleanColumnReader(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new BooleanColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<byte?> CreateByteColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new ByteColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<DateTime?> CreateDateColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new DateColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<double> CreateDecimalColumnBufferAsDouble(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new DecimalAsDoubleColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<decimal?> CreateDecimalColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new DecimalColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<double> CreateDoubleColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new DoubleColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<float> CreateFloatColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new FloatColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<long?> CreateIntegerColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new IntegerColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<string> CreateStringColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new StringColumnBuffer(_byteRangeProvider, context, column);
         }
 
         public BaseColumnBuffer<DateTime?> CreateTimestampColumnBuffer(OrcColumn column)
         {
-            var context = new OrcContext(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            var context = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new TimestampColumnBuffer(_byteRangeProvider, context, column);
         }
 
-        public IEnumerable<int> GetStripeIds(OrcColumn column, string min, string max)
-            => GetStripeIds(Enumerable.Range(0, _fileTail.Metadata.StripeStats.Count), column, min, max);
+        public IEnumerable<int> FilterStripes(OrcColumn column, string min, string max)
+            => FilterStripes(Enumerable.Range(0, _fileTail.Metadata.StripeStats.Count), column, min, max);
 
-        public IEnumerable<int> GetStripeIds(IEnumerable<int> lookupStripeIds, OrcColumn column, string min, string max)
+        public IEnumerable<int> FilterStripes(IEnumerable<int> lookupStripeIds, OrcColumn column, string min, string max)
         {
             var columnStats = GetFileColumnStatistics(column.Id);
 
@@ -155,13 +155,13 @@ namespace ApacheOrcDotNet.OptimizedReader
             });
         }
 
-        public IEnumerable<int> GetRowGroupIndexes(int stripeId, OrcColumn column, string min, string max)
+        public IEnumerable<int> FilterRowGroups(int stripeId, OrcColumn column, string min, string max)
         {
             var rowIndex = GetColumnRowIndex(column.Id, stripeId);
-            return GetRowGroupIndexes(Enumerable.Range(0, rowIndex.Entry.Count), stripeId, column, min, max);
+            return FilterRowGroups(Enumerable.Range(0, rowIndex.Entry.Count), stripeId, column, min, max);
         }
 
-        public IEnumerable<int> GetRowGroupIndexes(IEnumerable<int> lookupIndexes, int stripeId, OrcColumn column, string min, string max)
+        public IEnumerable<int> FilterRowGroups(IEnumerable<int> lookupIndexes, int stripeId, OrcColumn column, string min, string max)
         {
             var rowIndex = GetColumnRowIndex(column.Id, stripeId);
 

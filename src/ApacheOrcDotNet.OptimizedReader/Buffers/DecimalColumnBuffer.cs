@@ -27,20 +27,20 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private ColumnDataStreams _streams;
 
-        public DecimalColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public DecimalColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamValues = new bool[_context.MaxValuesToRead];
             _dataStreamValues = new BigInteger[_context.MaxValuesToRead];
             _secondaryStreamValues = new long[_context.MaxValuesToRead];
 
             _dataStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
 
             _presentStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
 
             _secondaryStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _secondaryStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _secondaryStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
         }
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)

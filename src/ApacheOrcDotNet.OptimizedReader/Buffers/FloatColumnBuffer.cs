@@ -22,16 +22,16 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private ColumnDataStreams _streams;
 
-        public FloatColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public FloatColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties context, OrcColumn column) : base(byteRangeProvider, context, column)
         {
             _presentStreamValues = new bool[_context.MaxValuesToRead];
             _valueBuffer = new byte[4];
 
             _dataStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
 
             _presentStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
         }
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
@@ -51,7 +51,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         {
             ReadBooleanStream(_streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
 
-            var dataReader = new BufferReader(ResizeBuffer(_streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength));
+            var dataReader = new BufferReader(GetDataStream(_streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength));
 
             if (presentValuesRead > 0)
             {

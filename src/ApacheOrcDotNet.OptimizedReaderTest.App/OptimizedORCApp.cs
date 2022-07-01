@@ -72,15 +72,15 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             var booleanColumnBuffer = reader.CreateBooleanColumnReader(booleanColumn);
 
             // Filters
-            var stripeIds = reader.GetStripeIds(sourceColumn, lookupSource, lookupSource);
-            stripeIds = reader.GetStripeIds(stripeIds, symbolColumn, lookupSymbol, lookupSymbol);
-            stripeIds = reader.GetStripeIds(stripeIds, timeColumn, $"{beginTime}", $"{endTime}");
+            var stripeIds = reader.FilterStripes(sourceColumn, lookupSource, lookupSource);
+            stripeIds = reader.FilterStripes(stripeIds, symbolColumn, lookupSymbol, lookupSymbol);
+            stripeIds = reader.FilterStripes(stripeIds, timeColumn, $"{beginTime}", $"{endTime}");
 
             foreach (var stripeId in stripeIds)
             {
-                var rowGroupIndexes = reader.GetRowGroupIndexes(stripeId, sourceColumn, lookupSource, lookupSource);
-                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, symbolColumn, lookupSymbol, lookupSymbol);
-                rowGroupIndexes = reader.GetRowGroupIndexes(rowGroupIndexes, stripeId, timeColumn, $"{beginTime}", $"{endTime}");
+                var rowGroupIndexes = reader.FilterRowGroups(stripeId, sourceColumn, lookupSource, lookupSource);
+                rowGroupIndexes = reader.FilterRowGroups(rowGroupIndexes, stripeId, symbolColumn, lookupSymbol, lookupSymbol);
+                rowGroupIndexes = reader.FilterRowGroups(rowGroupIndexes, stripeId, timeColumn, $"{beginTime}", $"{endTime}");
 
                 foreach (var rowEntryIndex in rowGroupIndexes)
                 {
