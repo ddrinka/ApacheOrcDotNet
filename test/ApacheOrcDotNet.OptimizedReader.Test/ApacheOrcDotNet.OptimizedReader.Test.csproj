@@ -9,41 +9,16 @@
     <ProjectReference Include="..\ApacheOrcDotNet.Test\ApacheOrcDotNet.Test.csproj" />
   </ItemGroup>
 
-	<ItemGroup>
-		<EmbeddedResource Include="Data\*.orc" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="Data\optimized_reader_test_file.csv" />
-	  <None Remove="Data\optimized_reader_test_file.orc" />
-	  <None Remove="Data\optimized_reader_test_file.orc.txt" />
-	  <None Remove="Data\optimized_reader_test_file_no_nulls.csv" />
-	  <None Remove="Data\optimized_reader_test_file_no_nulls.orc" />
-	  <None Remove="Data\optimized_reader_test_file_no_nulls.orc.txt" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <EmbeddedResource Include="Data\optimized_reader_test_file_no_nulls.orc.txt">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </EmbeddedResource>
-	  <EmbeddedResource Include="Data\optimized_reader_test_file.orc.txt">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </EmbeddedResource>
-	  <EmbeddedResource Include="Data\optimized_reader_test_file.csv">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </EmbeddedResource>
-	  <EmbeddedResource Include="Data\optimized_reader_test_file_no_nulls.csv">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </EmbeddedResource>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <EmbeddedResource Update="Data\optimized_reader_test_file.orc">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </EmbeddedResource>
-	  <EmbeddedResource Update="Data\optimized_reader_test_file_no_nulls.orc">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </EmbeddedResource>
-	</ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\*.orc">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Data\*.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Data\*.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
 
 </Project>
