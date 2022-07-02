@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
@@ -15,6 +16,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public bool Complete => _position >= _buffer.Length;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryRead(out byte value)
         {
             value = default;
@@ -29,6 +31,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(Span<byte> buffer)
         {
             if (_position + buffer.Length > _buffer.Length)
