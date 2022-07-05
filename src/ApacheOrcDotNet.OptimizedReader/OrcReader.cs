@@ -138,38 +138,38 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new TimestampColumnBuffer(_byteRangeProvider, orcFileProperties, column);
         }
 
-        public IEnumerable<int> FilterStripes(OrcColumn column, string min, string max)
-            => FilterStripes(Enumerable.Range(0, _fileTail.Metadata.StripeStats.Count), column, min, max);
+        public IEnumerable<int> FilterStripes(OrcColumn column, FilterValues filterValues)
+            => FilterStripes(Enumerable.Range(0, _fileTail.Metadata.StripeStats.Count), column, filterValues);
 
-        public IEnumerable<int> FilterStripes(IEnumerable<int> lookupStripeIds, OrcColumn column, string min, string max)
+        public IEnumerable<int> FilterStripes(IEnumerable<int> lookupStripeIds, OrcColumn column, FilterValues filterValues)
         {
             var columnStats = GetFileColumnStatistics(column.Id);
 
-            if (!columnStats.InRange(column.Type, min, max))
+            if (!columnStats.InRange(column.Type, filterValues.Min, filterValues.Max))
                 return Enumerable.Empty<int>();
 
             return lookupStripeIds.Where(stripeId =>
             {
                 var stripeColumnStats = GetStripeColumnStatistics(column.Id, stripeId);
-                return stripeColumnStats.InRange(column, min, max);
-            });
+                return stripeColumnStats.InRange(column, filterValues.Min, filterValues.Max);
+            }).ToList();
         }
 
-        public IEnumerable<int> FilterRowGroups(int stripeId, OrcColumn column, string min, string max)
+        public IEnumerable<int> FilterRowGroups(int stripeId, OrcColumn column, FilterValues filterValues)
         {
             var rowIndex = GetColumnRowIndex(column.Id, stripeId);
-            return FilterRowGroups(Enumerable.Range(0, rowIndex.Entry.Count), stripeId, column, min, max);
+            return FilterRowGroups(Enumerable.Range(0, rowIndex.Entry.Count), stripeId, column, filterValues);
         }
 
-        public IEnumerable<int> FilterRowGroups(IEnumerable<int> lookupIndexes, int stripeId, OrcColumn column, string min, string max)
+        public IEnumerable<int> FilterRowGroups(IEnumerable<int> lookupIndexes, int stripeId, OrcColumn column, FilterValues filterValues)
         {
             var rowIndex = GetColumnRowIndex(column.Id, stripeId);
 
             return lookupIndexes.Where(index =>
             {
                 var rowIndexEntry = rowIndex.Entry[index];
-                return rowIndexEntry.Statistics.InRange(column, min, max);
-            });
+                return rowIndexEntry.Statistics.InRange(column, filterValues.Min, filterValues.Max);
+            }).ToList();
         }
 
         public async Task LoadDataAsync<TOutput>(int stripeId, int rowEntryIndexId, BaseColumnBuffer<TOutput> columnBuffer)
