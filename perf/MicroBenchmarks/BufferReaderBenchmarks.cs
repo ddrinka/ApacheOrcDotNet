@@ -37,5 +37,24 @@ namespace MicroBenchmarks
             Span<byte> targetBuffer = stackalloc byte[3];
             while (reader.TryCopyTo(targetBuffer)) { }
         }
+
+        [Benchmark]
+        public void TryRead3Bytes()
+        {
+            var reader = new BufferReader(_testBuffer);
+
+            _ = reader.TryRead(out _);
+            _ = reader.TryRead(out _);
+            _ = reader.TryRead(out _);
+        }
+
+        [Benchmark]
+        public void TryCopyTo3Bytes()
+        {
+            var reader = new BufferReader(_testBuffer);
+
+            Span<byte> targetBuffer = stackalloc byte[3];
+            _ = reader.TryCopyTo(targetBuffer);
+        }
     }
 }
