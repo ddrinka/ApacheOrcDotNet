@@ -11,7 +11,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
     [SkipLocalsInit]
     public class StringColumnBuffer : BaseColumnBuffer<string>
     {
-        private readonly Dictionary<int, long[]> _dictionaryLengthBuffers = new();
+        private readonly Dictionary<int, List<string>> _stripeDictionaries = new();
         private readonly bool[] _presentStreamValues;
         private readonly long[] _dataStreamValues;
         private readonly long[] _lengthStreamValues;
@@ -130,20 +130,25 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void ReadDictionaryV2()
         {
-            var dictionaryV2LengthStreamBuffer = GetLengthStreamBufferDictinaryV2(_stripeId, _streams.Length.DictionarySize);
-
             ReadBooleanStream(_streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(_streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, dictionaryV2LengthStreamBuffer, out var lengthValuesRead);
             ReadNumericStream(_streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, isSigned: false, _dataStreamValues, out var dataValuesRead);
 
-            int stringOffset = 0;
-            List<string> stringsList = new(lengthValuesRead);
-            for (int idx = 0; idx < lengthValuesRead; idx++)
+            if (!_stripeDictionaries.TryGetValue(_stripeId, out var stringsList))
             {
-                var length = (int)dictionaryV2LengthStreamBuffer[idx];
-                var value = Encoding.UTF8.GetString(_dictionaryStreamDecompressedBuffer.AsSpan().Slice(stringOffset, length));
-                stringOffset += length;
-                stringsList.Add(value);
+                Span<long> dictionaryV2LengthStreamBuffer = stackalloc long[_streams.Length.DictionarySize];
+                ReadNumericStream(_streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, dictionaryV2LengthStreamBuffer, out var lengthValuesRead);
+
+                int stringOffset = 0;
+                stringsList = new List<string>();
+                for (int idx = 0; idx < lengthValuesRead; idx++)
+                {
+                    var length = (int)dictionaryV2LengthStreamBuffer[idx];
+                    var value = Encoding.UTF8.GetString(_dictionaryStreamDecompressedBuffer.AsSpan().Slice(stringOffset, length));
+                    stringOffset += length;
+                    stringsList.Add(value);
+                }
+
+                _stripeDictionaries[_stripeId] = stringsList;
             }
 
             if (presentValuesRead > 0)
@@ -170,14 +175,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                         break;
                 }
             }
-        }
-
-        private long[] GetLengthStreamBufferDictinaryV2(int stripeId, int dictionarySize)
-        {
-            if (!_dictionaryLengthBuffers.ContainsKey(stripeId))
-                _dictionaryLengthBuffers.Add(stripeId, new long[dictionarySize]);
-
-            return _dictionaryLengthBuffers[stripeId];
         }
     }
 }
