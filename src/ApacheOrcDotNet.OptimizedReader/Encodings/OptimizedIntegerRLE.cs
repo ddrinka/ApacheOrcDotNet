@@ -7,7 +7,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
 {
     public static class OptimizedIntegerRLE
     {
-        enum EncodingType { ShortRepeat, Direct, PatchedBase, Delta }
+        enum EncodingType
+        {
+            ShortRepeat = 0,
+            Direct = 1,
+            PatchedBase = 2,
+            Delta = 3
+        }
 
         public static int ReadValues(ref BufferReader reader, bool isSigned, Span<long> outputValues)
         {
