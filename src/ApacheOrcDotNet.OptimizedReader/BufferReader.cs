@@ -19,10 +19,11 @@ namespace ApacheOrcDotNet.OptimizedReader
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryRead(out byte value)
         {
-            value = default;
-
             if (_position >= _buffer.Length)
+            {
+                value = default;
                 return false;
+            }
 
             value = _buffer[_position];
 
