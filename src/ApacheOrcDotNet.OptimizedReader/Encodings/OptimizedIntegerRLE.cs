@@ -111,7 +111,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                 var patchIndex = 0;
                 var patchListWidth = BitManipulation.FindNearestDirectWidth(patchWidth + patchGapWidth);
                 ReadBitpackedIntegers(ref reader, isSigned, patchListWidth, patchListLength, patchListValuesSpan);
-                GetNextPatch(patchListValues, ref patchIndex, ref gap, out patch, patchWidth, (1L << patchWidth) - 1);
+                GetNextPatch(patchListValuesSpan, ref patchIndex, ref gap, out patch, patchWidth, (1L << patchWidth) - 1);
 
                 for (int i = 0; i < numReadValues; i++)
                 {
@@ -121,7 +121,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                         outputValues[i] = baseValue + patchedValue;
 
                         if (patchIndex < patchListLength)
-                            GetNextPatch(patchListValues, ref patchIndex, ref gap, out patch, patchWidth, (1L << patchWidth) - 1);
+                            GetNextPatch(patchListValuesSpan, ref patchIndex, ref gap, out patch, patchWidth, (1L << patchWidth) - 1);
                     }
                     else
                         outputValues[i] = baseValue + outputValues[i];
@@ -174,8 +174,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                     for (int i = 0; i < deltaValuesSpan.Length; i++)
                     {
                         outputValues[index++] = deltaBase > 0
-                            ? outputValues[index - 2] + deltaValues[i]
-                            : outputValues[index - 2] - deltaValues[i];
+                            ? outputValues[index - 2] + deltaValuesSpan[i]
+                            : outputValues[index - 2] - deltaValuesSpan[i];
                     }
                 }
                 finally
