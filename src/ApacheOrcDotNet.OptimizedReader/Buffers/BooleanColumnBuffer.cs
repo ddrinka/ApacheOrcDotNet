@@ -1,11 +1,8 @@
 ﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
-using ApacheOrcDotNet.Protocol;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    [SkipLocalsInit]
     public class BooleanColumnBuffer : BaseColumnBuffer<bool?>
     {
         private readonly bool[] _presentStreamValues;

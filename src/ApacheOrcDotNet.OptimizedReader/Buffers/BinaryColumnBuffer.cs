@@ -1,10 +1,8 @@
 ﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    [SkipLocalsInit]
     public class BinaryColumnBuffer : BaseColumnBuffer<byte[]>
     {
         private readonly bool[] _presentStreamBuffer;

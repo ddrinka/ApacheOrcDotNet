@@ -1,12 +1,10 @@
 ﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    [SkipLocalsInit]
     public class DecimalColumnBuffer : BaseColumnBuffer<decimal?>
     {
         private bool[] _presentStreamValues;

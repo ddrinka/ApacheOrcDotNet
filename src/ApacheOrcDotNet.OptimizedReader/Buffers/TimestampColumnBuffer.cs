@@ -1,11 +1,9 @@
 ﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    [SkipLocalsInit]
     public class TimestampColumnBuffer : BaseColumnBuffer<DateTime?>
     {
         private readonly static DateTime _orcEpoch = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);

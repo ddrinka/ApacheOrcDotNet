@@ -8,12 +8,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    [SkipLocalsInit]
     public abstract class BaseColumnBuffer<TOutput>
     {
         private readonly long[] _numericStreamBuffer;

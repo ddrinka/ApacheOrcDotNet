@@ -2,13 +2,11 @@
 using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    [SkipLocalsInit]
     public class StringColumnBuffer : BaseColumnBuffer<string>
     {
         private readonly Dictionary<int, List<string>> _stripeDictionaries = new();
