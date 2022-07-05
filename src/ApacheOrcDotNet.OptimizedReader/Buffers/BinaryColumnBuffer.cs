@@ -22,19 +22,19 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private ColumnDataStreams _streams;
 
-        public BinaryColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public BinaryColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column) : base(byteRangeProvider, orcFileProperties, column)
         {
-            _presentStreamBuffer = new bool[_context.MaxValuesToRead];
-            _lengthStreamBuffer = new long[_context.MaxValuesToRead];
+            _presentStreamBuffer = new bool[_orcFileProperties.MaxValuesToRead];
+            _lengthStreamBuffer = new long[_orcFileProperties.MaxValuesToRead];
 
-            _dataStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
+            _dataStreamCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
+            _dataStreamDecompressedBuffer = _pool.Rent(_orcFileProperties.MaxDecompressedBufferLength);
 
-            _lengthStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _lengthStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
+            _lengthStreamCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
+            _lengthStreamDecompressedBuffer = _pool.Rent(_orcFileProperties.MaxDecompressedBufferLength);
 
-            _presentStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
+            _presentStreamCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
+            _presentStreamDecompressedBuffer = _pool.Rent(_orcFileProperties.MaxDecompressedBufferLength);
         }
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)

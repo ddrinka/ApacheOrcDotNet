@@ -34,23 +34,23 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private ColumnDataStreams _streams;
         private int _stripeId;
 
-        public StringColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public StringColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column) : base(byteRangeProvider, orcFileProperties, column)
         {
-            _presentStreamValues = new bool[_context.MaxValuesToRead];
-            _dataStreamValues = new long[_context.MaxValuesToRead];
-            _lengthStreamValues = new long[_context.MaxValuesToRead];
+            _presentStreamValues = new bool[_orcFileProperties.MaxValuesToRead];
+            _dataStreamValues = new long[_orcFileProperties.MaxValuesToRead];
+            _lengthStreamValues = new long[_orcFileProperties.MaxValuesToRead];
 
-            _dataStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
+            _dataStreamCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
+            _dataStreamDecompressedBuffer = _pool.Rent(_orcFileProperties.MaxDecompressedBufferLength);
 
-            _dictionaryStreanCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dictionaryStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
+            _dictionaryStreanCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
+            _dictionaryStreamDecompressedBuffer = _pool.Rent(_orcFileProperties.MaxDecompressedBufferLength);
 
-            _lengthStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _lengthStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
+            _lengthStreamCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
+            _lengthStreamDecompressedBuffer = _pool.Rent(_orcFileProperties.MaxDecompressedBufferLength);
 
-            _presentStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompressedBufferLength);
+            _presentStreamCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
+            _presentStreamDecompressedBuffer = _pool.Rent(_orcFileProperties.MaxDecompressedBufferLength);
         }
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)

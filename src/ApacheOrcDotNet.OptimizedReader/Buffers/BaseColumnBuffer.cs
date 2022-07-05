@@ -19,7 +19,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private readonly byte[] _boolStreamBuffer;
 
         private protected readonly IByteRangeProvider _byteRangeProvider;
-        private protected readonly OrcFileProperties _context;
+        private protected readonly OrcFileProperties _orcFileProperties;
         private protected readonly OrcColumn _column;
         private protected readonly TOutput[] _values;
 
@@ -30,12 +30,12 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private StreamRange _lastRange;
         private int _lastRangeLength;
 
-        public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties context, OrcColumn column)
+        public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column)
         {
             _byteRangeProvider = byteRangeProvider;
-            _context = context;
+            _orcFileProperties = orcFileProperties;
             _column = column;
-            _values = new TOutput[_context.MaxValuesToRead];
+            _values = new TOutput[_orcFileProperties.MaxValuesToRead];
 
             _pool = ArrayPool<byte>.Create(15 * 1024 * 1024, 8);
 
@@ -214,7 +214,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             decompressedLength = 0;
 
             if (stream != null)
-                decompressedLength = StreamData.Decompress(compressedInput.Slice(0, stream.Range.Length), decompressedOutput, _context.CompressionKind);
+                decompressedLength = StreamData.Decompress(compressedInput.Slice(0, stream.Range.Length), decompressedOutput, _orcFileProperties.CompressionKind);
         }
 
         /// <summary>
