@@ -189,19 +189,20 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
 
         private static void GetNextPatch(Span<long> patchListValues, ref int patchIndex, ref long gap, out long patch, int patchWidth, long patchMask)
         {
-            var raw = patchListValues[patchIndex];
-            patchIndex++;
-            long curGap = (long)((ulong)raw >> patchWidth);
-            patch = raw & patchMask;
-            while (curGap == 255 && patch == 0)
+            while (true)
             {
-                gap += 255;
-                raw = patchListValues[patchIndex];
-                patchIndex++;
-                curGap = (long)((ulong)raw >> patchWidth);
+                var raw = patchListValues[patchIndex++];
+                var curGap = (long)((ulong)raw >> patchWidth);
                 patch = raw & patchMask;
+
+                if (curGap != 255 || patch != 0)
+                {
+                    gap += curGap;
+                    break;
+                }
+
+                gap += 255;
             }
-            gap += curGap;
         }
 
         private static void ReadBitpackedIntegers(ref BufferReader reader, bool isSigned, int bitWidth, int count, Span<long> outputValues)
