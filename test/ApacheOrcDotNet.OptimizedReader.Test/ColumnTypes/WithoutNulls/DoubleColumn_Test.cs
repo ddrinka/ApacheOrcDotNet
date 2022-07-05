@@ -22,7 +22,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
                 if (ExpectedDoubles[i] == null)
                     Assert.Equal(double.NaN, columnBuffer.Values[i]);
                 else
-                    Assert.Equal(double.Parse(ExpectedDoubles[i], _enUSCulture), columnBuffer.Values[i]);
+                    Assert.Equal(double.Parse(ExpectedDoubles[i], _invariantCulture), columnBuffer.Values[i]);
             }
         }
 
@@ -44,7 +44,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
                 if (ExpectedDoubles[i] == null)
                     Assert.Equal(double.NaN, columnBuffer.Values[i]);
                 else
-                    Assert.Equal(double.Parse(ExpectedDoubles[i], _enUSCulture), columnBuffer.Values[i]);
+                    Assert.Equal(double.Parse(ExpectedDoubles[i], _invariantCulture), columnBuffer.Values[i]);
             }
         }
     }

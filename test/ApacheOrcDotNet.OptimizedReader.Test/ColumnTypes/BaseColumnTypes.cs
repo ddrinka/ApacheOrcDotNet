@@ -22,7 +22,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
 
     public abstract class BaseColumnTypes
     {
-        private protected readonly CultureInfo _enUSCulture = CultureInfo.GetCultureInfo("en-US");
+        private protected readonly CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
         private protected readonly IByteRangeProvider _byteRangeProvider;
         private readonly DataFileHelper _expectedValuesFile;
 
