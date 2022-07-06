@@ -2,7 +2,6 @@
 using ApacheOrcDotNet.OptimizedReader.Encodings;
 using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
-using System.Buffers;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -19,8 +18,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private protected readonly OrcColumn _column;
         private protected readonly TOutput[] _values;
 
-        private protected readonly ArrayPool<byte> _pool;
-
         private protected int _numValuesRead;
 
         private StreamRange _lastRange;
@@ -32,8 +29,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             _orcFileProperties = orcFileProperties;
             _column = column;
             _values = new TOutput[_orcFileProperties.MaxValuesToRead];
-
-            _pool = ArrayPool<byte>.Create(15 * 1024 * 1024, 8);
 
             _numericStreamBuffer = new long[1000];
             _byteStreamBuffer = new byte[1000];

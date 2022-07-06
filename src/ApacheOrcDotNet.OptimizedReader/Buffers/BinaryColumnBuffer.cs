@@ -27,14 +27,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             _presentStreamBuffer = new bool[_orcFileProperties.MaxValuesToRead];
             _lengthStreamBuffer = new long[_orcFileProperties.MaxValuesToRead];
 
-            _dataStreamCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
-            _dataStreamDecompressedBuffer = _pool.Rent(_orcFileProperties.MaxDecompressedBufferLength);
+            _dataStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
+            _dataStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
 
-            _lengthStreamCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
-            _lengthStreamDecompressedBuffer = _pool.Rent(_orcFileProperties.MaxDecompressedBufferLength);
+            _lengthStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
+            _lengthStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
 
-            _presentStreamCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
-            _presentStreamDecompressedBuffer = _pool.Rent(_orcFileProperties.MaxDecompressedBufferLength);
+            _presentStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
+            _presentStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
         }
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
