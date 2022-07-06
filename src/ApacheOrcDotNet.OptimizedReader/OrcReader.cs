@@ -451,7 +451,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
                 if (nextOffset.RowGroupOffset != currentPositions.RowGroupOffset)
                 {
-                    // Calculate the range length, adding possible bytes that might have been included into the next compressed chunk.
+                    // Calculate the range length, adding bytes that may have been included into the next compressed chunk.
                     rangeLength = (nextOffset.RowGroupOffset - currentPositions.RowGroupOffset) + nextOffset.RowEntryOffset;
                     break;
                 }
@@ -476,7 +476,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
                 if (nextOffset.RowGroupOffset != currentPositions.RowGroupOffset)
                 {
-                    // Calculate the range length, adding possible bytes that might have been included into the next compressed chunk.
+                    // Calculate the range length, adding bytes that may have been included into the next compressed chunk.
                     rangeLength = (nextOffset.RowGroupOffset - currentPositions.RowGroupOffset) + nextOffset.RowEntryOffset;
                     break;
                 }

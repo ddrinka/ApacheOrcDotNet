@@ -11,9 +11,16 @@ namespace ApacheOrcDotNet.OptimizedReader
             CompressionBlockSize = compressionBlockSize;
             MaxValuesToRead = maxValuesToRead;
 
+            // When requesting ranges to be decompressed,
+            // for some edge cases, we may need to load up to two chunks of data
+            // (to account for blocks that had data saved into the next row group)
             if (maxCompressedBufferLength <= 0)
-                maxCompressedBufferLength = 25 * 1024 * 1024;
+                maxCompressedBufferLength = compressionBlockSize * 2;
 
+            // When decompressing data, we only know the total size
+            // after the data is decopressed. To guarantee we will not
+            // run out of space during this process, we allocate a 25 Mb buffer for that.
+            // This is an arbirary number based on the maximum size decompressed using production data (~10Mb).
             if (maxDecompressedBufferLength <= 0)
                 maxDecompressedBufferLength = 25 * 1024 * 1024;
 
