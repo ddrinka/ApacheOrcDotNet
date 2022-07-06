@@ -142,7 +142,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                     if (numSkipped++ < stream.Positions.ValuesToSkip)
                         continue;
 
-                    outputValues[numValuesRead++] = (int)_numericStreamBuffer[idx];
+                    outputValues[numValuesRead++] = _numericStreamBuffer[idx];
 
                     if (numValuesRead >= outputValues.Length)
                         return;
@@ -150,7 +150,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void ReadVarIntStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<BigInteger> outputValues, out int numValuesRead)
+        private protected void ReadVarIntStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<long> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
@@ -162,7 +162,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             while (!bufferReader.Complete)
             {
-                var bigInt = ReadBigVarInt(ref bufferReader);
+                var bigInt = ReadVarInt(ref bufferReader);
 
                 if (!bigInt.HasValue)
                     return;
@@ -211,30 +211,30 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             return decompressedBuffer.Slice(stream.Positions.RowEntryOffset, rowEntryLength);
         }
 
-        private protected double BigIntegerToDouble(BigInteger numerator, long scale)
-            => (double)BigIntegerToDecimal(numerator, scale);
+        private protected double VarIntToDouble(long numerator, long scale)
+            => (double)VarIntToDecimal(numerator, scale);
 
-        private protected decimal BigIntegerToDecimal(BigInteger numerator, long scale)
+        private protected decimal VarIntToDecimal(long numerator, long scale)
         {
             if (scale < 0 || scale > 255)
                 throw new OverflowException("Scale must be positive number");
 
-            var decNumerator = (decimal)numerator; //This will throw for an overflow or underflow
+            var decNumerator = (decimal)numerator;
             var scaler = new decimal(1, 0, 0, false, (byte)scale);
 
             return decNumerator * scaler;
         }
 
-        private BigInteger? ReadBigVarInt(ref BufferReader stream)
+        private long? ReadVarInt(ref BufferReader stream)
         {
-            var value = BigInteger.Zero;
+            long value = 0;
             long currentLong = 0;
             int bitCount = 0;
 
             while (true)
             {
                 if (!stream.TryRead(out var currentByte))
-                    return null; // Reached the end of the stream
+                    return null;
 
                 currentLong |= ((long)currentByte & 0x7f) << bitCount % 63;
                 bitCount += 7;
@@ -242,14 +242,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 if (bitCount % 63 == 0)
                 {
                     if (bitCount == 63)
-                        value = new BigInteger(currentLong);
+                        value = currentLong;
                     else
-                        value |= new BigInteger(currentLong) << bitCount - 63;
+                        value |= currentLong << bitCount - 63;
 
                     currentLong = 0;
                 }
 
-                // Done when the high bit is set
+                // Done when the high bit is cleared
                 if (currentByte < 0x80)
                     break;
             }
@@ -257,11 +257,11 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             if (currentLong != 0) // Some bits left to add to result
             {
                 var shift = bitCount / 63 * 63;
-                value |= new BigInteger(currentLong) << shift;
+                value |= currentLong << shift;
             }
 
             // Un zig-zag
-            return ((long)value).ZigzagDecode();
+            return value.ZigzagDecode();
         }
     }
 }

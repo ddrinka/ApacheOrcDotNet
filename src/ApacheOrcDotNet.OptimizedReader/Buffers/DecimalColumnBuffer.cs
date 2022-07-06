@@ -1,6 +1,5 @@
 ﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
-using System.Numerics;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
@@ -8,7 +7,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
     public class DecimalColumnBuffer : BaseColumnBuffer<decimal?>
     {
         private bool[] _presentStreamValues;
-        private BigInteger[] _dataStreamValues;
+        private long[] _dataStreamValues;
         private long[] _secondaryStreamValues;
 
         private byte[] _dataStreamCompressedBuffer;
@@ -28,7 +27,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         public DecimalColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column) : base(byteRangeProvider, orcFileProperties, column)
         {
             _presentStreamValues = new bool[_orcFileProperties.MaxValuesToRead];
-            _dataStreamValues = new BigInteger[_orcFileProperties.MaxValuesToRead];
+            _dataStreamValues = new long[_orcFileProperties.MaxValuesToRead];
             _secondaryStreamValues = new long[_orcFileProperties.MaxValuesToRead];
 
             _dataStreamCompressedBuffer = _pool.Rent(_orcFileProperties.MaxCompressedBufferLength);
@@ -72,7 +71,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 {
                     if (_presentStreamValues[idx])
                     {
-                        _values[_numValuesRead++] = BigIntegerToDecimal(_dataStreamValues[valueIndex], _secondaryStreamValues[valueIndex]);
+                        _values[_numValuesRead++] = VarIntToDecimal(_dataStreamValues[valueIndex], _secondaryStreamValues[valueIndex]);
                         valueIndex++;
                     }
                     else
@@ -82,7 +81,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             else
             {
                 for (int idx = 0; idx < secondaryValuesRead; idx++)
-                    _values[_numValuesRead++] = BigIntegerToDecimal(_dataStreamValues[idx], _secondaryStreamValues[idx]);
+                    _values[_numValuesRead++] = VarIntToDecimal(_dataStreamValues[idx], _secondaryStreamValues[idx]);
             }
         }
     }
