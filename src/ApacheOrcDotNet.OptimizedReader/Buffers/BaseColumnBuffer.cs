@@ -1,12 +1,8 @@
 ﻿using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.OptimizedReader.Encodings;
 using ApacheOrcDotNet.OptimizedReader.Infrastructure;
-using ApacheOrcDotNet.Protocol;
 using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -51,18 +47,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         public abstract void Fill();
 
         public void Reset() => _numValuesRead = 0;
-
-        private protected StreamDetail GetStripeStream(IEnumerable<StreamDetail> columnStreams, StreamKind streamKind, bool isRequired = true)
-        {
-            var stream = columnStreams.SingleOrDefault(stream =>
-                stream.StreamKind == streamKind
-            );
-
-            if (isRequired && stream == null)
-                throw new InvalidDataException($"The '{streamKind}' stream must be available");
-
-            return stream;
-        }
 
         private protected void ReadByteStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<byte> outputValues, out int numValuesRead)
         {
