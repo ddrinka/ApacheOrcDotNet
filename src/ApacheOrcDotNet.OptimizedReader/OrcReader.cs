@@ -213,7 +213,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 {
                     _ = _byteRangeProvider.GetRange(compressedBufferSpan, rowIndexStream.FileOffset);
 
-                    var decompressedBufferLength = StreamData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression);
+                    var decompressedBufferLength = CompressedData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression);
 
                     return Serializer.Deserialize<RowIndex>(decompressedBufferSpan.Slice(0, decompressedBufferLength));
                 }
@@ -262,7 +262,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 {
                     _ = _byteRangeProvider.GetRange(compressedBufferSpan, stripeFooterStart);
 
-                    var decompressedBufferLength = StreamData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression);
+                    var decompressedBufferLength = CompressedData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression);
 
                     var streams = SpanStripeFooter.ReadStreamDetails(decompressedBufferSpan.Slice(0, decompressedBufferLength), (long)stripe.Offset);
 

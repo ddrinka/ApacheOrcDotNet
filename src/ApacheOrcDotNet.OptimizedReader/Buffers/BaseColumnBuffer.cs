@@ -195,7 +195,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             decompressedLength = 0;
 
             if (stream != null)
-                decompressedLength = StreamData.Decompress(compressedInput.Slice(0, stream.Range.Length), decompressedOutput, _orcFileProperties.CompressionKind);
+                decompressedLength = CompressedData.Decompress(compressedInput.Slice(0, stream.Range.Length), decompressedOutput, _orcFileProperties.CompressionKind);
         }
 
         /// <summary>

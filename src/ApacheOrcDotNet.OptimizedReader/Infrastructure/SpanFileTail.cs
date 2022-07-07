@@ -57,10 +57,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
             try
             {
-                var decompressedFooterSize = StreamData.Decompress(compressedFooterBuffer, decompressedFooterBuffer, postScript.Compression);
+                var decompressedFooterSize = CompressedData.Decompress(compressedFooterBuffer, decompressedFooterBuffer, postScript.Compression);
                 var footer = Serializer.Deserialize<Protocol.Footer>(decompressedFooterBufferSpan.Slice(0, decompressedFooterSize));
 
-                var decompressedMetadataSize = StreamData.Decompress(compressedMetadataBuffer, decompressedMetadataBuffer, postScript.Compression);
+                var decompressedMetadataSize = CompressedData.Decompress(compressedMetadataBuffer, decompressedMetadataBuffer, postScript.Compression);
                 var metadata = Serializer.Deserialize<Protocol.Metadata>(decompressedMetadataBufferSpan.Slice(0, decompressedMetadataSize));
 
                 fileTail = new SpanFileTail

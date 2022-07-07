@@ -4,7 +4,7 @@ using System;
 
 namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
-    public static class StreamData
+    public static class CompressedData
     {
         public static int Decompress(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer, CompressionKind compressionKind)
         {
