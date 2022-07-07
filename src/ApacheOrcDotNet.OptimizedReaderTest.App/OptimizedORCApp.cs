@@ -104,18 +104,6 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         reader.LoadDataAsync(stripeId, rowEntryIndex, booleanColumnBuffer)
                     );
 
-                    reader.Fill(sourceColumnBuffer);
-                    reader.Fill(symbolColumnBuffer);
-                    reader.Fill(timeColumnBuffer);
-                    reader.Fill(sizeColumnBuffer);
-                    reader.Fill(dateColumnBuffer);
-                    reader.Fill(doubleColumnBuffer);
-                    reader.Fill(floatColumnBuffer);
-                    reader.Fill(timeStampColumnBuffer);
-                    reader.Fill(binaryColumnBuffer);
-                    reader.Fill(byteColumnBuffer);
-                    reader.Fill(booleanColumnBuffer);
-
                     for (int idx = 0; idx < reader.NumValues; idx++)
                     {
                         var source = sourceColumnBuffer.Values[idx];

@@ -13,7 +13,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var column = reader.GetColumn("size");
             var columnBuffer = reader.CreateIntegerColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
-            reader.Fill(columnBuffer);
 
             Assert.Equal(10_000, columnBuffer.Values.Length);
 
@@ -35,7 +34,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var column = reader.GetColumn("size");
             var buffer = reader.CreateIntegerColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, buffer).Wait();
-            reader.Fill(buffer);
 
             Assert.Equal(1, buffer.Values.Length);
 

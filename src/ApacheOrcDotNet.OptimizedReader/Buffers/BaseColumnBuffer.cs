@@ -39,7 +39,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         public ReadOnlySpan<TOutput> Values => _values.AsSpan().Slice(0, _numValuesRead);
 
         public abstract Task LoadDataAsync(int stripeId, ColumnDataStreams streams);
-        public abstract void Fill();
 
         public void Reset() => _numValuesRead = 0;
 

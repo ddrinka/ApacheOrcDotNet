@@ -172,20 +172,15 @@ namespace ApacheOrcDotNet.OptimizedReader
             }).ToList();
         }
 
-        public async Task LoadDataAsync<TOutput>(int stripeId, int rowEntryIndexId, BaseColumnBuffer<TOutput> columnBuffer)
-        {
-            var rowIndex = GetColumnRowIndex(columnBuffer.Column.Id, stripeId);
-            var columnStreams = GetColumnDataStreams(stripeId, columnBuffer.Column, rowIndex, rowEntryIndexId);
-
-            await columnBuffer.LoadDataAsync(stripeId, columnStreams);
-        }
-
-        public void Fill<TOutput>(BaseColumnBuffer<TOutput> columnBuffer, bool discardPreviousData = true)
+        public async Task LoadDataAsync<TOutput>(int stripeId, int rowEntryIndexId, BaseColumnBuffer<TOutput> columnBuffer, bool discardPreviousData = true)
         {
             if (discardPreviousData)
                 columnBuffer.Reset();
 
-            columnBuffer.Fill();
+            var rowIndex = GetColumnRowIndex(columnBuffer.Column.Id, stripeId);
+            var columnStreams = GetColumnDataStreams(stripeId, columnBuffer.Column, rowIndex, rowEntryIndexId);
+
+            await columnBuffer.LoadDataAsync(stripeId, columnStreams);
 
             if (NumValues == 0 || NumValues > columnBuffer.Values.Length)
                 NumValues = columnBuffer.Values.Length;

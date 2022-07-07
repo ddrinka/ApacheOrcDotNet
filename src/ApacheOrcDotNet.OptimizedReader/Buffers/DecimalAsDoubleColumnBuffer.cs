@@ -22,8 +22,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private byte[] _secondaryStreamDecompressedBuffer;
         private int _secondaryStreamDecompressedBufferLength;
 
-        private ColumnDataStreams _streams;
-
         public DecimalAsDoubleColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column) : base(byteRangeProvider, orcFileProperties, column)
         {
             _presentStreamValues = new bool[_orcFileProperties.MaxValuesToRead];
@@ -42,24 +40,24 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
         {
-            _streams = streams;
-
             _ = await Task.WhenAll(
-                GetByteRangeAsync(_streams.Present, _presentStreamCompressedBuffer),
-                GetByteRangeAsync(_streams.Data, _dataStreamCompressedBuffer),
-                GetByteRangeAsync(_streams.Secondary, _secondaryStreamCompressedBuffer)
+                GetByteRangeAsync(streams.Present, _presentStreamCompressedBuffer),
+                GetByteRangeAsync(streams.Data, _dataStreamCompressedBuffer),
+                GetByteRangeAsync(streams.Secondary, _secondaryStreamCompressedBuffer)
             );
 
-            DecompressByteRange(_streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
-            DecompressByteRange(_streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
-            DecompressByteRange(_streams.Secondary, _secondaryStreamCompressedBuffer, _secondaryStreamDecompressedBuffer, ref _secondaryStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Secondary, _secondaryStreamCompressedBuffer, _secondaryStreamDecompressedBuffer, ref _secondaryStreamDecompressedBufferLength);
+
+            Fill(streams);
         }
 
-        public override void Fill()
+        private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(_streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
-            ReadVarIntStream(_streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, _dataStreamValues, out var dataValuesRead);
-            ReadNumericStream(_streams.Secondary, _secondaryStreamDecompressedBuffer, _secondaryStreamDecompressedBufferLength, isSigned: true, _secondaryStreamValues, out var secondaryValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
+            ReadVarIntStream(streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, _dataStreamValues, out var dataValuesRead);
+            ReadNumericStream(streams.Secondary, _secondaryStreamDecompressedBuffer, _secondaryStreamDecompressedBufferLength, isSigned: true, _secondaryStreamValues, out var secondaryValuesRead);
 
             if (dataValuesRead != secondaryValuesRead)
                 throw new InvalidOperationException($"Number of data({dataValuesRead}) and secondary({secondaryValuesRead}) values must match.");
