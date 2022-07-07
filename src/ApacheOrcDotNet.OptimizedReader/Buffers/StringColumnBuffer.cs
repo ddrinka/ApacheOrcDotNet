@@ -2,16 +2,14 @@
 using ApacheOrcDotNet.Protocol;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    [SkipLocalsInit]
     public class StringColumnBuffer : BaseColumnBuffer<string>
     {
-        private readonly Dictionary<int, long[]> _dictionaryLengthBuffers = new();
+        private readonly Dictionary<int, List<string>> _stripeDictionaries = new();
         private readonly bool[] _presentStreamValues;
         private readonly long[] _dataStreamValues;
         private readonly long[] _lengthStreamValues;
@@ -32,74 +30,68 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private byte[] _presentStreamDecompressedBuffer;
         private int _presentStreamDecompressedBufferLength;
 
-        private ColumnEncodingKind _encodingKind;
-        private ColumnDataStreams _streams;
-        private int _stripeId;
-
-        public StringColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public StringColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column) : base(byteRangeProvider, orcFileProperties, column)
         {
-            _presentStreamValues = new bool[_context.MaxValuesToRead];
-            _dataStreamValues = new long[_context.MaxValuesToRead];
-            _lengthStreamValues = new long[_context.MaxValuesToRead];
+            _presentStreamValues = new bool[_orcFileProperties.MaxValuesToRead];
+            _dataStreamValues = new long[_orcFileProperties.MaxValuesToRead];
+            _lengthStreamValues = new long[_orcFileProperties.MaxValuesToRead];
 
-            _dataStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _dataStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
+            _dataStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
 
-            _dictionaryStreanCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dictionaryStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _dictionaryStreanCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
+            _dictionaryStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
 
-            _lengthStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _lengthStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _lengthStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
+            _lengthStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
 
-            _presentStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _presentStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
+            _presentStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
         }
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
         {
-            _streams = streams;
-            _stripeId = stripeId;
-            _encodingKind = _streams.EncodingKind;
-
             var byteRangeTasks = new List<Task<int>>()
             {
-                GetByteRangeAsync(_streams.Present, _presentStreamCompressedBuffer),
-                GetByteRangeAsync(_streams.Length, _lengthStreamCompressedBuffer),
-                GetByteRangeAsync(_streams.Data, _dataStreamCompressedBuffer)
+                GetByteRangeAsync(streams.Present, _presentStreamCompressedBuffer),
+                GetByteRangeAsync(streams.Length, _lengthStreamCompressedBuffer),
+                GetByteRangeAsync(streams.Data, _dataStreamCompressedBuffer)
             };
-            if (_encodingKind == ColumnEncodingKind.DictionaryV2)
-                byteRangeTasks.Add(GetByteRangeAsync(_streams.DictionaryData, _dictionaryStreanCompressedBuffer));
+            if (streams.EncodingKind == ColumnEncodingKind.DictionaryV2)
+                byteRangeTasks.Add(GetByteRangeAsync(streams.DictionaryData, _dictionaryStreanCompressedBuffer));
 
             _ = await Task.WhenAll(byteRangeTasks);
 
-            DecompressByteRange(_streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
-            DecompressByteRange(_streams.Length, _lengthStreamCompressedBuffer, _lengthStreamDecompressedBuffer, ref _lengthStreamDecompressedBufferLength);
-            DecompressByteRange(_streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
-            if (_encodingKind == ColumnEncodingKind.DictionaryV2)
-                DecompressByteRange(_streams.DictionaryData, _dictionaryStreanCompressedBuffer, _dictionaryStreamDecompressedBuffer, ref _dictionaryStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Length, _lengthStreamCompressedBuffer, _lengthStreamDecompressedBuffer, ref _lengthStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
+            if (streams.EncodingKind == ColumnEncodingKind.DictionaryV2)
+                DecompressByteRange(streams.DictionaryData, _dictionaryStreanCompressedBuffer, _dictionaryStreamDecompressedBuffer, ref _dictionaryStreamDecompressedBufferLength);
+
+            Fill(stripeId, streams);
         }
 
-        public override void Fill()
+        private void Fill(int stripeId, ColumnDataStreams streams)
         {
-            switch (_encodingKind)
+            switch (streams.EncodingKind)
             {
                 case ColumnEncodingKind.DirectV2:
-                    ReadDirectV2();
+                    ReadDirectV2(streams);
                     break;
                 case ColumnEncodingKind.DictionaryV2:
-                    ReadDictionaryV2();
+                    ReadDictionaryV2(stripeId, streams);
                     break;
                 default:
                     throw new InvalidOperationException();
             }
         }
 
-        private void ReadDirectV2()
+        private void ReadDirectV2(ColumnDataStreams streams)
         {
-            ReadBooleanStream(_streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(_streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, _lengthStreamValues, out var lengthValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, _lengthStreamValues, out var lengthValuesRead);
 
-            var dataBuffer = ResizeBuffer(_streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength);
+            var dataBuffer = GetDataStream(streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength);
 
             var stringOffset = 0;
             if (presentValuesRead > 0)
@@ -128,22 +120,27 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private void ReadDictionaryV2()
+        private void ReadDictionaryV2(int stripeId, ColumnDataStreams streams)
         {
-            var dictionaryV2LengthStreamBuffer = GetLengthStreamBufferDictinaryV2(_stripeId, _streams.Length.DictionarySize);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, isSigned: false, _dataStreamValues, out var dataValuesRead);
 
-            ReadBooleanStream(_streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(_streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, dictionaryV2LengthStreamBuffer, out var lengthValuesRead);
-            ReadNumericStream(_streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, isSigned: false, _dataStreamValues, out var dataValuesRead);
-
-            int stringOffset = 0;
-            List<string> stringsList = new(lengthValuesRead);
-            for (int idx = 0; idx < lengthValuesRead; idx++)
+            if (!_stripeDictionaries.TryGetValue(stripeId, out var stringsList))
             {
-                var length = (int)dictionaryV2LengthStreamBuffer[idx];
-                var value = Encoding.UTF8.GetString(_dictionaryStreamDecompressedBuffer.AsSpan().Slice(stringOffset, length));
-                stringOffset += length;
-                stringsList.Add(value);
+                Span<long> dictionaryV2LengthStreamBuffer = stackalloc long[streams.Length.DictionarySize];
+                ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, dictionaryV2LengthStreamBuffer, out var lengthValuesRead);
+
+                int stringOffset = 0;
+                stringsList = new List<string>();
+                for (int idx = 0; idx < lengthValuesRead; idx++)
+                {
+                    var length = (int)dictionaryV2LengthStreamBuffer[idx];
+                    var value = Encoding.UTF8.GetString(_dictionaryStreamDecompressedBuffer.AsSpan().Slice(stringOffset, length));
+                    stringOffset += length;
+                    stringsList.Add(value);
+                }
+
+                _stripeDictionaries[stripeId] = stringsList;
             }
 
             if (presentValuesRead > 0)
@@ -170,14 +167,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                         break;
                 }
             }
-        }
-
-        private long[] GetLengthStreamBufferDictinaryV2(int stripeId, int dictionarySize)
-        {
-            if (!_dictionaryLengthBuffers.ContainsKey(stripeId))
-                _dictionaryLengthBuffers.Add(stripeId, new long[dictionarySize]);
-
-            return _dictionaryLengthBuffers[stripeId];
         }
     }
 }

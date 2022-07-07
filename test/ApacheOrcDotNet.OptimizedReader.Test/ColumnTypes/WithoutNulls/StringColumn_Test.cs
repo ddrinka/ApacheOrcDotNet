@@ -13,16 +13,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var column = reader.GetColumn("symbol");
             var columnBuffer = reader.CreateStringColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
-            reader.Fill(columnBuffer);
 
             Assert.Equal(10_000, columnBuffer.Values.Length);
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.symbols[i] == null)
+                if (ExpectedSymbols[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.symbols[i], columnBuffer.Values[i]);
+                    Assert.Equal(ExpectedSymbols[i], columnBuffer.Values[i]);
             }
         }
 
@@ -35,16 +34,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var column = reader.GetColumn("symbol");
             var columnBuffer = reader.CreateStringColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
-            reader.Fill(columnBuffer);
 
             Assert.Equal(1, columnBuffer.Values.Length);
 
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.symbols[i] == null)
+                if (ExpectedSymbols[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.symbols[i], columnBuffer.Values[i]);
+                    Assert.Equal(ExpectedSymbols[i], columnBuffer.Values[i]);
             }
         }
 
@@ -57,16 +55,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var column = reader.GetColumn("source");
             var columnBuffer = reader.CreateStringColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
-            reader.Fill(columnBuffer);
 
             Assert.Equal(10_000, columnBuffer.Values.Length);
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.sources[i] == null)
+                if (ExpectedSources[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.sources[i], columnBuffer.Values[i]);
+                    Assert.Equal(ExpectedSources[i], columnBuffer.Values[i]);
             }
         }
 
@@ -79,16 +76,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var column = reader.GetColumn("source");
             var columnBuffer = reader.CreateStringColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
-            reader.Fill(columnBuffer);
 
             Assert.Equal(1, columnBuffer.Values.Length);
 
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.sources[i] == null)
+                if (ExpectedSources[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(_expectedValues.sources[i], columnBuffer.Values[i]);
+                    Assert.Equal(ExpectedSources[i], columnBuffer.Values[i]);
             }
         }
     }

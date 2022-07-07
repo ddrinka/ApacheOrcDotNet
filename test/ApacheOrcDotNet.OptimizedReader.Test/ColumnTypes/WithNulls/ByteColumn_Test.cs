@@ -13,16 +13,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var column = reader.GetColumn("byte");
             var columnBuffer = reader.CreateByteColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
-            reader.Fill(columnBuffer);
 
             Assert.Equal(10_000, columnBuffer.Values.Length);
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.bytes[i] == null)
+                if (ExpectedBytes[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(byte.Parse(_expectedValues.bytes[i]), columnBuffer.Values[i]);
+                    Assert.Equal(byte.Parse(ExpectedBytes[i]), columnBuffer.Values[i]);
             }
         }
 
@@ -35,16 +34,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var column = reader.GetColumn("byte");
             var columnBuffer = reader.CreateByteColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
-            reader.Fill(columnBuffer);
 
             Assert.Equal(1, columnBuffer.Values.Length);
 
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.bytes[i] == null)
+                if (ExpectedBytes[i] == null)
                     Assert.Null(columnBuffer.Values[i]);
                 else
-                    Assert.Equal(byte.Parse(_expectedValues.bytes[i]), columnBuffer.Values[i]);
+                    Assert.Equal(byte.Parse(ExpectedBytes[i]), columnBuffer.Values[i]);
             }
         }
     }

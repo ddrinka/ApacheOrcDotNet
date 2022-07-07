@@ -1,19 +1,12 @@
 ﻿using ApacheOrcDotNet.Encodings;
 using ApacheOrcDotNet.OptimizedReader.Encodings;
 using ApacheOrcDotNet.OptimizedReader.Infrastructure;
-using ApacheOrcDotNet.Protocol;
 using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    [SkipLocalsInit]
     public abstract class BaseColumnBuffer<TOutput>
     {
         private readonly long[] _numericStreamBuffer;
@@ -21,25 +14,21 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private readonly byte[] _boolStreamBuffer;
 
         private protected readonly IByteRangeProvider _byteRangeProvider;
-        private protected readonly OrcContext _context;
+        private protected readonly OrcFileProperties _orcFileProperties;
         private protected readonly OrcColumn _column;
         private protected readonly TOutput[] _values;
-
-        private protected readonly ArrayPool<byte> _pool;
 
         private protected int _numValuesRead;
 
         private StreamRange _lastRange;
         private int _lastRangeLength;
 
-        public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column)
+        public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column)
         {
             _byteRangeProvider = byteRangeProvider;
-            _context = context;
+            _orcFileProperties = orcFileProperties;
             _column = column;
-            _values = new TOutput[_context.MaxValuesToRead];
-
-            _pool = ArrayPool<byte>.Create(15 * 1024 * 1024, 8);
+            _values = new TOutput[_orcFileProperties.MaxValuesToRead];
 
             _numericStreamBuffer = new long[1000];
             _byteStreamBuffer = new byte[1000];
@@ -50,21 +39,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         public ReadOnlySpan<TOutput> Values => _values.AsSpan().Slice(0, _numValuesRead);
 
         public abstract Task LoadDataAsync(int stripeId, ColumnDataStreams streams);
-        public abstract void Fill();
 
         public void Reset() => _numValuesRead = 0;
-
-        private protected StreamDetail GetStripeStream(IEnumerable<StreamDetail> columnStreams, StreamKind streamKind, bool isRequired = true)
-        {
-            var stream = columnStreams.SingleOrDefault(stream =>
-                stream.StreamKind == streamKind
-            );
-
-            if (isRequired && stream == null)
-                throw new InvalidDataException($"The '{streamKind}' stream must be available");
-
-            return stream;
-        }
 
         private protected void ReadByteStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<byte> outputValues, out int numValuesRead)
         {
@@ -74,7 +50,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             var numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
 
             while (!bufferReader.Complete)
             {
@@ -101,7 +77,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             var numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
             var numOfTotalBitsToSkip = stream.Positions.ValuesToSkip * 8 + stream.Positions.RemainingBits;
             var numOfBytesToSkip = numOfTotalBitsToSkip / 8;
             while (!bufferReader.Complete)
@@ -134,6 +110,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                         if (numValuesRead >= outputValues.Length)
                             return;
 
+                        // If we are processing the very last byte and all bits after the current
+                        // iteration are unset, we can discard those as they are not being used.
+                        // This is the opposite edge case from the above. Where we have only a few bits set.
                         if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == bitIdx)
                             return;
                     }
@@ -149,7 +128,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             var numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
 
             while (!bufferReader.Complete)
             {
@@ -160,7 +139,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                     if (numSkipped++ < stream.Positions.ValuesToSkip)
                         continue;
 
-                    outputValues[numValuesRead++] = (int)_numericStreamBuffer[idx];
+                    outputValues[numValuesRead++] = _numericStreamBuffer[idx];
 
                     if (numValuesRead >= outputValues.Length)
                         return;
@@ -168,7 +147,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void ReadVarIntStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<BigInteger> outputValues, out int numValuesRead)
+        private protected void ReadVarIntStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<long> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
@@ -176,11 +155,11 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             int numSkipped = 0;
-            var bufferReader = new BufferReader(ResizeBuffer(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
 
             while (!bufferReader.Complete)
             {
-                var bigInt = ReadBigVarInt(ref bufferReader);
+                var bigInt = ReadVarInt(ref bufferReader);
 
                 if (!bigInt.HasValue)
                     return;
@@ -216,43 +195,43 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             decompressedLength = 0;
 
             if (stream != null)
-                decompressedLength = StreamData.Decompress(compressedInput.Slice(0, stream.Range.Length), decompressedOutput, _context.CompressionKind);
+                decompressedLength = StreamData.Decompress(compressedInput.Slice(0, stream.Range.Length), decompressedOutput, _orcFileProperties.CompressionKind);
         }
 
         /// <summary>
         /// Applies the offset position into the decompressed data.
         /// </summary>
-        private protected ReadOnlySpan<byte> ResizeBuffer(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, int decompressedBufferLength)
+        private protected ReadOnlySpan<byte> GetDataStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, int decompressedBufferLength)
         {
             var rowEntryLength = decompressedBufferLength - stream.Positions.RowEntryOffset;
 
             return decompressedBuffer.Slice(stream.Positions.RowEntryOffset, rowEntryLength);
         }
 
-        private protected double BigIntegerToDouble(BigInteger numerator, long scale)
-            => (double)BigIntegerToDecimal(numerator, scale);
+        private protected double VarIntToDouble(long numerator, long scale)
+            => (double)VarIntToDecimal(numerator, scale);
 
-        private protected decimal BigIntegerToDecimal(BigInteger numerator, long scale)
+        private protected decimal VarIntToDecimal(long numerator, long scale)
         {
             if (scale < 0 || scale > 255)
                 throw new OverflowException("Scale must be positive number");
 
-            var decNumerator = (decimal)numerator; //This will throw for an overflow or underflow
+            var decNumerator = (decimal)numerator;
             var scaler = new decimal(1, 0, 0, false, (byte)scale);
 
             return decNumerator * scaler;
         }
 
-        private BigInteger? ReadBigVarInt(ref BufferReader stream)
+        private long? ReadVarInt(ref BufferReader stream)
         {
-            var value = BigInteger.Zero;
+            long value = 0;
             long currentLong = 0;
             int bitCount = 0;
 
             while (true)
             {
                 if (!stream.TryRead(out var currentByte))
-                    return null; // Reached the end of the stream
+                    return null;
 
                 currentLong |= ((long)currentByte & 0x7f) << bitCount % 63;
                 bitCount += 7;
@@ -260,14 +239,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 if (bitCount % 63 == 0)
                 {
                     if (bitCount == 63)
-                        value = new BigInteger(currentLong);
+                        value = currentLong;
                     else
-                        value |= new BigInteger(currentLong) << bitCount - 63;
+                        value |= currentLong << bitCount - 63;
 
                     currentLong = 0;
                 }
 
-                // Done when the high bit is set
+                // Done when the high bit is cleared
                 if (currentByte < 0x80)
                     break;
             }
@@ -275,11 +254,11 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             if (currentLong != 0) // Some bits left to add to result
             {
                 var shift = bitCount / 63 * 63;
-                value |= new BigInteger(currentLong) << shift;
+                value |= currentLong << shift;
             }
 
             // Un zig-zag
-            return ((long)value).ZigzagDecode();
+            return value.ZigzagDecode();
         }
     }
 }

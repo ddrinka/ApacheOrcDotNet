@@ -6,43 +6,87 @@ namespace MicroBenchmarks
     [MemoryDiagnoser]
     public class NullableBenchmarks
     {
+        private const int size = 10_000;
+        private int[] _ints = new int[size];
+        private int?[] _nullInts = new int?[size];
+        private decimal[] _decimals = new decimal[size];
+        private decimal?[] _nullDecimals = new decimal?[size];
+        private double[] _doubles = new double[size];
+        private double?[] _nullDoubles = new double?[size];
+
         [Benchmark]
         public int IntAllocation()
         {
-            return int.MaxValue;
+            for (int i = 0; i < size; i++)
+                _ints[i] = Get(i, i);
+
+            var temp = Get(_ints[3], _ints.Length);
+
+            return temp;
         }
 
         [Benchmark]
         public int? IntAllocationNullable()
         {
-            int? value = null;
-            return value;
+            for (int i = 0; i < size; i++)
+                _nullInts[i] = Get((int?)i, i);
+
+            var temp = Get(_nullInts[3], _nullInts.Length);
+
+            return temp;
         }
 
         [Benchmark]
         public decimal DecimalAllocation()
         {
-            return decimal.MaxValue;
+            for (int i = 0; i < size; i++)
+                _decimals[i] = Get(i, i);
+
+            var temp = Get(_decimals[3], _decimals.Length);
+
+            return temp;
         }
 
         [Benchmark]
         public decimal? DecimalAllocationNullable()
         {
-            decimal? value = null;
-            return value;
+            for (int i = 0; i < size; i++)
+                _nullDecimals[i] = Get((decimal?)i, i);
+
+            var temp = Get(_nullDecimals[3], _nullDecimals.Length);
+
+            return temp;
         }
 
         [Benchmark]
         public double DoubleAllocation()
         {
-            return double.MaxValue;
+            for (int i = 0; i < size; i++)
+                _doubles[i] = Get((double)i, i);
+
+            var temp = Get(_doubles[3], _doubles.Length);
+
+            return temp;
         }
 
         [Benchmark]
         public double? DoubleAllocationNullable()
         {
-            double? value = null;
-            return value;
+            for (int i = 0; i < size; i++)
+                _nullDoubles[i] = Get((double?)i, i);
+
+            var temp = Get(_nullDoubles[3], _nullDoubles.Length);
+
+            return temp;
+        }
+
+        private T Get<T>(T input, int length)
+        {
+            // Attempt to prevent compiler optimization.
+            if (length < 0)
+                return default;
+
+            return input;
         }
     }
 }

@@ -10,13 +10,16 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
         public static bool InRange(this ColumnStatistics stats, OrcColumn column, string min, string max)
         {
             if (string.IsNullOrEmpty(min) && string.IsNullOrEmpty(max))
-                throw new InvalidOperationException($"Invalid lookup parameters for column '{column.Name}'.");
+                throw new InvalidOperationException($"Lookup parameters for column '{column.Name}' cannot be null.");
 
             return stats.InRange(column.Type, min, max);
         }
 
         public static bool InRange(this ColumnStatistics stats, ColumnTypeKind columnType, string min, string max)
         {
+            if (min == null || max == null)
+                throw new InvalidOperationException($"Lookup parameters cannot be null.");
+
             switch (columnType)
             {
                 case ColumnTypeKind.Boolean:
@@ -26,15 +29,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
                 case ColumnTypeKind.Int:
                 case ColumnTypeKind.Long:
                     {
-                        var minVal = long.Parse(min);
-                        var maxVal = long.Parse(max);
+                        var minVal = long.Parse(min, CultureInfo.InvariantCulture);
+                        var maxVal = long.Parse(max, CultureInfo.InvariantCulture);
                         return stats.InRangeNumeric(minVal, maxVal);
                     }
                 case ColumnTypeKind.Float:
                 case ColumnTypeKind.Double:
                     {
-                        var minVal = double.Parse(min);
-                        var maxVal = double.Parse(max);
+                        var minVal = double.Parse(min, CultureInfo.InvariantCulture);
+                        var maxVal = double.Parse(max, CultureInfo.InvariantCulture);
                         return stats.InRangeDouble(minVal, maxVal);
                     }
                 case ColumnTypeKind.String:
@@ -43,14 +46,21 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
                     return stats.InRangeString(min, max);
                 case ColumnTypeKind.Decimal:
                     {
-                        var minVal = decimal.Parse(min);
-                        var maxVal = decimal.Parse(max);
-                        //TODO it would be better to do a numeric string comparison in the future
-                        if (!decimal.TryParse(stats.DecimalStatistics.Minimum, NumberStyles.Number, CultureInfo.InvariantCulture, out var statsMinVal))
-                            throw new ArgumentOutOfRangeException($"Unable to parse: '{stats.DecimalStatistics.Minimum}'");
-                        if (!decimal.TryParse(stats.DecimalStatistics.Maximum, NumberStyles.Number, CultureInfo.InvariantCulture, out var statsMaxVal))
-                            throw new ArgumentOutOfRangeException($"Unable to parse: '{stats.DecimalStatistics.Maximum}'");
+                        var minVal = decimal.Parse(min, NumberStyles.Number, CultureInfo.InvariantCulture);
+                        var maxVal = decimal.Parse(max, NumberStyles.Number, CultureInfo.InvariantCulture);
                         return stats.InRangeDecimal(minVal, maxVal);
+                    }
+                case ColumnTypeKind.Date:
+                    {
+                        var minVal = int.Parse(min, CultureInfo.InvariantCulture);
+                        var maxVal = int.Parse(max, CultureInfo.InvariantCulture);
+                        return stats.InRangeDate(minVal, maxVal);
+                    }
+                case ColumnTypeKind.Timestamp:
+                    {
+                        var minVal = long.Parse(min, CultureInfo.InvariantCulture);
+                        var maxVal = long.Parse(max, CultureInfo.InvariantCulture);
+                        return stats.InRangeTimespan(minVal, maxVal);
                     }
                 default:
                     throw new NotImplementedException($"Range check for {columnType} not implemented");
@@ -78,13 +88,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             => min.CompareTo(stats.StringStatistics.Maximum) <= 0 && max.CompareTo(stats.StringStatistics.Minimum) >= 0;
 
         public static bool InRangeDecimal(this ColumnStatistics stats, decimal min, decimal max)
-        {
-            if (!decimal.TryParse(stats.DecimalStatistics.Minimum, NumberStyles.Number, CultureInfo.InvariantCulture, out var statsMin))
-                throw new ArgumentOutOfRangeException($"Unable to parse: '{stats.DecimalStatistics.Minimum}'");
-            if (!decimal.TryParse(stats.DecimalStatistics.Maximum, NumberStyles.Number, CultureInfo.InvariantCulture, out var statsMax))
-                throw new ArgumentOutOfRangeException($"Unable to parse: '{stats.DecimalStatistics.Maximum}'");
+            => min <= decimal.Parse(stats.DecimalStatistics.Maximum, NumberStyles.Number, CultureInfo.InvariantCulture) 
+            && max >= decimal.Parse(stats.DecimalStatistics.Minimum, NumberStyles.Number, CultureInfo.InvariantCulture);
 
-            return min <= statsMax && max >= statsMin;
-        }
+        public static bool InRangeDate(this ColumnStatistics stats, int min, int max)
+            => min <= stats.DateStatistics.Maximum && max >= stats.DateStatistics.Minimum;
+
+        public static bool InRangeTimespan(this ColumnStatistics stats, long min, long max)
+            => min <= stats.TimestampStatistics.MaximumUtc && max >= stats.TimestampStatistics.MinimumUtc;
     }
 }

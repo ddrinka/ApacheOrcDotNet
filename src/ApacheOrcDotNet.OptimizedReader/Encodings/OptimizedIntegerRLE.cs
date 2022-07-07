@@ -7,7 +7,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
 {
     public static class OptimizedIntegerRLE
     {
-        enum EncodingType { ShortRepeat, Direct, PatchedBase, Delta }
+        enum EncodingType
+        {
+            ShortRepeat = 0,
+            Direct = 1,
+            PatchedBase = 2,
+            Delta = 3
+        }
 
         public static int ReadValues(ref BufferReader reader, bool isSigned, Span<long> outputValues)
         {
@@ -111,7 +117,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                 var patchIndex = 0;
                 var patchListWidth = BitManipulation.FindNearestDirectWidth(patchWidth + patchGapWidth);
                 ReadBitpackedIntegers(ref reader, isSigned, patchListWidth, patchListLength, patchListValuesSpan);
-                GetNextPatch(patchListValues, ref patchIndex, ref gap, out patch, patchWidth, (1L << patchWidth) - 1);
+                GetNextPatch(patchListValuesSpan, ref patchIndex, ref gap, out patch, patchWidth, (1L << patchWidth) - 1);
 
                 for (int i = 0; i < numReadValues; i++)
                 {
@@ -121,7 +127,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                         outputValues[i] = baseValue + patchedValue;
 
                         if (patchIndex < patchListLength)
-                            GetNextPatch(patchListValues, ref patchIndex, ref gap, out patch, patchWidth, (1L << patchWidth) - 1);
+                            GetNextPatch(patchListValuesSpan, ref patchIndex, ref gap, out patch, patchWidth, (1L << patchWidth) - 1);
                     }
                     else
                         outputValues[i] = baseValue + outputValues[i];
@@ -174,8 +180,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                     for (int i = 0; i < deltaValuesSpan.Length; i++)
                     {
                         outputValues[index++] = deltaBase > 0
-                            ? outputValues[index - 2] + deltaValues[i]
-                            : outputValues[index - 2] - deltaValues[i];
+                            ? outputValues[index - 2] + deltaValuesSpan[i]
+                            : outputValues[index - 2] - deltaValuesSpan[i];
                     }
                 }
                 finally
@@ -189,19 +195,20 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
 
         private static void GetNextPatch(Span<long> patchListValues, ref int patchIndex, ref long gap, out long patch, int patchWidth, long patchMask)
         {
-            var raw = patchListValues[patchIndex];
-            patchIndex++;
-            long curGap = (long)((ulong)raw >> patchWidth);
-            patch = raw & patchMask;
-            while (curGap == 255 && patch == 0)
+            while (true)
             {
-                gap += 255;
-                raw = patchListValues[patchIndex];
-                patchIndex++;
-                curGap = (long)((ulong)raw >> patchWidth);
+                var raw = patchListValues[patchIndex++];
+                var curGap = (long)((ulong)raw >> patchWidth);
                 patch = raw & patchMask;
+
+                if (curGap != 255 || patch != 0)
+                {
+                    gap += curGap;
+                    break;
+                }
+
+                gap += 255;
             }
-            gap += curGap;
         }
 
         private static void ReadBitpackedIntegers(ref BufferReader reader, bool isSigned, int bitWidth, int count, Span<long> outputValues)

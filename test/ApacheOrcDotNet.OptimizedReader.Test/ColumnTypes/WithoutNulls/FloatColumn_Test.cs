@@ -13,16 +13,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var column = reader.GetColumn("float");
             var columnBuffer = reader.CreateFloatColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
-            reader.Fill(columnBuffer);
 
             Assert.Equal(10_000, columnBuffer.Values.Length);
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.floats[i] == null)
+                if (ExpectedFloats[i] == null)
                     Assert.Equal(float.NaN, columnBuffer.Values[i]);
                 else
-                    Assert.Equal(float.Parse(_expectedValues.floats[i], _enUSCulture), columnBuffer.Values[i]);
+                    Assert.Equal(float.Parse(ExpectedFloats[i], _invariantCulture), columnBuffer.Values[i]);
             }
         }
 
@@ -35,16 +34,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var column = reader.GetColumn("float");
             var columnBuffer = reader.CreateFloatColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
-            reader.Fill(columnBuffer);
 
             Assert.Equal(1, columnBuffer.Values.Length);
 
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
-                if (_expectedValues.floats[i] == null)
+                if (ExpectedFloats[i] == null)
                     Assert.Equal(float.NaN, columnBuffer.Values[i]);
                 else
-                    Assert.Equal(float.Parse(_expectedValues.floats[i], _enUSCulture), columnBuffer.Values[i]);
+                    Assert.Equal(float.Parse(ExpectedFloats[i], _invariantCulture), columnBuffer.Values[i]);
             }
         }
     }

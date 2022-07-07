@@ -1,11 +1,8 @@
 ﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
-using ApacheOrcDotNet.Protocol;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    [SkipLocalsInit]
     public class BooleanColumnBuffer : BaseColumnBuffer<bool?>
     {
         private readonly bool[] _presentStreamValues;
@@ -19,37 +16,35 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private byte[] _presentStreamDecompressedBuffer;
         private int _presentStreamDecompressedBufferLength;
 
-        private ColumnDataStreams _streams;
-
-        public BooleanColumnBuffer(IByteRangeProvider byteRangeProvider, OrcContext context, OrcColumn column) : base(byteRangeProvider, context, column)
+        public BooleanColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column) : base(byteRangeProvider, orcFileProperties, column)
         {
-            _presentStreamValues = new bool[_context.MaxValuesToRead];
-            _dataStreamValues = new bool[_context.MaxValuesToRead];
+            _presentStreamValues = new bool[_orcFileProperties.MaxValuesToRead];
+            _dataStreamValues = new bool[_orcFileProperties.MaxValuesToRead];
 
-            _dataStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _dataStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _dataStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
+            _dataStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
 
-            _presentStreamCompressedBuffer = _pool.Rent(_context.MaxCompressedBufferLength);
-            _presentStreamDecompressedBuffer = _pool.Rent(_context.MaxDecompresseBufferLength);
+            _presentStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
+            _presentStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
         }
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
         {
-            _streams = streams;
-
             _ = await Task.WhenAll(
-                GetByteRangeAsync(_streams.Present, _presentStreamCompressedBuffer),
-                GetByteRangeAsync(_streams.Data, _dataStreamCompressedBuffer)
+                GetByteRangeAsync(streams.Present, _presentStreamCompressedBuffer),
+                GetByteRangeAsync(streams.Data, _dataStreamCompressedBuffer)
             );
 
-            DecompressByteRange(_streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
-            DecompressByteRange(_streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
+
+            Fill(streams);
         }
 
-        public override void Fill()
+        private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(_streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
-            ReadBooleanStream(_streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, _dataStreamValues, out var dataValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
+            ReadBooleanStream(streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, _dataStreamValues, out var dataValuesRead);
 
             if (presentValuesRead > 0)
             {

@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public class OrcReader_Test
     {
-        private readonly CultureInfo _enUSCulture = CultureInfo.GetCultureInfo("en-US");
+        private readonly CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
         private readonly IByteRangeProvider _byteRangeProvider = new TestByteRangeProvider(writeRequestedRangesToFile: false, readRequestedRangesFromFile: true);
 
         [Fact]
@@ -61,8 +61,8 @@ namespace ApacheOrcDotNet.OptimizedReader
             Assert.Equal(35, reader.GetFileColumnStatistics(2).IntStatistics.Maximum);
             Assert.Equal(311, reader.GetFileColumnStatistics(3).IntStatistics.Minimum);
             Assert.Equal(596293502, reader.GetFileColumnStatistics(3).IntStatistics.Maximum);
-            Assert.Equal(9.392m, decimal.Parse(reader.GetFileColumnStatistics(5).DecimalStatistics.Minimum, _enUSCulture));
-            Assert.Equal(72041.725554m, decimal.Parse(reader.GetFileColumnStatistics(5).DecimalStatistics.Maximum, _enUSCulture));
+            Assert.Equal(9.392m, decimal.Parse(reader.GetFileColumnStatistics(5).DecimalStatistics.Minimum, _invariantCulture));
+            Assert.Equal(72041.725554m, decimal.Parse(reader.GetFileColumnStatistics(5).DecimalStatistics.Maximum, _invariantCulture));
         }
 
         [Fact]
@@ -75,8 +75,8 @@ namespace ApacheOrcDotNet.OptimizedReader
             Assert.Equal(35, reader.GetStripeColumnStatistics(2, 0).IntStatistics.Maximum);
             Assert.Equal(311, reader.GetStripeColumnStatistics(3, 0).IntStatistics.Minimum);
             Assert.Equal(16690225, reader.GetStripeColumnStatistics(3, 0).IntStatistics.Maximum);
-            Assert.Equal(25200.063318m, decimal.Parse(reader.GetStripeColumnStatistics(5, 0).DecimalStatistics.Minimum, _enUSCulture));
-            Assert.Equal(71979.49409m, decimal.Parse(reader.GetStripeColumnStatistics(5, 0).DecimalStatistics.Maximum, _enUSCulture));
+            Assert.Equal(25200.063318m, decimal.Parse(reader.GetStripeColumnStatistics(5, 0).DecimalStatistics.Minimum, _invariantCulture));
+            Assert.Equal(71979.49409m, decimal.Parse(reader.GetStripeColumnStatistics(5, 0).DecimalStatistics.Maximum, _invariantCulture));
         }
 
         [Fact]
