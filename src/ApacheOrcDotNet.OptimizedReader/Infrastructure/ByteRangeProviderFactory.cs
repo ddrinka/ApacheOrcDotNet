@@ -9,10 +9,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             if (!Uri.TryCreate(location, UriKind.Absolute, out var uri))
                 throw new InvalidOperationException($"Byte range provider must be a valid file:// or http(s):// URI.");
 
-            if (uri.IsFile)
-                return new MemoryMappedFileRangeProvider(uri.LocalPath);
+            var scheme = uri.Scheme;
 
-            return new HttpByteRangeProvider(uri.AbsoluteUri);
+            return scheme switch
+            {
+                "file" => new MemoryMappedFileRangeProvider(uri.LocalPath),
+                "http" => new HttpByteRangeProvider(uri.AbsoluteUri),
+                "https" => new HttpByteRangeProvider(uri.AbsoluteUri),
+                _ => throw new InvalidOperationException($"The scheme '{scheme}' is not supported.")
+            };
         }
     }
 }
