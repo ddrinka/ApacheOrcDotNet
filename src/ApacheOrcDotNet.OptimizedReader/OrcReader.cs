@@ -204,14 +204,24 @@ namespace ApacheOrcDotNet.OptimizedReader
                     && s.ColumnId == columnId
                 ).Single();
 
-                var decompressedData = _byteRangeProvider.DecompressByteRange(
-                     rowIndexStream.FileOffset,
-                     rowIndexStream.Length,
-                     _fileTail.PostScript.Compression,
-                     (int)_fileTail.PostScript.CompressionBlockSize
-                 );
+                var compressedBuffer = ArrayPool<byte>.Shared.Rent(rowIndexStream.Length);
+                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(rowIndexStream.Length * 1032);
+                var compressedBufferSpan = compressedBuffer.AsSpan().Slice(0, rowIndexStream.Length);
+                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, rowIndexStream.Length * 1032);
 
-                return Serializer.Deserialize<RowIndex>(decompressedData.Sequence);
+                try
+                {
+                    _ = _byteRangeProvider.GetRange(compressedBufferSpan, rowIndexStream.FileOffset);
+
+                    var decompressedBufferLength = StreamData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression);
+
+                    return Serializer.Deserialize<RowIndex>(decompressedBufferSpan.Slice(0, decompressedBufferLength));
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(compressedBuffer);
+                    ArrayPool<byte>.Shared.Return(decompressedBuffer);
+                }
             });
         }
 
@@ -243,16 +253,26 @@ namespace ApacheOrcDotNet.OptimizedReader
                 var stripeFooterStart = (long)(stripe.Offset + stripe.IndexLength + stripe.DataLength);
                 var stripeFooterLength = (int)stripe.FooterLength;
 
-                var decompressedData = _byteRangeProvider.DecompressByteRange(
-                    stripeFooterStart,
-                    stripeFooterLength,
-                    _fileTail.PostScript.Compression,
-                    (int)_fileTail.PostScript.CompressionBlockSize
-                );
+                var compressedBuffer = ArrayPool<byte>.Shared.Rent(stripeFooterLength);
+                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(stripeFooterLength * 1032);
+                var compressedBufferSpan = compressedBuffer.AsSpan().Slice(0, stripeFooterLength);
+                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, stripeFooterLength * 1032);
 
-                var streams = SpanStripeFooter.ReadStreamDetails(decompressedData.Sequence, (long)stripe.Offset);
+                try
+                {
+                    _ = _byteRangeProvider.GetRange(compressedBufferSpan, stripeFooterStart);
 
-                _stripeStreams.Add(stripeId, streams.ToList());
+                    var decompressedBufferLength = StreamData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression);
+
+                    var streams = SpanStripeFooter.ReadStreamDetails(decompressedBufferSpan.Slice(0, decompressedBufferLength), (long)stripe.Offset);
+
+                    _stripeStreams.Add(stripeId, streams.ToList());
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(compressedBuffer);
+                    ArrayPool<byte>.Shared.Return(decompressedBuffer);
+                }
             }
 
             return _stripeStreams[stripeId];

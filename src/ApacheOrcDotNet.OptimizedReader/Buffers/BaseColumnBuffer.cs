@@ -178,8 +178,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         {
             if (stream != null)
             {
-                // If last range matches, the previous data will already be buffered.
-                // We can return only the length without requesting the same bytes.
+                // If current and last ranges are equal, the previous data will be buffered
+                // and we can return only the length, without requesting the bytes again.
 
                 if (stream.Range != _lastRange)
                     _lastRangeLength = await _byteRangeProvider.GetRangeAsync(output.Slice(0, stream.Range.Length), stream.Range.Offset);

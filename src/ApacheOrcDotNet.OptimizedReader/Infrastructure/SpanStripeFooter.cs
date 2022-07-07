@@ -1,6 +1,6 @@
 ﻿using ApacheOrcDotNet.Protocol;
 using ProtoBuf;
-using System.Buffers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,7 +8,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public static class SpanStripeFooter
     {
-        public static IEnumerable<StreamDetail> ReadStreamDetails(ReadOnlySequence<byte> inputSequence, long stripeOffset)
+        public static IEnumerable<StreamDetail> ReadStreamDetails(ReadOnlySpan<byte> inputSequence, long stripeOffset)
         {
             var stripeFooter = Serializer.Deserialize<StripeFooter>(inputSequence);
 
