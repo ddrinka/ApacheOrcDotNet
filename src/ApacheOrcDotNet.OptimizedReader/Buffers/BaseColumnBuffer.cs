@@ -110,6 +110,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                         if (numValuesRead >= outputValues.Length)
                             return;
 
+                        // If we are processing the very last byte and all bits after the current
+                        // iteration are unset, we can discard those as they are not being used.
+                        // This is the opposite edge case from the above. Where we have only a few bits set.
                         if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == bitIdx)
                             return;
                     }
