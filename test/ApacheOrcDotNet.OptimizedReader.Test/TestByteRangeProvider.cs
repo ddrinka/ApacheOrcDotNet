@@ -34,7 +34,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             var reader = GetOpenStreamForRange(false, position, buffer.Length);
             if (!_readRequestedRangesFromFile)
                 reader.Seek(position, SeekOrigin.Begin);
-            ReadAllBytes(reader, buffer);
+            _ = reader.Read(buffer);
             if (_writeRequestedRangesToFile)
             {
                 var filename = GetRangeFilename(false, position, buffer.Length);
@@ -58,7 +58,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             var reader = GetOpenStreamForRange(true, positionFromEnd, buffer.Length);
             if (!_readRequestedRangesFromFile)
                 reader.Seek(-positionFromEnd, SeekOrigin.End);
-            ReadAllBytes(reader, buffer);
+            _ = reader.Read(buffer);
             if (_writeRequestedRangesToFile)
             {
                 var filename = GetRangeFilename(true, positionFromEnd, buffer.Length);
@@ -110,21 +110,6 @@ namespace ApacheOrcDotNet.OptimizedReader
         {
             string fromEnd = isFromEnd ? "fromEnd" : "fromStart";
             return $"orctest_{fromEnd}_{position}_{length}.orc";
-        }
-
-        void ReadAllBytes(Stream stream, Span<byte> buffer)
-        {
-            var remaining = buffer.Length;
-            var pos = 0;
-            while (remaining > 0)
-            {
-                var count = stream.Read(buffer[pos..]);
-                if (count == 0)
-                    throw new InvalidOperationException();
-
-                remaining -= count;
-                pos += count;
-            }
         }
     }
 }

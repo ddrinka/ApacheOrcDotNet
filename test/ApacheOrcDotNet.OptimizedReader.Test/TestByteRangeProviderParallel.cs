@@ -27,7 +27,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             lock (_streamLock)
             {
                 _stream.Seek(position, SeekOrigin.Begin);
-                return DoRead(buffer);
+                return _stream.Read(buffer);
             }
         }
 
@@ -45,7 +45,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             lock (_streamLock)
             {
                 _stream.Seek(-positionFromEnd, SeekOrigin.End);
-                return DoRead(buffer);
+                return _stream.Read(buffer);
             }
         }
 
@@ -56,22 +56,6 @@ namespace ApacheOrcDotNet.OptimizedReader
                 _stream.Seek(-positionFromEnd, SeekOrigin.End);
                 return DoReadAsync(buffer);
             }
-        }
-
-        private int DoRead(Span<byte> buffer)
-        {
-            int bytesRead = 0;
-            int bytesRemaining = buffer.Length;
-            while (bytesRemaining > 0)
-            {
-                int count = _stream.Read(buffer[bytesRead..]);
-                if (count == 0)
-                    break;
-
-                bytesRead += count;
-                bytesRemaining -= count;
-            }
-            return bytesRead;
         }
 
         private async Task<int> DoReadAsync(Memory<byte> buffer)

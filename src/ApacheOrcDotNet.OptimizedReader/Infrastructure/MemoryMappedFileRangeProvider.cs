@@ -12,9 +12,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
         internal MemoryMappedFileRangeProvider(string path)
         {
-            using (var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
-                _length = fileStream.Length;
-
+            _length = (new FileInfo(path)).Length;
             _memoryMappedFile = MemoryMappedFile.CreateFromFile(path);
         }
 
@@ -27,7 +25,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
         {
             using (var stream = _memoryMappedFile.CreateViewStream(position, buffer.Length, MemoryMappedFileAccess.Read))
             {
-                return DoRead(stream, buffer);
+                return stream.Read(buffer);
             }
         }
 
@@ -35,7 +33,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
         {
             using (var stream = _memoryMappedFile.CreateViewStream(position, buffer.Length, MemoryMappedFileAccess.Read))
             {
-                return await DoReadAsync(stream, buffer);
+                return await stream.ReadAsync(buffer);
             }
         }
 
@@ -43,7 +41,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
         {
             using (var stream = _memoryMappedFile.CreateViewStream(_length - positionFromEnd, buffer.Length, MemoryMappedFileAccess.Read))
             {
-                return DoRead(stream, buffer);
+                return stream.Read(buffer);
             }
         }
 
@@ -51,40 +49,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
         {
             using (var stream = _memoryMappedFile.CreateViewStream(_length - positionFromEnd, buffer.Length, MemoryMappedFileAccess.Read))
             {
-                return await DoReadAsync(stream, buffer);
+                return await stream.ReadAsync(buffer);
             }
-        }
-
-        private int DoRead(Stream stream, Span<byte> buffer)
-        {
-            int bytesRead = 0;
-            int bytesRemaining = buffer.Length;
-            while (bytesRemaining > 0)
-            {
-                int count = stream.Read(buffer[bytesRead..]);
-                if (count == 0)
-                    break;
-
-                bytesRead += count;
-                bytesRemaining -= count;
-            }
-            return bytesRead;
-        }
-
-        private async Task<int> DoReadAsync(Stream stream, Memory<byte> buffer)
-        {
-            int bytesRead = 0;
-            int bytesRemaining = buffer.Length;
-            while (bytesRemaining > 0)
-            {
-                int count = await stream.ReadAsync(buffer[bytesRead..]);
-                if (count == 0)
-                    break;
-
-                bytesRead += count;
-                bytesRemaining -= count;
-            }
-            return bytesRead;
         }
     }
 }
