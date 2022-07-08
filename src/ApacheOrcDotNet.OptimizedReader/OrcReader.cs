@@ -45,29 +45,19 @@ namespace ApacheOrcDotNet.OptimizedReader
                 var subType = (int)_fileTail.Footer.Types[0].SubTypes[i];
                 var subTypeKind = _fileTail.Footer.Types[subType].Kind;
                 return (subType, name, subTypeKind);
-            }).ToDictionary(i => i.name.ToLower(), i => i);
+            }).ToDictionary(x => x.name.ToLower(), x => x);
 
             _compressionKind = _fileTail.PostScript.Compression;
-            _compressionBlockSize = (int)_fileTail.PostScript.CompressionBlockSize;
-            _maxValuesToRead = (int)_fileTail.Footer.RowIndexStride;
+            _compressionBlockSize = checked((int)_fileTail.PostScript.CompressionBlockSize);
+            _maxValuesToRead = checked((int)_fileTail.Footer.RowIndexStride);
         }
 
         public int NumValues { get; set; }
 
-        public OrcColumn GetColumn(int columnId)
-        {
-            if (columnId == 0 || columnId >= _protoColumns.Count)
-                throw new InvalidOperationException($"The column Id '{columnId}' is invalid.");
-
-            var columnPair = _protoColumns.ElementAt(columnId - 1);
-
-            return GetColumn(columnPair.Value.Name);
-        }
-
         public OrcColumn GetColumn(string columnName)
         {
             if (!_protoColumns.TryGetValue(columnName?.ToLower(), out var column))
-                throw new InvalidOperationException($"The column name '{columnName}' is invalid.");
+                throw new ArgumentException($"The column name '{columnName}' is invalid.");
 
             return new OrcColumn(column.Id, column.Name, column.Type);
         }

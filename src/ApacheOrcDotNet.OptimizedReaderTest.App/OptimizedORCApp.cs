@@ -2,6 +2,7 @@
 using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -122,13 +123,13 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                             Console.WriteLine($"" +
                                 $"{source}," +
                                 $"{symbol}," +
-                                $"{time.ToString().PadRight(15, '0')}," +
+                                $"{time.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0')}," +
                                 $"{size}" +
                                 $"     " +
-                                $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy") : string.Empty)}," +
+                                $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture) : string.Empty)}," +
                                 $"{dobl}," +
                                 $"{sing}," +
-                                $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss") : string.Empty)}," +
+                                $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : string.Empty)}," +
                                 $"{(binary != null ? Encoding.ASCII.GetString(binary) : string.Empty)}," +
                                 $"{tinyInt}," +
                                 $"{boolean}" +

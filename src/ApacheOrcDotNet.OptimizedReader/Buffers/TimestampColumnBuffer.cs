@@ -6,7 +6,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
     public class TimestampColumnBuffer : BaseColumnBuffer<DateTime?>
     {
-        private readonly static DateTime _orcEpoch = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         private readonly bool[] _presentStreamValues;
         private readonly long[] _dataStreamValues;
 
@@ -74,7 +73,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                         var seconds = _dataStreamValues[valueIndex];
                         var nanosecondTicks = EncodedNanosToTicks(_secondaryStreamValues[valueIndex]);
                         var totalTicks = seconds * TimeSpan.TicksPerSecond + (seconds >= 0 ? nanosecondTicks : -nanosecondTicks);
-                        _values[_numValuesRead++] = _orcEpoch.AddTicks(totalTicks);
+                        _values[_numValuesRead++] = OrcFileProperties.OrcEpoch.AddTicks(totalTicks);
                         valueIndex++;
                     }
                     else
@@ -88,7 +87,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                     var seconds = _dataStreamValues[idx];
                     var nanosecondTicks = EncodedNanosToTicks(_secondaryStreamValues[idx]);
                     var totalTicks = seconds * TimeSpan.TicksPerSecond + (seconds >= 0 ? nanosecondTicks : -nanosecondTicks);
-                    _values[_numValuesRead++] = _orcEpoch.AddTicks(totalTicks);
+                    _values[_numValuesRead++] = OrcFileProperties.OrcEpoch.AddTicks(totalTicks);
                 }
             }
         }
