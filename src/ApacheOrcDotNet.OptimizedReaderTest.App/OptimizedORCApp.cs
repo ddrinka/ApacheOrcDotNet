@@ -9,7 +9,6 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
     public class OptimizedORCAppConfiguration
     {
-        public DateTime Date { get; set; }
         public string Source { get; set; }
         public string Symbol { get; set; }
         public TimeSpan BeginTime { get; set; }

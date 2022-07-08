@@ -11,11 +11,6 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
     {
         static async Task Main(string[] args)
         {
-            var cultureInfo = CultureInfo.GetCultureInfo("en-US");
-
-            CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
-            CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
-
             var config = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: true)
                 .AddEnvironmentVariables("apacheorc_app_")
@@ -24,19 +19,17 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             ;
 
             var uri = config.GetValue("uri", string.Empty);
-            var date = config.GetValue("date", DateTime.Now.ToString("d"));
             var source = config.GetValue("source", string.Empty);
             var symbol = config.GetValue("symbol", string.Empty);
             var beginTime = config.GetValue("beginTime", "00:00:00");
             var endTime = config.GetValue("endTime", "23:45:00");
 
-            var isValidDate = DateTime.TryParse(date, out var parsedDate);
-            var isValidBeginTime = TimeSpan.TryParse(beginTime, out var parsedBeginTime);
-            var isValidEndTime = TimeSpan.TryParse(endTime, out var parsedEndTime);
+            var isValidBeginTime = TimeSpan.TryParse(beginTime, CultureInfo.InvariantCulture, out var parsedBeginTime);
+            var isValidEndTime = TimeSpan.TryParse(endTime, CultureInfo.InvariantCulture, out var parsedEndTime);
 
-            if (uri.Length ==0 || !isValidDate || source.Length == 0 || symbol.Length == 0 || !isValidBeginTime || !isValidEndTime || (parsedEndTime < parsedBeginTime))
+            if (uri.Length ==0 || source.Length == 0 || symbol.Length == 0 || !isValidBeginTime || !isValidEndTime || (parsedEndTime < parsedBeginTime))
             {
-                Console.WriteLine("Usage: --uri orcFileUri --date m/d/yyyy --source sourceName --symbol symbolName --beginTime hh:mm:ss --endTime hh:mm:ss");
+                Console.WriteLine("Usage: --uri orcFileUri --source sourceName --symbol symbolName --beginTime hh:mm:ss --endTime hh:mm:ss");
                 Console.WriteLine();
                 Console.WriteLine("Examples:");
                 Console.WriteLine(@"   dotnet run --uri file://c:/path/to/testFile.orc --source CTSPillarNetworkB --symbol SPY --beginTime 09:43:20 --endTime 09:43:21");
@@ -60,7 +53,6 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
             var configs = new OptimizedORCAppConfiguration
             {
-                Date = parsedDate,
                 Source = source,
                 Symbol = symbol,
                 BeginTime = parsedBeginTime,
