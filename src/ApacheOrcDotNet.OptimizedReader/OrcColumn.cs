@@ -3,7 +3,7 @@ using System;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
-    public class OrcColumn
+    public class OrcColumn : IEquatable<OrcColumn>
     {
         public OrcColumn(int id, string name, ColumnTypeKind type)
         {
@@ -18,14 +18,14 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public override bool Equals(object obj)
         {
-            if (obj is OrcColumn)
-            {
-                var other = obj as OrcColumn;
-                return Id == other.Id && Name == other.Name && Type == other.Type;
-            }
+            if (obj is OrcColumn other)
+                return Equals(other);
 
             return false;
         }
+
+        public bool Equals(OrcColumn other)
+            => Id == other.Id && Name == other.Name && Type == other.Type;
 
         public override int GetHashCode() => HashCode.Combine(Id, Name, Type);
     }
