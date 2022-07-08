@@ -104,7 +104,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         reader.LoadDataAsync(stripeId, rowEntryIndex, booleanColumnBuffer)
                     );
 
-                    for (int idx = 0; idx < reader.NumValues; idx++)
+                    for (int idx = 0; idx < reader.NumValuesLoaded; idx++)
                     {
                         var source = sourceColumnBuffer.Values[idx];
                         var symbol = symbolColumnBuffer.Values[idx];

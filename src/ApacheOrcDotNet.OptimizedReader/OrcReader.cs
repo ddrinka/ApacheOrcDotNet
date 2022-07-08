@@ -52,7 +52,8 @@ namespace ApacheOrcDotNet.OptimizedReader
             _maxValuesToRead = checked((int)_fileTail.Footer.RowIndexStride);
         }
 
-        public int NumValues { get; set; }
+        public int NumValuesLoaded { get; set; }
+        public int MaxValuesPerRowGroup => _maxValuesToRead;
 
         public OrcColumn GetColumn(string columnName)
         {
@@ -172,8 +173,8 @@ namespace ApacheOrcDotNet.OptimizedReader
 
             await columnBuffer.LoadDataAsync(stripeId, columnStreams);
 
-            if (NumValues == 0 || NumValues > columnBuffer.Values.Length)
-                NumValues = columnBuffer.Values.Length;
+            if (NumValuesLoaded == 0 || NumValuesLoaded > columnBuffer.Values.Length)
+                NumValuesLoaded = columnBuffer.Values.Length;
         }
 
         public ColumnStatistics GetFileColumnStatistics(int columnId)

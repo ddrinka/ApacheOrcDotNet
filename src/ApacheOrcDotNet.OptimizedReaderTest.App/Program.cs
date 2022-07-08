@@ -60,11 +60,18 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             };
 
             var fileByteRangeProviderFactory = new ByteRangeProviderFactory();
-            var optimizedORCApp = new OptimizedORCApp(uri, configs, fileByteRangeProviderFactory);
             var stopWatch = new Stopwatch();
 
             stopWatch.Start();
-            await optimizedORCApp.Run();
+
+            // Sample app 1
+            await (new OptimizedORCApp(uri, configs, fileByteRangeProviderFactory)).Run();
+
+            //// Sample app 2
+            //// This requires a test file with a sorce,symbol,time,price and size fields.
+            //// (Or the test class bellow can be updated to use different fields)
+            //(new TradeDataSourceApp(uri, configs, fileByteRangeProviderFactory)).Run();
+
             stopWatch.Stop();
 
             Console.WriteLine($"Total execution time: {stopWatch.Elapsed}");
