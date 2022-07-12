@@ -37,17 +37,17 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             }
         }
 
-        public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
+        public int GetRangeFromEnd(Span<byte> buffer)
         {
-            using (var stream = _memoryMappedFile.CreateViewStream(_length - positionFromEnd, buffer.Length, MemoryMappedFileAccess.Read))
+            using (var stream = _memoryMappedFile.CreateViewStream(_length - buffer.Length, buffer.Length, MemoryMappedFileAccess.Read))
             {
                 return stream.Read(buffer);
             }
         }
 
-        public async Task<int> GetRangeFromEndAsync(Memory<byte> buffer, long positionFromEnd)
+        public async Task<int> GetRangeFromEndAsync(Memory<byte> buffer)
         {
-            using (var stream = _memoryMappedFile.CreateViewStream(_length - positionFromEnd, buffer.Length, MemoryMappedFileAccess.Read))
+            using (var stream = _memoryMappedFile.CreateViewStream(_length - buffer.Length, buffer.Length, MemoryMappedFileAccess.Read))
             {
                 return await stream.ReadAsync(buffer);
             }

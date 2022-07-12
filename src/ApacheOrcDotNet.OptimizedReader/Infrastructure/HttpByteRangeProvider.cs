@@ -39,9 +39,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             return await (await response.Content.ReadAsStreamAsync()).ReadAsync(buffer);
         }
 
-        public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
+        public int GetRangeFromEnd(Span<byte> buffer)
         {
-            var request = CreateRangeRequest(null, positionFromEnd);
+            var request = CreateRangeRequest(null, buffer.Length);
             var response = _httpClient.Send(request);
 
             if (!response.Content.Headers.ContentRange.Length.HasValue)
@@ -50,9 +50,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             return response.Content.ReadAsStream().Read(buffer);
         }
 
-        public async Task<int> GetRangeFromEndAsync(Memory<byte> buffer, long positionFromEnd)
+        public async Task<int> GetRangeFromEndAsync(Memory<byte> buffer)
         {
-            var request = CreateRangeRequest(null, positionFromEnd);
+            var request = CreateRangeRequest(null, buffer.Length);
             var response = await _httpClient.SendAsync(request);
 
             if (!response.Content.Headers.ContentRange.Length.HasValue)

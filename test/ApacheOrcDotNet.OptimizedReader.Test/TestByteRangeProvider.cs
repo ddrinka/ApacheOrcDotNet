@@ -53,15 +53,15 @@ namespace ApacheOrcDotNet.OptimizedReader
             throw new NotImplementedException();
         }
 
-        public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
+        public int GetRangeFromEnd(Span<byte> buffer)
         {
-            var reader = GetOpenStreamForRange(true, positionFromEnd, buffer.Length);
+            var reader = GetOpenStreamForRange(true, buffer.Length, buffer.Length);
             if (!_readRequestedRangesFromFile)
-                reader.Seek(-positionFromEnd, SeekOrigin.End);
+                reader.Seek(-buffer.Length, SeekOrigin.End);
             _ = reader.Read(buffer);
             if (_writeRequestedRangesToFile)
             {
-                var filename = GetRangeFilename(true, positionFromEnd, buffer.Length);
+                var filename = GetRangeFilename(true, buffer.Length, buffer.Length);
                 var path = Path.Combine(Path.GetTempPath(), filename);
                 lock (_fileLock)
                 {
@@ -72,7 +72,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return buffer.Length;
         }
 
-        public Task<int> GetRangeFromEndAsync(Memory<byte> buffer, long positionFromEnd)
+        public Task<int> GetRangeFromEndAsync(Memory<byte> buffer)
         {
             throw new NotImplementedException();
         }

@@ -224,7 +224,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 var fileTailBufferRaw = ArrayPool<byte>.Shared.Rent(lengthToReadFromEnd);
                 var fileTailBuffer = fileTailBufferRaw.AsSpan()[..lengthToReadFromEnd];
 
-                _byteRangeProvider.GetRangeFromEnd(fileTailBuffer, lengthToReadFromEnd);
+                _byteRangeProvider.GetRangeFromEnd(fileTailBuffer);
 
                 var success = SpanFileTail.TryRead(fileTailBuffer, out var fileTail, out var additionalBytesRequired);
                 ArrayPool<byte>.Shared.Return(fileTailBufferRaw);

@@ -40,20 +40,20 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        public int GetRangeFromEnd(Span<byte> buffer, long positionFromEnd)
+        public int GetRangeFromEnd(Span<byte> buffer)
         {
             lock (_streamLock)
             {
-                _stream.Seek(-positionFromEnd, SeekOrigin.End);
+                _stream.Seek(-buffer.Length, SeekOrigin.End);
                 return _stream.Read(buffer);
             }
         }
 
-        public Task<int> GetRangeFromEndAsync(Memory<byte> buffer, long positionFromEnd)
+        public Task<int> GetRangeFromEndAsync(Memory<byte> buffer)
         {
             lock (_streamLock)
             {
-                _stream.Seek(-positionFromEnd, SeekOrigin.End);
+                _stream.Seek(-buffer.Length, SeekOrigin.End);
                 return DoReadAsync(buffer);
             }
         }
