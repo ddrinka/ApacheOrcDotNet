@@ -103,6 +103,89 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                         return;
                     }
 
+                    outputValues[numValuesRead++] = (decodedByte & 128) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 7)
+                        return;
+
+                    outputValues[numValuesRead++] = (decodedByte & 64) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 6)
+                        return;
+
+                    outputValues[numValuesRead++] = (decodedByte & 32) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 5)
+                        return;
+
+                    outputValues[numValuesRead++] = (decodedByte & 16) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 4)
+                        return;
+
+                    outputValues[numValuesRead++] = (decodedByte & 8) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 3)
+                        return;
+
+                    outputValues[numValuesRead++] = (decodedByte & 4) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 2)
+                        return;
+
+                    outputValues[numValuesRead++] = (decodedByte & 2) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return;
+                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 1)
+                        return;
+
+                    outputValues[numValuesRead++] = (decodedByte & 1) != 0;
+                    if (numValuesRead >= outputValues.Length)
+                        return;
+                }
+            }
+        }
+
+        private protected void ReadBooleanStreamOld(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<bool> outputValues, out int numValuesRead)
+        {
+            numValuesRead = 0;
+
+            if (stream == null)
+                return;
+
+            var numSkipped = 0;
+            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
+            var numOfTotalBitsToSkip = stream.Positions.ValuesToSkip * 8 + stream.Positions.RemainingBits;
+            var numOfBytesToSkip = numOfTotalBitsToSkip / 8;
+            while (!bufferReader.Complete)
+            {
+                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref bufferReader, _boolStreamBuffer);
+
+                for (int idx = 0; idx < numByteValuesRead; idx++)
+                {
+                    if (numSkipped++ < numOfBytesToSkip)
+                        continue;
+
+                    var decodedByte = _boolStreamBuffer[idx];
+                    var isFinalByte = bufferReader.Complete && idx >= numByteValuesRead - 1;
+
+                    // Skip remaining bits.
+                    if (numOfBytesToSkip % 8 != 0)
+                        decodedByte = (byte)(decodedByte << numOfTotalBitsToSkip % 8);
+
+                    if (isFinalByte && decodedByte == 0)
+                    {
+                        // Edge case where there is only one value for the row entry and that value is null
+                        outputValues[numValuesRead++] = false;
+                        return;
+                    }
+
                     for (int bitIdx = 7; bitIdx >= 0; bitIdx--)
                     {
                         outputValues[numValuesRead++] = (decodedByte & 1 << bitIdx) != 0;
