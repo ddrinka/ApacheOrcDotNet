@@ -30,9 +30,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             _column = column;
             _values = new TOutput[_orcFileProperties.MaxValuesToRead];
 
-            _numericStreamBuffer = new long[1000];
-            _byteStreamBuffer = new byte[1000];
-            _boolStreamBuffer = new byte[1000];
+            // RLEs will decode values from
+            // at most two bytes. We allocate
+            // an extra byte to guarantee space.
+            var runMaxValues = byte.MaxValue * 3;
+            _numericStreamBuffer = new long[runMaxValues];
+            _byteStreamBuffer = new byte[runMaxValues];
+            _boolStreamBuffer = new byte[runMaxValues];
         }
 
         public OrcColumn Column => _column;
