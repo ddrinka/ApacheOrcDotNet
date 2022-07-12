@@ -99,16 +99,28 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new DecimalColumnBuffer(_byteRangeProvider, orcFileProperties, column);
         }
 
-        public BaseColumnBuffer<double> CreateDoubleColumnBuffer(OrcColumn column)
+        public BaseColumnBuffer<double?> CreateDoubleColumnBuffer(OrcColumn column)
         {
             var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new DoubleColumnBuffer(_byteRangeProvider, orcFileProperties, column);
         }
 
-        public BaseColumnBuffer<float> CreateFloatColumnBuffer(OrcColumn column)
+        public BaseColumnBuffer<double> CreateDoubleWithNullAsNaNColumnBuffer(OrcColumn column)
+        {
+            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            return new DoubleWithNullAsNaNColumnBuffer(_byteRangeProvider, orcFileProperties, column);
+        }
+
+        public BaseColumnBuffer<float?> CreateFloatColumnBuffer(OrcColumn column)
         {
             var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
             return new FloatColumnBuffer(_byteRangeProvider, orcFileProperties, column);
+        }
+
+        public BaseColumnBuffer<float> CreateFloatWithNullAsNaNColumnBuffer(OrcColumn column)
+        {
+            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
+            return new FloatWithNullAsNaNColumnBuffer(_byteRangeProvider, orcFileProperties, column);
         }
 
         public BaseColumnBuffer<long?> CreateIntegerColumnBuffer(OrcColumn column)

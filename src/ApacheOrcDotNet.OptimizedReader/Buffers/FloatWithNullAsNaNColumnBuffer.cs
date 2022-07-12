@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    public class FloatColumnBuffer : BaseColumnBuffer<float?>
+    public class FloatWithNullAsNaNColumnBuffer : BaseColumnBuffer<float>
     {
         private bool[] _presentStreamValues;
         private byte[] _valueBuffer;
@@ -17,7 +17,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private byte[] _presentStreamDecompressedBuffer;
         private int _presentStreamDecompressedBufferLength;
 
-        public FloatColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column) : base(byteRangeProvider, orcFileProperties, column)
+        public FloatWithNullAsNaNColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column) : base(byteRangeProvider, orcFileProperties, column)
         {
             _presentStreamValues = new bool[_orcFileProperties.MaxValuesToRead];
             _valueBuffer = new byte[4];
@@ -60,7 +60,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                         _values[_numValuesRead++] = BitConverter.ToSingle(_valueBuffer);
                     }
                     else
-                        _values[_numValuesRead++] = null;
+                        _values[_numValuesRead++] = float.NaN;
                 }
             }
             else

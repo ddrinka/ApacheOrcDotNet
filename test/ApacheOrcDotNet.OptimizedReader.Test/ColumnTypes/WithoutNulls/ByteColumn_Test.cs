@@ -18,10 +18,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
 
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
-                if (ExpectedBytes[i] == null)
-                    Assert.Null(columnBuffer.Values[i]);
-                else
-                    Assert.Equal(byte.Parse(ExpectedBytes[i]), columnBuffer.Values[i]);
+                Assert.NotNull(columnBuffer.Values[i]);
+                Assert.Equal(byte.Parse(ExpectedBytes[i]), columnBuffer.Values[i]);
             }
         }
 
@@ -39,10 +37,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
 
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
-                if (ExpectedBytes[i] == null)
-                    Assert.Null(columnBuffer.Values[i]);
-                else
-                    Assert.Equal(byte.Parse(ExpectedBytes[i]), columnBuffer.Values[i]);
+                Assert.NotNull(columnBuffer.Values[i]);
+                Assert.Equal(byte.Parse(ExpectedBytes[i]), columnBuffer.Values[i]);
             }
         }
     }

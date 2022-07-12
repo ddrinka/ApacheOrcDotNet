@@ -19,7 +19,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
                 if (ExpectedFloats[i] == null)
-                    Assert.Equal(float.NaN, columnBuffer.Values[i]);
+                    Assert.Null(columnBuffer.Values[i]);
                 else
                     Assert.Equal(float.Parse(ExpectedFloats[i], _invariantCulture), columnBuffer.Values[i]);
             }
@@ -40,7 +40,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
                 if (ExpectedFloats[i] == null)
-                    Assert.Equal(float.NaN, columnBuffer.Values[i]);
+                    Assert.Null(columnBuffer.Values[i]);
                 else
                     Assert.Equal(float.Parse(ExpectedFloats[i], _invariantCulture), columnBuffer.Values[i]);
             }

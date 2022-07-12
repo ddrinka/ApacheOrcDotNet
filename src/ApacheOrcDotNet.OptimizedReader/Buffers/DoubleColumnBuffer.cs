@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
-    public class DoubleColumnBuffer : BaseColumnBuffer<double>
+    public class DoubleColumnBuffer : BaseColumnBuffer<double?>
     {
         private bool[] _presentStreamValues;
         private byte[] _valueBuffer;
@@ -60,7 +60,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                         _values[_numValuesRead++] = BitConverter.ToDouble(_valueBuffer);
                     }
                     else
-                        _values[_numValuesRead++] = double.NaN;
+                        _values[_numValuesRead++] = null;
                 }
             }
             else

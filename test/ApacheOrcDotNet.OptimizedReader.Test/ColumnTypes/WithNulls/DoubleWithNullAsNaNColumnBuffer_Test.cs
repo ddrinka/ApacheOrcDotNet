@@ -2,7 +2,7 @@
 
 namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
 {
-    public class DoubleColumn_Test : _BaseColumnTypeWithNulls
+    public class DoubleWithNullAsNaNColumnBuffer_Test : _BaseColumnTypeWithNulls
     {
         [Fact]
         public void Double_Column_10k_Values()
@@ -11,7 +11,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var reader = new OrcReader(config, _byteRangeProvider);
 
             var column = reader.GetColumn("double");
-            var columnBuffer = reader.CreateDoubleColumnBuffer(column);
+            var columnBuffer = reader.CreateDoubleWithNullAsNaNColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
 
             Assert.Equal(10_000, columnBuffer.Values.Length);
@@ -19,7 +19,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             for (int i = 0; i < columnBuffer.Values.Length; i++)
             {
                 if (ExpectedDoubles[i] == null)
-                    Assert.Null(columnBuffer.Values[i]);
+                    Assert.Equal(double.NaN, columnBuffer.Values[i]);
                 else
                     Assert.Equal(double.Parse(ExpectedDoubles[i], _invariantCulture), columnBuffer.Values[i]);
             }
@@ -32,7 +32,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var reader = new OrcReader(config, _byteRangeProvider);
 
             var column = reader.GetColumn("double");
-            var columnBuffer = reader.CreateDoubleColumnBuffer(column);
+            var columnBuffer = reader.CreateDoubleWithNullAsNaNColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
 
             Assert.Equal(1, columnBuffer.Values.Length);
@@ -40,7 +40,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             for (int i = 10_000; i < columnBuffer.Values.Length; i++)
             {
                 if (ExpectedDoubles[i] == null)
-                    Assert.Null(columnBuffer.Values[i]);
+                    Assert.Equal(double.NaN, columnBuffer.Values[i]);
                 else
                     Assert.Equal(double.Parse(ExpectedDoubles[i], _invariantCulture), columnBuffer.Values[i]);
             }
