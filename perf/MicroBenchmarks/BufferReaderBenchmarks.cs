@@ -1,6 +1,5 @@
 ﻿using ApacheOrcDotNet.OptimizedReader;
 using BenchmarkDotNet.Attributes;
-using System;
 using System.IO;
 
 namespace MicroBenchmarks
@@ -9,6 +8,8 @@ namespace MicroBenchmarks
     [MemoryDiagnoser]
     public class BufferReaderBenchmarks
     {
+        private readonly byte[] _readBuffer1 = new byte[3];
+        private readonly byte[] _readBuffer2 = new byte[3];
         private readonly string _testFilePath = @"BenchmarkDotNet.SampleData/optimized_reader_test_file.orc";
         private readonly byte[] _testBuffer;
 
@@ -25,7 +26,6 @@ namespace MicroBenchmarks
         public void TryRead()
         {
             var reader = new BufferReader(_testBuffer);
-
             while (reader.TryRead(out _)) { }
         }
 
@@ -33,9 +33,7 @@ namespace MicroBenchmarks
         public void TryCopyTo()
         {
             var reader = new BufferReader(_testBuffer);
-
-            Span<byte> targetBuffer = stackalloc byte[3];
-            while (reader.TryCopyTo(targetBuffer)) { }
+            while (reader.TryReadTo(_readBuffer1)) { }
         }
 
         [Benchmark]
@@ -52,9 +50,7 @@ namespace MicroBenchmarks
         public void TryCopyTo3Bytes()
         {
             var reader = new BufferReader(_testBuffer);
-
-            Span<byte> targetBuffer = stackalloc byte[3];
-            _ = reader.TryCopyTo(targetBuffer);
+            _ = reader.TryReadTo(_readBuffer2);
         }
     }
 }

@@ -79,19 +79,21 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             var directBitWidth = encodedWidth.DecodeDirectWidth();
             numReadValues = (firstByte & 0x1) << 8;
 
-            Span<byte> nextBytes = stackalloc byte[3];
-            if (!reader.TryCopyTo(nextBytes))
+            if (!reader.TryRead(out var nextByte))
                 throw new InvalidOperationException("Read past end of stream");
-
-            numReadValues |= nextBytes[0];
+            numReadValues |= nextByte;
             numReadValues += 1;
 
-            var baseValueWidth = ((nextBytes[1] >> 5) & 0x7) + 1;
-            var encodedPatchWidth = nextBytes[1] & 0x1f;
+            if (!reader.TryRead(out nextByte))
+                throw new InvalidOperationException("Read past end of stream");
+            var baseValueWidth = ((nextByte >> 5) & 0x7) + 1;
+            var encodedPatchWidth = nextByte & 0x1f;
             var patchWidth = encodedPatchWidth.DecodeDirectWidth();
 
-            var patchGapWidth = ((nextBytes[2] >> 5) & 0x7) + 1;
-            var patchListLength = nextBytes[2] & 0x1f;
+            if (!reader.TryRead(out nextByte))
+                throw new InvalidOperationException("Read past end of stream");
+            var patchGapWidth = ((nextByte >> 5) & 0x7) + 1;
+            var patchListLength = nextByte & 0x1f;
 
             long baseValue = ReadLongBE(ref reader, baseValueWidth);
             long msbMask = (1L << ((baseValueWidth * 8) - 1));

@@ -54,7 +54,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 {
                     if (_presentStreamValues[idx])
                     {
-                        if (!dataReader.TryCopyTo(_valueBuffer))
+                        if (!dataReader.TryReadTo(_valueBuffer))
                             throw new InvalidOperationException("Read past end of stream");
 
                         _values[_numValuesRead++] = BitConverter.ToDouble(_valueBuffer);
@@ -65,7 +65,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
             else
             {
-                while (dataReader.TryCopyTo(_valueBuffer))
+                while (dataReader.TryReadTo(_valueBuffer))
                 {
                     _values[_numValuesRead++] = BitConverter.ToDouble(_valueBuffer);
 

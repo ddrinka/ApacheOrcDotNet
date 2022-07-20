@@ -3,10 +3,10 @@ using System.Runtime.CompilerServices;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
-    public readonly ref struct BufferReader
+    public ref struct BufferReader
     {
         private readonly ReadOnlySpan<byte> _buffer;
-        private readonly int _position;
+        private int _position;
 
         public BufferReader(ReadOnlySpan<byte> buffer)
         {
@@ -33,7 +33,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryCopyTo(Span<byte> buffer)
+        public bool TryReadTo(Span<byte> buffer)
         {
             if (_position + buffer.Length > _buffer.Length)
                 return false;
@@ -45,12 +45,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return true;
         }
 
-        private unsafe void Advance(int length)
-        {
-            fixed (int* ptr = &_position)
-            {
-                *ptr += length;
-            }
-        }
+        private void Advance(int length) 
+            => _position += length;
     }
 }

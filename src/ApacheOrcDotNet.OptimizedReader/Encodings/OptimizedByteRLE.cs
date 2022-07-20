@@ -25,7 +25,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
             {
                 numReadValues = 0x100 - firstByte;
 
-                if (!reader.TryCopyTo(outputValues.Slice(0, numReadValues)))
+                if (!reader.TryReadTo(outputValues.Slice(0, numReadValues)))
                     throw new InvalidOperationException("Read past end of stream");
             }
 
