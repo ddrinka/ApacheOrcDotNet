@@ -263,16 +263,20 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private protected async Task<int> GetByteRangeAsync(StreamDetail stream, Memory<byte> output)
         {
-            if (stream != null)
-            {
-                // If current and last ranges are equal, the previous data will be buffered
-                // and we can return only the length, without requesting the bytes again.
+            if (stream == null)
+                return 0;
 
-                if (stream.Range != _lastRange)
-                    _lastRangeLength = await _byteRangeProvider.GetRangeAsync(output.Slice(0, stream.Range.Length), stream.Range.Offset);
+            // If current and last ranges are equal, the previous data will be buffered
+            // and we can return only the length, without requesting the bytes again.
 
-                _lastRange = stream.Range;
-            }
+            if (stream.Range == _lastRange)
+                return _lastRangeLength;
+
+            if (stream.Range.Length >= output.Length)
+                throw new CompressionBufferException(nameof(output), output.Length, stream.Range.Length);
+
+            _lastRangeLength = await _byteRangeProvider.GetRangeAsync(output.Slice(0, stream.Range.Length), stream.Range.Offset);
+            _lastRange = stream.Range;
 
             return _lastRangeLength;
         }
@@ -282,7 +286,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             decompressedLength = 0;
 
             if (stream != null)
-                decompressedLength = CompressedData.Decompress(compressedInput.Slice(0, stream.Range.Length), decompressedOutput, _orcFileProperties.CompressionKind);
+                decompressedLength = CompressedData.Decompress(compressedInput.Slice(0, stream.Range.Length), decompressedOutput, _orcFileProperties.CompressionKind, (ulong)_orcFileProperties.CompressionBlockSize);
         }
 
         /// <summary>

@@ -15,6 +15,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public class OrcReaderConfiguration
     {
+        public int DecompressionBufferLength { get; set; } = 25 * 1024 * 1024;
         public int OptimisticFileTailReadLength { get; set; } = 16 * 1024;
     }
 
@@ -27,9 +28,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         private readonly ConcurrentDictionary<(int columnId, int stripeId), List<StreamDetail>> _columnStreams = new();
         private readonly ConcurrentDictionary<(int columnId, int stripeId), RowIndex> _rowGroupIndexes = new();
         private readonly Dictionary<string, (int Id, string Name, ColumnTypeKind Type)> _protoColumns = new();
-        private readonly CompressionKind _compressionKind;
-        private readonly int _compressionBlockSize;
-        private readonly int _maxValuesToRead;
+        private readonly OrcFileProperties _orcFileProperties;
 
         public OrcReader(OrcReaderConfiguration configuration, IByteRangeProvider byteRangeProvider)
         {
@@ -47,13 +46,16 @@ namespace ApacheOrcDotNet.OptimizedReader
                 return (subType, name, subTypeKind);
             }).ToDictionary(x => x.name.ToLower(), x => x);
 
-            _compressionKind = _fileTail.PostScript.Compression;
-            _compressionBlockSize = checked((int)_fileTail.PostScript.CompressionBlockSize);
-            _maxValuesToRead = checked((int)_fileTail.Footer.RowIndexStride);
+            _orcFileProperties = new OrcFileProperties(
+                _fileTail.PostScript.Compression,
+                checked((int)_fileTail.PostScript.CompressionBlockSize),
+                checked((int)_fileTail.Footer.RowIndexStride),
+                _configuration.DecompressionBufferLength
+            );
         }
 
         public int NumValuesLoaded { get; set; }
-        public int MaxValuesPerRowGroup => _maxValuesToRead;
+        public int MaxValuesPerRowGroup => _orcFileProperties.MaxValuesToRead;
 
         public OrcColumn GetColumn(string columnName)
         {
@@ -64,82 +66,43 @@ namespace ApacheOrcDotNet.OptimizedReader
         }
 
         public BaseColumnBuffer<byte[]> CreateBinaryColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new BinaryColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new BinaryColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<bool?> CreateBooleanColumnReader(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new BooleanColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new BooleanColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<byte?> CreateByteColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new ByteColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new ByteColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<DateTime?> CreateDateColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new DateColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new DateColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<double> CreateDecimalColumnBufferAsDouble(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new DecimalAsDoubleColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new DecimalAsDoubleColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<decimal?> CreateDecimalColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new DecimalColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new DecimalColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<double?> CreateDoubleColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new DoubleColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new DoubleColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<double> CreateDoubleWithNullAsNaNColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new DoubleWithNullAsNaNColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new DoubleWithNullAsNaNColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<float?> CreateFloatColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new FloatColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new FloatColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<float> CreateFloatWithNullAsNaNColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new FloatWithNullAsNaNColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new FloatWithNullAsNaNColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<long?> CreateIntegerColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new IntegerColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new IntegerColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<string> CreateStringColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new StringColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new StringColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public BaseColumnBuffer<DateTime?> CreateTimestampColumnBuffer(OrcColumn column)
-        {
-            var orcFileProperties = new OrcFileProperties(_compressionKind, _compressionBlockSize, _maxValuesToRead);
-            return new TimestampColumnBuffer(_byteRangeProvider, orcFileProperties, column);
-        }
+            => new TimestampColumnBuffer(_byteRangeProvider, _orcFileProperties, column);
 
         public IEnumerable<int> FilterStripes(OrcColumn column, FilterValues filterValues)
             => FilterStripes(Enumerable.Range(0, _fileTail.Metadata.StripeStats.Count), column, filterValues);
@@ -216,7 +179,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 {
                     _ = _byteRangeProvider.GetRange(compressedBufferSpan, rowIndexStream.FileOffset);
 
-                    var decompressedBufferLength = CompressedData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression);
+                    var decompressedBufferLength = CompressedData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression, _fileTail.PostScript.CompressionBlockSize);
 
                     return Serializer.Deserialize<RowIndex>(decompressedBufferSpan.Slice(0, decompressedBufferLength));
                 }
@@ -265,7 +228,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 {
                     _ = _byteRangeProvider.GetRange(compressedBufferSpan, stripeFooterStart);
 
-                    var decompressedBufferLength = CompressedData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression);
+                    var decompressedBufferLength = CompressedData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression, _fileTail.PostScript.CompressionBlockSize);
 
                     var streams = SpanStripeFooter.ReadStreamDetails(decompressedBufferSpan.Slice(0, decompressedBufferLength), (long)stripe.Offset);
 

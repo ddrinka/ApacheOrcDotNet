@@ -22,17 +22,17 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         public BinaryColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column) : base(byteRangeProvider, orcFileProperties, column)
         {
-            _presentStreamBuffer = new bool[_orcFileProperties.MaxValuesToRead];
-            _lengthStreamBuffer = new long[_orcFileProperties.MaxValuesToRead];
+            _presentStreamBuffer = new bool[orcFileProperties.MaxValuesToRead];
+            _lengthStreamBuffer = new long[orcFileProperties.MaxValuesToRead];
 
-            _dataStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
-            _dataStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
+            _dataStreamCompressedBuffer = new byte[orcFileProperties.ReusableBufferLength];
+            _dataStreamDecompressedBuffer = new byte[orcFileProperties.ReusableBufferLength];
 
-            _lengthStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
-            _lengthStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
+            _lengthStreamCompressedBuffer = new byte[orcFileProperties.ReusableBufferLength];
+            _lengthStreamDecompressedBuffer = new byte[orcFileProperties.ReusableBufferLength];
 
-            _presentStreamCompressedBuffer = new byte[_orcFileProperties.MaxCompressedBufferLength];
-            _presentStreamDecompressedBuffer = new byte[_orcFileProperties.MaxDecompressedBufferLength];
+            _presentStreamCompressedBuffer = new byte[orcFileProperties.ReusableBufferLength];
+            _presentStreamDecompressedBuffer = new byte[orcFileProperties.ReusableBufferLength];
         }
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
