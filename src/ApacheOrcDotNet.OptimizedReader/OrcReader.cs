@@ -15,7 +15,8 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public class OrcReaderConfiguration
     {
-        public int DecompressionBufferLength { get; set; } = 15 * 1024 * 1024;
+        public int MetadataDecompressionBufferLength { get; set; } = 1 * 1024 * 1024;
+        public int StreamDecompressionBufferLength { get; set; } = 15 * 1024 * 1024;
         public int OptimisticFileTailReadLength { get; set; } = 16 * 1024;
     }
 
@@ -50,7 +51,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 _fileTail.PostScript.Compression,
                 checked((int)_fileTail.PostScript.CompressionBlockSize),
                 checked((int)_fileTail.Footer.RowIndexStride),
-                _configuration.DecompressionBufferLength
+                _configuration.StreamDecompressionBufferLength
             );
         }
 
@@ -171,9 +172,9 @@ namespace ApacheOrcDotNet.OptimizedReader
                 ).Single();
 
                 var compressedBuffer = ArrayPool<byte>.Shared.Rent(rowIndexStream.Length);
-                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(_configuration.DecompressionBufferLength);
                 var compressedBufferSpan = compressedBuffer.AsSpan().Slice(0, rowIndexStream.Length);
-                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, _configuration.DecompressionBufferLength);
+                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(_configuration.MetadataDecompressionBufferLength);
+                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, _configuration.MetadataDecompressionBufferLength);
 
                 try
                 {
@@ -204,7 +205,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
                     _byteRangeProvider.FillBufferFromEnd(fileTailBuffer);
 
-                    var success = SpanFileTail.TryRead(fileTailBuffer, _configuration.DecompressionBufferLength, out var fileTail, out var additionalBytesRequired);
+                    var success = SpanFileTail.TryRead(fileTailBuffer, _configuration.MetadataDecompressionBufferLength, out var fileTail, out var additionalBytesRequired);
 
                     if (success)
                         return fileTail;
@@ -227,9 +228,9 @@ namespace ApacheOrcDotNet.OptimizedReader
                 var stripeFooterLength = (int)stripe.FooterLength;
 
                 var compressedBuffer = ArrayPool<byte>.Shared.Rent(stripeFooterLength);
-                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(_configuration.DecompressionBufferLength);
                 var compressedBufferSpan = compressedBuffer.AsSpan().Slice(0, stripeFooterLength);
-                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, _configuration.DecompressionBufferLength);
+                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(_configuration.MetadataDecompressionBufferLength);
+                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, _configuration.MetadataDecompressionBufferLength);
 
                 try
                 {
