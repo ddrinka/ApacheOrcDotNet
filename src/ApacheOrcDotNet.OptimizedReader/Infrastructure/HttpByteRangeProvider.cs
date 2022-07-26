@@ -17,50 +17,58 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
         public void Dispose() => _httpClient.Dispose();
 
-        public int GetRange(Span<byte> buffer, long position)
+        public void FillBuffer(Span<byte> buffer, long position)
         {
             var request = CreateRangeRequest(position, position + buffer.Length);
             var response = _httpClient.Send(request);
 
             if (!response.Content.Headers.ContentRange.Length.HasValue)
-                throw new InvalidOperationException("Range response must include a length.");
+                throw new InvalidRangeResponseException();
 
-            return response.Content.ReadAsStream().Read(buffer);
+            var bytesRead = response.Content.ReadAsStream().Read(buffer);
+            if (bytesRead < buffer.Length)
+                throw new BufferNotFilledException();
         }
 
-        public async Task<int> GetRangeAsync(Memory<byte> buffer, long position)
+        public async Task FillBufferAsync(Memory<byte> buffer, long position)
         {
             var request = CreateRangeRequest(position, position + buffer.Length);
             var response = await _httpClient.SendAsync(request);
 
             if (!response.Content.Headers.ContentRange.Length.HasValue)
-                throw new InvalidOperationException("Range response must include a length.");
+                throw new InvalidRangeResponseException();
 
             var httpStream = await response.Content.ReadAsStreamAsync();
 
-            return await httpStream.ReadAsync(buffer);
+            var bytesRead = await httpStream.ReadAsync(buffer);
+            if (bytesRead < buffer.Length)
+                throw new BufferNotFilledException();
         }
 
-        public int GetRangeFromEnd(Span<byte> buffer)
+        public void FillBufferFromEnd(Span<byte> buffer)
         {
             var request = CreateRangeRequest(null, buffer.Length);
             var response = _httpClient.Send(request);
 
             if (!response.Content.Headers.ContentRange.Length.HasValue)
-                throw new InvalidOperationException("Range response must include a length.");
+                throw new InvalidRangeResponseException();
 
-            return response.Content.ReadAsStream().Read(buffer);
+            var bytesRead = response.Content.ReadAsStream().Read(buffer);
+            if (bytesRead < buffer.Length)
+                throw new BufferNotFilledException();
         }
 
-        public async Task<int> GetRangeFromEndAsync(Memory<byte> buffer)
+        public async Task FillBufferFromEndAsync(Memory<byte> buffer)
         {
             var request = CreateRangeRequest(null, buffer.Length);
             var response = await _httpClient.SendAsync(request);
 
             if (!response.Content.Headers.ContentRange.Length.HasValue)
-                throw new InvalidOperationException("Range response must include a length.");
+                throw new InvalidRangeResponseException();
 
-            return await (await response.Content.ReadAsStreamAsync()).ReadAsync(buffer);
+            var bytesRead = await (await response.Content.ReadAsStreamAsync()).ReadAsync(buffer);
+            if (bytesRead < buffer.Length)
+                throw new BufferNotFilledException();
         }
 
         private HttpRequestMessage CreateRangeRequest(long? from, long? to)

@@ -21,35 +21,43 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             _memoryMappedFile.Dispose();
         }
 
-        public int GetRange(Span<byte> buffer, long position)
+        public void FillBuffer(Span<byte> buffer, long position)
         {
             using (var stream = _memoryMappedFile.CreateViewStream(position, buffer.Length, MemoryMappedFileAccess.Read))
             {
-                return stream.Read(buffer);
+                var bytesRead = stream.Read(buffer);
+                if (bytesRead < buffer.Length)
+                    throw new BufferNotFilledException();
             }
         }
 
-        public async Task<int> GetRangeAsync(Memory<byte> buffer, long position)
+        public async Task FillBufferAsync(Memory<byte> buffer, long position)
         {
             using (var stream = _memoryMappedFile.CreateViewStream(position, buffer.Length, MemoryMappedFileAccess.Read))
             {
-                return await stream.ReadAsync(buffer);
+                var bytesRead = await stream.ReadAsync(buffer);
+                if (bytesRead < buffer.Length)
+                    throw new BufferNotFilledException();
             }
         }
 
-        public int GetRangeFromEnd(Span<byte> buffer)
+        public void FillBufferFromEnd(Span<byte> buffer)
         {
             using (var stream = _memoryMappedFile.CreateViewStream(_length - buffer.Length, buffer.Length, MemoryMappedFileAccess.Read))
             {
-                return stream.Read(buffer);
+                var bytesRead = stream.Read(buffer);
+                if (bytesRead < buffer.Length)
+                    throw new BufferNotFilledException();
             }
         }
 
-        public async Task<int> GetRangeFromEndAsync(Memory<byte> buffer)
+        public async Task FillBufferFromEndAsync(Memory<byte> buffer)
         {
             using (var stream = _memoryMappedFile.CreateViewStream(_length - buffer.Length, buffer.Length, MemoryMappedFileAccess.Read))
             {
-                return await stream.ReadAsync(buffer);
+                var bytesRead = await stream.ReadAsync(buffer);
+                if (bytesRead < buffer.Length)
+                    throw new BufferNotFilledException();
             }
         }
     }

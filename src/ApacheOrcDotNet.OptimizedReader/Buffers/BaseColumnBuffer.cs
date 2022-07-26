@@ -224,7 +224,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             if (stream.Range.Length >= outputBuffer.Length)
                 throw new CompressionBufferException(nameof(outputBuffer), outputBuffer.Length, stream.Range.Length);
 
-            _lastRangeLength = await _byteRangeProvider.GetRangeAsync(outputBuffer.Slice(0, stream.Range.Length), stream.Range.Offset);
+            await _byteRangeProvider.FillBufferAsync(outputBuffer.Slice(0, stream.Range.Length), stream.Range.Offset);
+
+            _lastRangeLength = stream.Range.Length;
             _lastRange = stream.Range;
 
             return _lastRangeLength;

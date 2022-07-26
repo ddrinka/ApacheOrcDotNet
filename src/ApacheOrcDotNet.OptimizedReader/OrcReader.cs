@@ -177,7 +177,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
                 try
                 {
-                    _ = _byteRangeProvider.GetRange(compressedBufferSpan, rowIndexStream.FileOffset);
+                    _byteRangeProvider.FillBuffer(compressedBufferSpan, rowIndexStream.FileOffset);
 
                     var decompressedBufferLength = CompressedData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression, _fileTail.PostScript.CompressionBlockSize);
 
@@ -202,7 +202,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 {
                     var fileTailBuffer = fileTailBufferRaw.AsSpan()[..lengthToReadFromEnd];
 
-                    _byteRangeProvider.GetRangeFromEnd(fileTailBuffer);
+                    _byteRangeProvider.FillBufferFromEnd(fileTailBuffer);
 
                     var success = SpanFileTail.TryRead(fileTailBuffer, _configuration.DecompressionBufferLength, out var fileTail, out var additionalBytesRequired);
 
@@ -233,7 +233,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 
                 try
                 {
-                    _ = _byteRangeProvider.GetRange(compressedBufferSpan, stripeFooterStart);
+                    _byteRangeProvider.FillBuffer(compressedBufferSpan, stripeFooterStart);
 
                     var decompressedBufferLength = CompressedData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression, _fileTail.PostScript.CompressionBlockSize);
 

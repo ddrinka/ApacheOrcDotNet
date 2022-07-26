@@ -22,16 +22,18 @@ namespace ApacheOrcDotNet.OptimizedReader
             _stream.Dispose();
         }
 
-        public int GetRange(Span<byte> buffer, long position)
+        public void FillBuffer(Span<byte> buffer, long position)
         {
             lock (_streamLock)
             {
                 _stream.Seek(position, SeekOrigin.Begin);
-                return _stream.Read(buffer);
+                var bytesRead = _stream.Read(buffer);
+                if (bytesRead < buffer.Length)
+                    throw new InvalidOperationException("Insufficient data to fill the buffer.");
             }
         }
 
-        public Task<int> GetRangeAsync(Memory<byte> buffer, long position)
+        public Task FillBufferAsync(Memory<byte> buffer, long position)
         {
             lock (_streamLock)
             {
@@ -40,16 +42,18 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        public int GetRangeFromEnd(Span<byte> buffer)
+        public void FillBufferFromEnd(Span<byte> buffer)
         {
             lock (_streamLock)
             {
                 _stream.Seek(-buffer.Length, SeekOrigin.End);
-                return _stream.Read(buffer);
+                var bytesRead = _stream.Read(buffer);
+                if (bytesRead < buffer.Length)
+                    throw new BufferNotFilledException();
             }
         }
 
-        public Task<int> GetRangeFromEndAsync(Memory<byte> buffer)
+        public Task FillBufferFromEndAsync(Memory<byte> buffer)
         {
             lock (_streamLock)
             {
@@ -58,20 +62,11 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        private async Task<int> DoReadAsync(Memory<byte> buffer)
+        private async Task DoReadAsync(Memory<byte> buffer)
         {
-            int bytesRead = 0;
-            int bytesRemaining = buffer.Length;
-            while (bytesRemaining > 0)
-            {
-                int count = await _stream.ReadAsync(buffer[bytesRead..]);
-                if (count == 0)
-                    break;
-
-                bytesRead += count;
-                bytesRemaining -= count;
-            }
-            return bytesRead;
+            var bytesRead = await _stream.ReadAsync(buffer);
+            if (bytesRead < buffer.Length)
+                throw new BufferNotFilledException();
         }
     }
 }

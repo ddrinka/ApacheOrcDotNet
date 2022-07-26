@@ -29,12 +29,17 @@ namespace ApacheOrcDotNet.OptimizedReader
                 file.Dispose();
         }
 
-        public int GetRange(Span<byte> buffer, long position)
+        public void FillBuffer(Span<byte> buffer, long position)
         {
             var reader = GetOpenStreamForRange(false, position, buffer.Length);
+
             if (!_readRequestedRangesFromFile)
                 reader.Seek(position, SeekOrigin.Begin);
-            _ = reader.Read(buffer);
+
+            var bytesRead = reader.Read(buffer);
+            if (bytesRead < buffer.Length)
+                throw new InvalidOperationException("Insufficient data to fill the buffer.");
+
             if (_writeRequestedRangesToFile)
             {
                 var filename = GetRangeFilename(false, position, buffer.Length);
@@ -45,20 +50,24 @@ namespace ApacheOrcDotNet.OptimizedReader
                     outputStream.Write(buffer);
                 }
             }
-            return buffer.Length;
         }
 
-        public Task<int> GetRangeAsync(Memory<byte> buffer, long position)
+        public Task FillBufferAsync(Memory<byte> buffer, long position)
         {
             throw new NotImplementedException();
         }
 
-        public int GetRangeFromEnd(Span<byte> buffer)
+        public void FillBufferFromEnd(Span<byte> buffer)
         {
             var reader = GetOpenStreamForRange(true, buffer.Length, buffer.Length);
+
             if (!_readRequestedRangesFromFile)
                 reader.Seek(-buffer.Length, SeekOrigin.End);
-            _ = reader.Read(buffer);
+
+            var bytesRead = reader.Read(buffer);
+            if (bytesRead < buffer.Length)
+                throw new InvalidOperationException("Insufficient data to fill the buffer.");
+
             if (_writeRequestedRangesToFile)
             {
                 var filename = GetRangeFilename(true, buffer.Length, buffer.Length);
@@ -69,10 +78,9 @@ namespace ApacheOrcDotNet.OptimizedReader
                     outputStream.Write(buffer);
                 }
             }
-            return buffer.Length;
         }
 
-        public Task<int> GetRangeFromEndAsync(Memory<byte> buffer)
+        public Task FillBufferFromEndAsync(Memory<byte> buffer)
         {
             throw new NotImplementedException();
         }

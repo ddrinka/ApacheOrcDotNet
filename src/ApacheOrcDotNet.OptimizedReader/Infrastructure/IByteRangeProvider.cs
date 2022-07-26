@@ -5,9 +5,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public interface IByteRangeProvider : IDisposable
     {
-        int GetRange(Span<byte> buffer, long position);
-        Task<int> GetRangeAsync(Memory<byte> buffer, long position);
-        int GetRangeFromEnd(Span<byte> buffer);
-        Task<int> GetRangeFromEndAsync(Memory<byte> buffer);
+        void FillBuffer(Span<byte> buffer, long position);
+        Task FillBufferAsync(Memory<byte> buffer, long position);
+        void FillBufferFromEnd(Span<byte> buffer);
+        Task FillBufferFromEndAsync(Memory<byte> buffer);
     }
 }
