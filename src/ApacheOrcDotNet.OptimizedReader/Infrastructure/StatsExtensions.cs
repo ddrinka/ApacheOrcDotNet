@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
         public static bool InRange(this ColumnStatistics stats, OrcColumn column, string min, string max)
         {
             if (string.IsNullOrEmpty(min) && string.IsNullOrEmpty(max))
-                throw new InvalidOperationException($"Lookup parameters for column '{column.Name}' cannot be null.");
+                throw new ArgumentException($"Lookup parameters for column '{column.Name}' cannot be null.");
 
             return stats.InRange(column.Type, min, max);
         }
@@ -18,7 +18,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
         public static bool InRange(this ColumnStatistics stats, ColumnTypeKind columnType, string min, string max)
         {
             if (min == null || max == null)
-                throw new InvalidOperationException($"Lookup parameters cannot be null.");
+                throw new ArgumentException($"Lookup parameters cannot be null.");
 
             switch (columnType)
             {
@@ -79,22 +79,34 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
         }
 
         public static bool InRangeNumeric(this ColumnStatistics stats, long min, long max)
-            => min <= stats.IntStatistics.Maximum && max >= stats.IntStatistics.Minimum;
+        { 
+            return min <= stats.IntStatistics.Maximum && max >= stats.IntStatistics.Minimum;
+        }
 
         public static bool InRangeDouble(this ColumnStatistics stats, double min, double max)
-            => min <= stats.DoubleStatistics.Maximum && max >= stats.DoubleStatistics.Minimum;
+        { 
+            return min <= stats.DoubleStatistics.Maximum && max >= stats.DoubleStatistics.Minimum;
+        }
 
         public static bool InRangeString(this ColumnStatistics stats, string min, string max)
-            => min.CompareTo(stats.StringStatistics.Maximum) <= 0 && max.CompareTo(stats.StringStatistics.Minimum) >= 0;
+        {
+            return min.CompareTo(stats.StringStatistics.Maximum) <= 0 && max.CompareTo(stats.StringStatistics.Minimum) >= 0;
+        }
 
         public static bool InRangeDecimal(this ColumnStatistics stats, decimal min, decimal max)
-            => min <= decimal.Parse(stats.DecimalStatistics.Maximum, NumberStyles.Number, CultureInfo.InvariantCulture) 
-            && max >= decimal.Parse(stats.DecimalStatistics.Minimum, NumberStyles.Number, CultureInfo.InvariantCulture);
+        { 
+            return min <= decimal.Parse(stats.DecimalStatistics.Maximum, NumberStyles.Number, CultureInfo.InvariantCulture)
+                && max >= decimal.Parse(stats.DecimalStatistics.Minimum, NumberStyles.Number, CultureInfo.InvariantCulture);
+        }
 
         public static bool InRangeDate(this ColumnStatistics stats, int min, int max)
-            => min <= stats.DateStatistics.Maximum && max >= stats.DateStatistics.Minimum;
+        {
+            return min <= stats.DateStatistics.Maximum && max >= stats.DateStatistics.Minimum;
+        }
 
         public static bool InRangeTimespan(this ColumnStatistics stats, long min, long max)
-            => min <= stats.TimestampStatistics.MaximumUtc && max >= stats.TimestampStatistics.MinimumUtc;
+        { 
+            return min <= stats.TimestampStatistics.MaximumUtc && max >= stats.TimestampStatistics.MinimumUtc;
+        }
     }
 }
