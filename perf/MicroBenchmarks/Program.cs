@@ -1,4 +1,6 @@
-﻿using BenchmarkDotNet.Running;
+﻿using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Running;
+using System.Diagnostics;
 
 namespace MicroBenchmarks
 {
@@ -6,7 +8,11 @@ namespace MicroBenchmarks
     {
         static void Main(string[] args)
         {
-            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+            IConfig config = Debugger.IsAttached
+                ? new DebugInProcessConfig()
+                : DefaultConfig.Instance;
+
+            BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, config);
         }
     }
 }
