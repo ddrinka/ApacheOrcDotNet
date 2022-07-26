@@ -36,7 +36,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             if (!response.Content.Headers.ContentRange.Length.HasValue)
                 throw new InvalidOperationException("Range response must include a length.");
 
-            return await (await response.Content.ReadAsStreamAsync()).ReadAsync(buffer);
+            var httpStream = await response.Content.ReadAsStreamAsync();
+
+            return await httpStream.ReadAsync(buffer);
         }
 
         public int GetRangeFromEnd(Span<byte> buffer)

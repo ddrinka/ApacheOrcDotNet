@@ -7,12 +7,12 @@ namespace MicroBenchmarks
     public class NullableBenchmarks
     {
         private const int size = 10_000;
-        private int[] _ints = new int[size];
-        private int?[] _nullInts = new int?[size];
-        private decimal[] _decimals = new decimal[size];
-        private decimal?[] _nullDecimals = new decimal?[size];
-        private double[] _doubles = new double[size];
-        private double?[] _nullDoubles = new double?[size];
+        private readonly int[] _ints = new int[size];
+        private readonly int?[] _nullInts = new int?[size];
+        private readonly decimal[] _decimals = new decimal[size];
+        private readonly decimal?[] _nullDecimals = new decimal?[size];
+        private readonly double[] _doubles = new double[size];
+        private readonly double?[] _nullDoubles = new double?[size];
 
         [Benchmark]
         public int IntAllocation()
@@ -80,7 +80,7 @@ namespace MicroBenchmarks
             return temp;
         }
 
-        private T Get<T>(T input, int length)
+        private static T Get<T>(T input, int length)
         {
             // Attempt to prevent compiler optimization.
             if (length < 0)

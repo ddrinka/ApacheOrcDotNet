@@ -5,7 +5,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public class FilterValues
     {
-        public static CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
+        private static CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
 
         private FilterValues(string min, string max)
         {
@@ -17,13 +17,13 @@ namespace ApacheOrcDotNet.OptimizedReader
         public string Max { get; }
 
         public static FilterValues CreateFromInteger(long min, long max)
-            => new FilterValues(min.ToString(_invariantCulture), max.ToString(_invariantCulture));
+            => new(min.ToString(_invariantCulture), max.ToString(_invariantCulture));
 
         public static FilterValues CreateFromDecimal(decimal min, decimal max)
-            => new FilterValues(min.ToString(_invariantCulture), max.ToString(_invariantCulture));
+            => new(min.ToString(_invariantCulture), max.ToString(_invariantCulture));
 
         public static FilterValues CreateFromString(string min, string max)
-            => new FilterValues(min, max);
+            => new(min, max);
 
         public static FilterValues CreateFromDate(DateTime min, DateTime max)
         {

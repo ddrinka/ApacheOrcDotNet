@@ -241,17 +241,17 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         /// <summary>
         /// Applies the offset position into the decompressed data.
         /// </summary>
-        private protected ReadOnlySpan<byte> GetDataStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, int decompressedBufferLength)
+        private static protected ReadOnlySpan<byte> GetDataStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, int decompressedBufferLength)
         {
             var rowEntryLength = decompressedBufferLength - stream.Positions.RowEntryOffset;
 
             return decompressedBuffer.Slice(stream.Positions.RowEntryOffset, rowEntryLength);
         }
 
-        private protected double VarIntToDouble(long numerator, long scale)
+        private static protected double VarIntToDouble(long numerator, long scale)
             => (double)VarIntToDecimal(numerator, scale);
 
-        private protected decimal VarIntToDecimal(long numerator, long scale)
+        private static protected decimal VarIntToDecimal(long numerator, long scale)
         {
             if (scale < 0 || scale > 255)
                 throw new OverflowException("Scale must be positive number");
@@ -262,7 +262,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             return decNumerator * scaler;
         }
 
-        private long? ReadVarInt(ref BufferReader stream)
+        private static long? ReadVarInt(ref BufferReader stream)
         {
             long value = 0;
             long currentLong = 0;

@@ -4,7 +4,7 @@ using Xunit;
 
 namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
 {
-    public class _Buffers_Test : _BaseColumnTypeWithNulls
+    public class Buffers_Test : _BaseColumnTypeWithNulls
     {
         [Fact]
         public async Task Small_ByteRange_Buffer_Will_Throw()
@@ -20,7 +20,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
                 await reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer)
             );
 
-            Assert.True(exception is CompressionBufferException);
+            Assert.NotNull(exception);
             Assert.Contains("22191", exception.Message);
             Assert.Contains("1024", exception.Message);
         }
@@ -39,7 +39,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
                 await reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer)
             );
 
-            Assert.True(exception is CompressionBufferException);
+            Assert.NotNull(exception);
             Assert.Contains("68776", exception.Message);
             Assert.Contains("32768", exception.Message);
         }
