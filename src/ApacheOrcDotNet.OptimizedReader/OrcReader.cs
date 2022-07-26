@@ -15,7 +15,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public class OrcReaderConfiguration
     {
-        public int DecompressionBufferLength { get; set; } = 25 * 1024 * 1024;
+        public int DecompressionBufferLength { get; set; } = 15 * 1024 * 1024;
         public int OptimisticFileTailReadLength { get; set; } = 16 * 1024;
     }
 
@@ -185,8 +185,8 @@ namespace ApacheOrcDotNet.OptimizedReader
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(compressedBuffer);
-                    ArrayPool<byte>.Shared.Return(decompressedBuffer);
+                    ArrayPool<byte>.Shared.Return(compressedBuffer, clearArray: false);
+                    ArrayPool<byte>.Shared.Return(decompressedBuffer, clearArray: false);
                 }
             });
         }
@@ -213,7 +213,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(fileTailBufferRaw);
+                    ArrayPool<byte>.Shared.Return(fileTailBufferRaw, clearArray: false);
                 }
             }
         }
@@ -243,8 +243,8 @@ namespace ApacheOrcDotNet.OptimizedReader
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(compressedBuffer);
-                    ArrayPool<byte>.Shared.Return(decompressedBuffer);
+                    ArrayPool<byte>.Shared.Return(compressedBuffer, clearArray: false);
+                    ArrayPool<byte>.Shared.Return(decompressedBuffer, clearArray: false);
                 }
             }
 

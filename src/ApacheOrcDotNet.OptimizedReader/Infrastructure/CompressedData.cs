@@ -39,7 +39,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(decompressionBuffer);
+                ArrayPool<byte>.Shared.Return(decompressionBuffer, clearArray: false);
             }
 
             return outputPosition;

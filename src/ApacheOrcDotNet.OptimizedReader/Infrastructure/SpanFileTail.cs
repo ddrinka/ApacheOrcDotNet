@@ -72,8 +72,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(decompressedFooterBuffer);
-                ArrayPool<byte>.Shared.Return(decompressedMetadataBuffer);
+                ArrayPool<byte>.Shared.Return(decompressedFooterBuffer, clearArray: false);
+                ArrayPool<byte>.Shared.Return(decompressedMetadataBuffer, clearArray: false);
             }
 
             additionalBytesRequired = 0;
