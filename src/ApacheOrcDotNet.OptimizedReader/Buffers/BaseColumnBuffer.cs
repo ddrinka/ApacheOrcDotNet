@@ -261,7 +261,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected async Task<int> GetByteRangeAsync(StreamDetail stream, Memory<byte> output)
+        private protected async Task<int> GetByteRangeAsync(StreamDetail stream, Memory<byte> outputBuffer)
         {
             if (stream == null)
                 return 0;
@@ -272,10 +272,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             if (stream.Range == _lastRange)
                 return _lastRangeLength;
 
-            if (stream.Range.Length >= output.Length)
-                throw new CompressionBufferException(nameof(output), output.Length, stream.Range.Length);
+            if (stream.Range.Length >= outputBuffer.Length)
+                throw new CompressionBufferException(nameof(outputBuffer), outputBuffer.Length, stream.Range.Length);
 
-            _lastRangeLength = await _byteRangeProvider.GetRangeAsync(output.Slice(0, stream.Range.Length), stream.Range.Offset);
+            _lastRangeLength = await _byteRangeProvider.GetRangeAsync(outputBuffer.Slice(0, stream.Range.Length), stream.Range.Offset);
             _lastRange = stream.Range;
 
             return _lastRangeLength;
