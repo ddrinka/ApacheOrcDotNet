@@ -142,7 +142,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
             watch.Stop();
             Console.WriteLine();
-            Console.WriteLine($"Read execution time: {watch.Elapsed}");
+            Console.WriteLine($"Read execution time: {watch.Elapsed.ToString("mm':'ss':'fff")}");
         }
     }
 }

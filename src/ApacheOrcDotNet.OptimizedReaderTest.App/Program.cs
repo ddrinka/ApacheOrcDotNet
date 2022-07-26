@@ -69,12 +69,12 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
             //// Sample app 2
             //// This requires a test file with a sorce,symbol,time,price and size fields.
-            //// (Or the test class bellow can be updated to use different fields)
+            //// (Or the test class below can be updated to use different fields)
             //(new TradeDataSourceApp(uri, configs, fileByteRangeProviderFactory)).Run();
 
             stopWatch.Stop();
 
-            Console.WriteLine($"Total execution time: {stopWatch.Elapsed}");
+            Console.WriteLine($"Total execution time: {stopWatch.Elapsed.ToString("mm':'ss':'fff")}");
             Console.WriteLine();
         }
     }

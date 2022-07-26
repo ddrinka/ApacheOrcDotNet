@@ -171,9 +171,9 @@ namespace ApacheOrcDotNet.OptimizedReader
                 ).Single();
 
                 var compressedBuffer = ArrayPool<byte>.Shared.Rent(rowIndexStream.Length);
-                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(rowIndexStream.Length * 1032);
+                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(_configuration.DecompressionBufferLength);
                 var compressedBufferSpan = compressedBuffer.AsSpan().Slice(0, rowIndexStream.Length);
-                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, rowIndexStream.Length * 1032);
+                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, _configuration.DecompressionBufferLength);
 
                 try
                 {
@@ -197,17 +197,24 @@ namespace ApacheOrcDotNet.OptimizedReader
             while (true)
             {
                 var fileTailBufferRaw = ArrayPool<byte>.Shared.Rent(lengthToReadFromEnd);
-                var fileTailBuffer = fileTailBufferRaw.AsSpan()[..lengthToReadFromEnd];
 
-                _byteRangeProvider.GetRangeFromEnd(fileTailBuffer);
+                try
+                {
+                    var fileTailBuffer = fileTailBufferRaw.AsSpan()[..lengthToReadFromEnd];
 
-                var success = SpanFileTail.TryRead(fileTailBuffer, out var fileTail, out var additionalBytesRequired);
-                ArrayPool<byte>.Shared.Return(fileTailBufferRaw);
+                    _byteRangeProvider.GetRangeFromEnd(fileTailBuffer);
 
-                if (success)
-                    return fileTail;
+                    var success = SpanFileTail.TryRead(fileTailBuffer, _configuration.DecompressionBufferLength, out var fileTail, out var additionalBytesRequired);
 
-                lengthToReadFromEnd += additionalBytesRequired;
+                    if (success)
+                        return fileTail;
+
+                    lengthToReadFromEnd += additionalBytesRequired;
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(fileTailBufferRaw);
+                }
             }
         }
 
@@ -220,9 +227,9 @@ namespace ApacheOrcDotNet.OptimizedReader
                 var stripeFooterLength = (int)stripe.FooterLength;
 
                 var compressedBuffer = ArrayPool<byte>.Shared.Rent(stripeFooterLength);
-                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(stripeFooterLength * 1032);
+                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(_configuration.DecompressionBufferLength);
                 var compressedBufferSpan = compressedBuffer.AsSpan().Slice(0, stripeFooterLength);
-                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, stripeFooterLength * 1032);
+                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, _configuration.DecompressionBufferLength);
 
                 try
                 {

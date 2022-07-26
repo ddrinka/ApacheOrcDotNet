@@ -11,7 +11,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
         public Protocol.Footer Footer { get; private init; }
         public Protocol.Metadata Metadata { get; private init; }
 
-        public static bool TryRead(ReadOnlySpan<byte> buffer, out SpanFileTail fileTail, out int additionalBytesRequired)
+        public static bool TryRead(ReadOnlySpan<byte> buffer, int decompressionBufferLength, out SpanFileTail fileTail, out int additionalBytesRequired)
         {
             int accumulatedLength = 1;
 
@@ -50,10 +50,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
             var compressedFooterBuffer = buffer.Slice(footerStart, (int)postScript.FooterLength);
             var compressedMetadataBuffer = buffer.Slice(metadataStart, (int)postScript.MetadataLength);
-            var decompressedFooterBuffer = ArrayPool<byte>.Shared.Rent((int)postScript.FooterLength * 1032);
-            var decompressedMetadataBuffer = ArrayPool<byte>.Shared.Rent((int)postScript.MetadataLength * 1032);
-            var decompressedFooterBufferSpan = decompressedFooterBuffer.AsSpan().Slice(0, (int)postScript.FooterLength * 1032);
-            var decompressedMetadataBufferSpan = decompressedMetadataBuffer.AsSpan().Slice(0, (int)postScript.MetadataLength * 1032);
+            var decompressedFooterBuffer = ArrayPool<byte>.Shared.Rent(decompressionBufferLength);
+            var decompressedMetadataBuffer = ArrayPool<byte>.Shared.Rent(decompressionBufferLength);
+            var decompressedFooterBufferSpan = decompressedFooterBuffer.AsSpan().Slice(0, decompressionBufferLength);
+            var decompressedMetadataBufferSpan = decompressedMetadataBuffer.AsSpan().Slice(0, decompressionBufferLength);
 
             try
             {
