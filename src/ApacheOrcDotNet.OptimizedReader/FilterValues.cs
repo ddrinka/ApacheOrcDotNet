@@ -27,16 +27,16 @@ namespace ApacheOrcDotNet.OptimizedReader
 
         public static FilterValues CreateFromDate(DateTime min, DateTime max)
         {
-            var minVal = (long)(min - OrcFileProperties.UnixEpochUnspecified).TotalDays;
-            var maxVal = (long)(max - OrcFileProperties.UnixEpochUnspecified).TotalDays;
+            var minVal = (long)(min - Constants.UnixEpochUnspecified).TotalDays;
+            var maxVal = (long)(max - Constants.UnixEpochUnspecified).TotalDays;
 
             return CreateFromInteger(minVal, maxVal);
         }
 
         public static FilterValues CreateFromTimestamp(DateTime min, DateTime max)
         {
-            var minVal = (min - OrcFileProperties.UnixEpochUtc).Ticks / TimeSpan.TicksPerMillisecond;
-            var maxVal = (max - OrcFileProperties.UnixEpochUtc).Ticks / TimeSpan.TicksPerMillisecond;
+            var minVal = (min - Constants.UnixEpochUtc).Ticks / TimeSpan.TicksPerMillisecond;
+            var maxVal = (max - Constants.UnixEpochUtc).Ticks / TimeSpan.TicksPerMillisecond;
 
             return CreateFromInteger(minVal, maxVal);
         }

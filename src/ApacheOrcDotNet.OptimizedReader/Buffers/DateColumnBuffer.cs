@@ -53,7 +53,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 for (int idx = 0; idx < presentValuesRead; idx++)
                 {
                     if (_presentStreamValues[idx])
-                        _values[_numValuesRead++] = OrcFileProperties.UnixEpochUtc.AddTicks(_dataStreamValues[dataIndex++] * TimeSpan.TicksPerDay);
+                        _values[_numValuesRead++] = Constants.UnixEpochUtc.AddTicks(_dataStreamValues[dataIndex++] * TimeSpan.TicksPerDay);
                     else
                         _values[_numValuesRead++] = null;
                 }
@@ -61,7 +61,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             else
             {
                 for (int idx = 0; idx < dataValuesRead; idx++)
-                    _values[_numValuesRead++] = OrcFileProperties.UnixEpochUtc.AddTicks(_dataStreamValues[idx] * TimeSpan.TicksPerDay);
+                    _values[_numValuesRead++] = Constants.UnixEpochUtc.AddTicks(_dataStreamValues[idx] * TimeSpan.TicksPerDay);
             }
         }
     }

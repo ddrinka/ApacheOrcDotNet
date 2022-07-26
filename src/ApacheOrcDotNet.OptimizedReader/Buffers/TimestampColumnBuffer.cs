@@ -73,7 +73,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                         var seconds = _dataStreamValues[valueIndex];
                         var nanosecondTicks = EncodedNanosToTicks(_secondaryStreamValues[valueIndex]);
                         var totalTicks = seconds * TimeSpan.TicksPerSecond + (seconds >= 0 ? nanosecondTicks : -nanosecondTicks);
-                        _values[_numValuesRead++] = OrcFileProperties.OrcEpoch.AddTicks(totalTicks);
+                        _values[_numValuesRead++] = Constants.OrcEpoch.AddTicks(totalTicks);
                         valueIndex++;
                     }
                     else
@@ -87,7 +87,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                     var seconds = _dataStreamValues[idx];
                     var nanosecondTicks = EncodedNanosToTicks(_secondaryStreamValues[idx]);
                     var totalTicks = seconds * TimeSpan.TicksPerSecond + (seconds >= 0 ? nanosecondTicks : -nanosecondTicks);
-                    _values[_numValuesRead++] = OrcFileProperties.OrcEpoch.AddTicks(totalTicks);
+                    _values[_numValuesRead++] = Constants.OrcEpoch.AddTicks(totalTicks);
                 }
             }
         }
