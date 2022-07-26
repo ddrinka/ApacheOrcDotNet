@@ -195,15 +195,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             while (!bufferReader.Complete)
             {
-                var bigInt = ReadVarInt(ref bufferReader);
+                var varInt = ReadVarInt(ref bufferReader);
 
-                if (!bigInt.HasValue)
+                if (!varInt.HasValue)
                     return;
 
                 if (numSkipped++ < stream.Positions.ValuesToSkip)
                     continue;
 
-                outputValues[numValuesRead++] = bigInt.Value;
+                outputValues[numValuesRead++] = varInt.Value;
 
                 if (numValuesRead >= outputValues.Length)
                     return;

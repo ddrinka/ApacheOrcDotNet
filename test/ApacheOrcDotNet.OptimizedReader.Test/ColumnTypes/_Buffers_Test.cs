@@ -1,5 +1,4 @@
 ﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
-using System;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -17,16 +16,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
             var column = reader.GetColumn("binary");
             var columnBuffer = reader.CreateBinaryColumnBuffer(column);
 
-            try
-            {
-                await reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer);
-            }
-            catch (Exception ex)
-            {
-                Assert.True(ex is CompressionBufferException);
-                Assert.Contains("22191", ex.Message);
-                Assert.Contains("1024", ex.Message);
-            }
+            var exception = await Assert.ThrowsAsync<CompressionBufferException>(async () => 
+                await reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer)
+            );
+
+            Assert.True(exception is CompressionBufferException);
+            Assert.Contains("22191", exception.Message);
+            Assert.Contains("1024", exception.Message);
         }
 
         [Fact]
@@ -39,17 +35,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes
             var column = reader.GetColumn("binary");
             var columnBuffer = reader.CreateBinaryColumnBuffer(column);
 
-            try
-            {
-                await reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer);
-            }
-            catch (Exception ex)
-            {
-                Assert.True(ex is CompressionBufferException);
-                Assert.Contains(nameof(CompressedData.Decompress), ex.Message);
-                Assert.Contains("68776", ex.Message);
-                Assert.Contains("32768", ex.Message);
-            }
+            var exception = await Assert.ThrowsAsync<CompressionBufferException>(async () =>
+                await reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer)
+            );
+
+            Assert.True(exception is CompressionBufferException);
+            Assert.Contains("68776", exception.Message);
+            Assert.Contains("32768", exception.Message);
         }
     }
 }
