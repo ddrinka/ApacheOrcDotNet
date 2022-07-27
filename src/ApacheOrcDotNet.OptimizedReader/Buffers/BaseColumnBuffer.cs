@@ -30,10 +30,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             _column = column;
             _values = new TOutput[_orcFileProperties.MaxValuesToRead];
 
-            // RLEs will decode values from
-            // at most two bytes. We allocate
-            // an extra byte to guarantee space.
-            var runMaxValues = byte.MaxValue * 3;
+            // RLEs decode values
+            // from at most two bytes.
+            var runMaxValues = (int)Math.Pow(2, 16);
             _numericStreamBuffer = new long[runMaxValues];
             _byteStreamBuffer = new byte[runMaxValues];
             _boolStreamBuffer = new byte[runMaxValues];
@@ -84,6 +83,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
             var numOfTotalBitsToSkip = stream.Positions.ValuesToSkip * 8 + stream.Positions.RemainingBits;
             var numOfBytesToSkip = numOfTotalBitsToSkip / 8;
+            var checkRemainingBits = true;
             while (!bufferReader.Complete)
             {
                 var numByteValuesRead = OptimizedByteRLE.ReadValues(ref bufferReader, _boolStreamBuffer);
@@ -97,8 +97,11 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                     var isFinalByte = bufferReader.Complete && idx >= numByteValuesRead - 1;
 
                     // Skip remaining bits.
-                    if (numOfBytesToSkip % 8 != 0)
+                    if (checkRemainingBits && numOfBytesToSkip % 8 != 0)
+                    {
                         decodedByte = (byte)(decodedByte << numOfTotalBitsToSkip % 8);
+                        checkRemainingBits = false;
+                    }
 
                     if (isFinalByte && decodedByte == 0)
                     {
