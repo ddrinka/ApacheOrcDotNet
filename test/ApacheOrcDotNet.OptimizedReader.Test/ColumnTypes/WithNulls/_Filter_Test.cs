@@ -15,17 +15,17 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var sourceColumn = reader.GetColumn("source");
             var symbolColumn = reader.GetColumn("symbol");
 
-            var sourcefilterValues = FilterValues.CreateFromString(min: "CTSPillarNetworkA", max: "CTSPillarNetworkB");
-            var symbolfilterValues = FilterValues.CreateFromString(min: "970", max: "973");
+            sourceColumn.SetStringFilter(min: "CTSPillarNetworkA", max: "CTSPillarNetworkB");
+            symbolColumn.SetStringFilter(min: "970", max: "973");
 
-            var filteredStripeIds = reader.FilterStripes(sourceColumn, sourcefilterValues);
-            filteredStripeIds = reader.FilterStripes(filteredStripeIds, symbolColumn, symbolfilterValues);
+            var filteredStripeIds = reader.FilterStripes(sourceColumn);
+            filteredStripeIds = reader.FilterStripes(filteredStripeIds, symbolColumn);
 
             Assert.Single(filteredStripeIds);
             Assert.Contains(filteredStripeIds, stripeId => stripeId == 0);
 
-            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, sourceColumn, sourcefilterValues);
-            rowGroupIndexIds = reader.FilterRowGroups(rowGroupIndexIds, stripeId: 0, symbolColumn, symbolfilterValues);
+            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, sourceColumn);
+            rowGroupIndexIds = reader.FilterRowGroups(rowGroupIndexIds, stripeId: 0, symbolColumn);
 
             Assert.Single(rowGroupIndexIds);
             Assert.Contains(rowGroupIndexIds, rowEntryIndex => rowEntryIndex == 0);
@@ -48,28 +48,32 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var symbolColumn = reader.GetColumn("symbol");
             var timeColumn = reader.GetColumn("time");
 
-            var sourcefilterValues = FilterValues.CreateFromString(min: "CTSPillarNetworkB", max: "CTSPillarNetworkB");
-            var symbolfilterValues = FilterValues.CreateFromString(min: "SPY", max: "SPY");
-            var timefilterValues1 = FilterValues.CreateFromTime(min: beginTime1, max: endTime1);
-            var timefilterValues2 = FilterValues.CreateFromTime(min: beginTime2, max: endTime2);
+            sourceColumn.SetStringFilter(min: "CTSPillarNetworkB", max: "CTSPillarNetworkB");
+            symbolColumn.SetStringFilter(min: "SPY", max: "SPY");
 
-            var filteredStripeIds = reader.FilterStripes(sourceColumn, sourcefilterValues);
-            filteredStripeIds = reader.FilterStripes(filteredStripeIds, symbolColumn, symbolfilterValues);
-            filteredStripeIds = reader.FilterStripes(filteredStripeIds, timeColumn, timefilterValues1);
+            //
+            timeColumn.SetTimeFilter(min: beginTime1, max: endTime1);
+
+            var filteredStripeIds = reader.FilterStripes(sourceColumn);
+            filteredStripeIds = reader.FilterStripes(filteredStripeIds, symbolColumn);
+            filteredStripeIds = reader.FilterStripes(filteredStripeIds, timeColumn);
             Assert.Single(filteredStripeIds);
             Assert.Contains(filteredStripeIds, stripeId => stripeId == 0);
 
-            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, sourceColumn, sourcefilterValues);
-            rowGroupIndexIds = reader.FilterRowGroups(rowGroupIndexIds, stripeId: 0, symbolColumn, symbolfilterValues);
-            rowGroupIndexIds = reader.FilterRowGroups(rowGroupIndexIds, stripeId: 0, timeColumn, timefilterValues1);
+            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, sourceColumn);
+            rowGroupIndexIds = reader.FilterRowGroups(rowGroupIndexIds, stripeId: 0, symbolColumn);
+            rowGroupIndexIds = reader.FilterRowGroups(rowGroupIndexIds, stripeId: 0, timeColumn);
             Assert.Equal(2, rowGroupIndexIds.Count());
             Assert.Contains(rowGroupIndexIds, rowEntryIndex => rowEntryIndex == 0);
             Assert.Contains(rowGroupIndexIds, rowEntryIndex => rowEntryIndex == 1);
 
-            rowGroupIndexIds = reader.FilterRowGroups(rowGroupIndexIds, stripeId: 0, timeColumn, timefilterValues2);
+            //
+            timeColumn.SetTimeFilter(min: beginTime2, max: endTime2);
+
+            rowGroupIndexIds = reader.FilterRowGroups(rowGroupIndexIds, stripeId: 0, timeColumn);
             Assert.Empty(rowGroupIndexIds);
 
-            filteredStripeIds = reader.FilterStripes(filteredStripeIds, timeColumn, timefilterValues2);
+            filteredStripeIds = reader.FilterStripes(filteredStripeIds, timeColumn);
             Assert.Empty(filteredStripeIds);
         }
 
@@ -82,13 +86,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             // Columns
             var dateColumn = reader.GetColumn("date");
 
-            var datefilterValues = FilterValues.CreateFromDate(min: new DateTime(1997, 5, 17), max: new DateTime(1997, 5, 19));
+            dateColumn.SetDateFilter(min: new(1997, 5, 17), max: new(1997, 5, 19));
 
-            var filteredStripeIds = reader.FilterStripes(dateColumn, datefilterValues);
+            var filteredStripeIds = reader.FilterStripes(dateColumn);
             Assert.Single(filteredStripeIds);
             Assert.Contains(filteredStripeIds, stripeId => stripeId == 0);
 
-            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, dateColumn, datefilterValues);
+            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, dateColumn);
             Assert.Single(rowGroupIndexIds);
             Assert.Contains(rowGroupIndexIds, rowEntryIndex => rowEntryIndex == 0);
         }
@@ -102,13 +106,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             // Columns
             var timestampColumn = reader.GetColumn("timestamp");
 
-            var timestampfilterValues = FilterValues.CreateFromTimestamp(min: new DateTime(2015, 1, 1, 2, 46, 35), max: new DateTime(2015, 1, 1, 2, 46, 47));
+            timestampColumn.SetTimestampFilter(min: new(2015, 1, 1, 2, 46, 35), max: new(2015, 1, 1, 2, 46, 47));
 
-            var filteredStripeIds = reader.FilterStripes(timestampColumn, timestampfilterValues);
+            var filteredStripeIds = reader.FilterStripes(timestampColumn);
             Assert.Single(filteredStripeIds);
             Assert.Contains(filteredStripeIds, stripeId => stripeId == 0);
 
-            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, timestampColumn, timestampfilterValues);
+            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, timestampColumn);
             Assert.Equal(2, rowGroupIndexIds.Count());
             Assert.Contains(rowGroupIndexIds, rowEntryIndex => rowEntryIndex == 0);
             Assert.Contains(rowGroupIndexIds, rowEntryIndex => rowEntryIndex == 1);
@@ -123,13 +127,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             // Columns
             var timestampColumn = reader.GetColumn("timestamp");
 
-            var timestampfilterValues = FilterValues.CreateFromTimestamp(min: new DateTime(2015, 1, 1, 2, 46, 47), max: new DateTime(2015, 1, 1, 2, 46, 47));
+            timestampColumn.SetTimestampFilter(min: new(2015, 1, 1, 2, 46, 47), max: new(2015, 1, 1, 2, 46, 47));
 
-            var filteredStripeIds = reader.FilterStripes(timestampColumn, timestampfilterValues);
+            var filteredStripeIds = reader.FilterStripes(timestampColumn);
             Assert.Single(filteredStripeIds);
             Assert.Contains(filteredStripeIds, stripeId => stripeId == 0);
 
-            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, timestampColumn, timestampfilterValues);
+            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, timestampColumn);
             Assert.Single(rowGroupIndexIds);
             Assert.Contains(rowGroupIndexIds, rowEntryIndex => rowEntryIndex == 1);
         }

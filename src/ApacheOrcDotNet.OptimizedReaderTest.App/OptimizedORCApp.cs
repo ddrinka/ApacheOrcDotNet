@@ -72,21 +72,20 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             var booleanColumnBuffer = reader.CreateBooleanColumnReader(booleanColumn);
 
             // Filters
-            var sourceFilterValues = FilterValues.CreateFromString(min: lookupSource, max: lookupSource);
-            var symbolFilterValues = FilterValues.CreateFromString(min: lookupSymbol, max: lookupSymbol);
-            var timeFilterValues = FilterValues.CreateFromTime(min: beginTime, max: endTime);
+            sourceColumn.SetStringFilter(min: lookupSource, max: lookupSource);
+            symbolColumn.SetStringFilter(min: lookupSymbol, max: lookupSymbol);
+            timeColumn.SetTimeFilter(min: beginTime, max: endTime);
 
-            //
-            var stripeIds = reader.FilterStripes(sourceColumn, sourceFilterValues);
-            stripeIds = reader.FilterStripes(stripeIds, symbolColumn, symbolFilterValues);
-            stripeIds = reader.FilterStripes(stripeIds, timeColumn, timeFilterValues);
+            var stripeIds = reader.FilterStripes(sourceColumn);
+            stripeIds = reader.FilterStripes(stripeIds, symbolColumn);
+            stripeIds = reader.FilterStripes(stripeIds, timeColumn);
 
             foreach (var stripeId in stripeIds)
             {
                 //
-                var rowGroupIndexes = reader.FilterRowGroups(stripeId, sourceColumn, sourceFilterValues);
-                rowGroupIndexes = reader.FilterRowGroups(rowGroupIndexes, stripeId, symbolColumn, symbolFilterValues);
-                rowGroupIndexes = reader.FilterRowGroups(rowGroupIndexes, stripeId, timeColumn, timeFilterValues);
+                var rowGroupIndexes = reader.FilterRowGroups(stripeId, sourceColumn);
+                rowGroupIndexes = reader.FilterRowGroups(rowGroupIndexes, stripeId, symbolColumn);
+                rowGroupIndexes = reader.FilterRowGroups(rowGroupIndexes, stripeId, timeColumn);
 
                 foreach (var rowEntryIndex in rowGroupIndexes)
                 {
