@@ -45,7 +45,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         public void Reset() => _numValuesRead = 0;
 
-        private protected void ReadByteStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<byte> outputValues, out int numValuesRead)
+        private protected void ReadByteStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, Span<byte> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
@@ -53,7 +53,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             var numSkipped = 0;
-            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, decompressedBuffer));
 
             while (!bufferReader.Complete)
             {
@@ -72,7 +72,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void ReadBooleanStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<bool> outputValues, out int numValuesRead)
+        private protected void ReadBooleanStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, Span<bool> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
@@ -80,7 +80,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             var numSkipped = 0;
-            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, decompressedBuffer));
             var numOfTotalBitsToSkip = stream.Positions.ValuesToSkip * 8 + stream.Positions.RemainingBits;
             var numOfBytesToSkip = numOfTotalBitsToSkip / 8;
             var checkRemainingBits = true;
@@ -159,7 +159,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void ReadNumericStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, bool isSigned, Span<long> outputValues, out int numValuesRead)
+        private protected void ReadNumericStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, bool isSigned, Span<long> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
@@ -167,7 +167,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             var numSkipped = 0;
-            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, decompressedBuffer));
 
             while (!bufferReader.Complete)
             {
@@ -186,7 +186,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void ReadVarIntStream(StreamDetail stream, ReadOnlySpan<byte> buffer, int length, Span<long> outputValues, out int numValuesRead)
+        private protected void ReadVarIntStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, Span<long> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
@@ -194,7 +194,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 return;
 
             int numSkipped = 0;
-            var bufferReader = new BufferReader(GetDataStream(stream, buffer, length));
+            var bufferReader = new BufferReader(GetDataStream(stream, decompressedBuffer));
 
             while (!bufferReader.Complete)
             {
@@ -246,9 +246,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         /// <summary>
         /// Applies the offset position into the decompressed data.
         /// </summary>
-        private static protected ReadOnlySpan<byte> GetDataStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, int decompressedBufferLength)
+        private static protected ReadOnlySpan<byte> GetDataStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer)
         {
-            var rowEntryLength = decompressedBufferLength - stream.Positions.RowEntryOffset;
+            var rowEntryLength = decompressedBuffer.Length - stream.Positions.RowEntryOffset;
 
             return decompressedBuffer.Slice(stream.Positions.RowEntryOffset, rowEntryLength);
         }

@@ -52,10 +52,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamBuffer, out var presentValuesRead);
-            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, _lengthStreamBuffer, out var lengthValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer[.._presentStreamDecompressedBufferLength], _presentStreamBuffer, out var presentValuesRead);
+            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer[.._lengthStreamDecompressedBufferLength], isSigned: false, _lengthStreamBuffer, out var lengthValuesRead);
 
-            var dataBuffer = GetDataStream(streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength);
+            var dataBuffer = GetDataStream(streams.Data, _dataStreamDecompressedBuffer[.._dataStreamDecompressedBufferLength]);
 
             var stringOffset = 0;
             if (presentValuesRead > 0)

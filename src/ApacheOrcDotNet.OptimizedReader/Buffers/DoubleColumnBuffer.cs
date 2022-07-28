@@ -44,9 +44,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
 
-            var dataReader = new BufferReader(GetDataStream(streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength));
+            var dataReader = new BufferReader(GetDataStream(streams.Data, _dataStreamDecompressedBuffer[.._dataStreamDecompressedBufferLength]));
 
             if (presentValuesRead > 0)
             {

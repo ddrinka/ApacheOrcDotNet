@@ -88,10 +88,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void ReadDirectV2(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, _lengthStreamValues, out var lengthValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer[.._lengthStreamDecompressedBufferLength], isSigned: false, _lengthStreamValues, out var lengthValuesRead);
 
-            var dataBuffer = GetDataStream(streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength);
+            var dataBuffer = GetDataStream(streams.Data, _dataStreamDecompressedBuffer[.._dataStreamDecompressedBufferLength]);
 
             var stringOffset = 0;
             if (presentValuesRead > 0)
@@ -122,13 +122,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void ReadDictionaryV2(int stripeId, ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer, _presentStreamDecompressedBufferLength, _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer, _dataStreamDecompressedBufferLength, isSigned: false, _dataStreamValues, out var dataValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer[.._dataStreamDecompressedBufferLength], isSigned: false, _dataStreamValues, out var dataValuesRead);
 
             if (!_stripeDictionaries.TryGetValue(stripeId, out var stringsList))
             {
                 Span<long> dictionaryV2LengthStreamBuffer = stackalloc long[streams.Length.DictionarySize];
-                ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer, _lengthStreamDecompressedBufferLength, isSigned: false, dictionaryV2LengthStreamBuffer, out var lengthValuesRead);
+                ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer[.._lengthStreamDecompressedBufferLength], isSigned: false, dictionaryV2LengthStreamBuffer, out var lengthValuesRead);
 
                 int stringOffset = 0;
                 stringsList = new List<string>();

@@ -5,7 +5,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public class FilterValues
     {
-        private static CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
+        private static readonly CultureInfo _invariantCulture = CultureInfo.InvariantCulture;
 
         private FilterValues(string min, string max)
         {
