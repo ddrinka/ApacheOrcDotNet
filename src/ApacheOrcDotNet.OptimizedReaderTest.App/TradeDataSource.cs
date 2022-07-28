@@ -1,4 +1,5 @@
-﻿using ApacheOrcDotNet.OptimizedReader.Buffers;
+﻿using ApacheOrcDotNet.OptimizedReader;
+using ApacheOrcDotNet.OptimizedReader.Buffers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -58,19 +59,19 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             _priceColumnBuffer = reader.CreateDecimalColumnBuffer(priceColumn);
             _sizeColumnBuffer = reader.CreateIntegerColumnBuffer(sizeColumn);
 
-            sourceColumn.SetStringFilter(min: _souce, max: _souce);
-            symbolColumn.SetStringFilter(min: _symbol, max: _symbol);
-            timeColumn.SetTimeFilter(min: _startTime, max: _endTime);
+            var sourceFilterValues = FilterValues.CreateFromString(min: _souce, max: _souce);
+            var symbolFilterValues = FilterValues.CreateFromString(min: _symbol, max: _symbol);
+            var timeFilterValues = FilterValues.CreateFromTime(min: _startTime, max: _endTime);
 
-            var stripeIds = _reader.FilterStripes(sourceColumn);
-            stripeIds = _reader.FilterStripes(stripeIds, symbolColumn);
-            stripeIds = _reader.FilterStripes(stripeIds, timeColumn);
+            var stripeIds = _reader.FilterStripes(sourceColumn, sourceFilterValues);
+            stripeIds = _reader.FilterStripes(stripeIds, symbolColumn, symbolFilterValues);
+            stripeIds = _reader.FilterStripes(stripeIds, timeColumn, timeFilterValues);
 
             foreach (var stripeId in stripeIds)
             {
-                var rowGroupIndexes = _reader.FilterRowGroups(stripeId, sourceColumn);
-                rowGroupIndexes = _reader.FilterRowGroups(rowGroupIndexes, stripeId, symbolColumn);
-                rowGroupIndexes = _reader.FilterRowGroups(rowGroupIndexes, stripeId, timeColumn);
+                var rowGroupIndexes = _reader.FilterRowGroups(stripeId, sourceColumn, sourceFilterValues);
+                rowGroupIndexes = _reader.FilterRowGroups(rowGroupIndexes, stripeId, symbolColumn, symbolFilterValues);
+                rowGroupIndexes = _reader.FilterRowGroups(rowGroupIndexes, stripeId, timeColumn, timeFilterValues);
 
                 _filters.Add(stripeId, rowGroupIndexes.ToList());
             }
