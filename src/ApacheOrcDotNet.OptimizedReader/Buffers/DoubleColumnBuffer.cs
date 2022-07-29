@@ -6,8 +6,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
     public class DoubleColumnBuffer : BaseColumnBuffer<double?>
     {
-        private bool[] _presentStreamValues;
-        private byte[] _valueBuffer;
+        private readonly bool[] _presentStreamValues;
+        private readonly byte[] _valueBuffer;
 
         private byte[] _dataStreamCompressedBuffer;
         private byte[] _dataStreamDecompressedBuffer;
@@ -31,22 +31,25 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
         {
+            CheckByteRangeBufferLength(streams.Present, ref _presentStreamCompressedBuffer);
+            CheckByteRangeBufferLength(streams.Data, ref _dataStreamCompressedBuffer);
+
             _ = await Task.WhenAll(
                 GetByteRangeAsync(streams.Present, _presentStreamCompressedBuffer),
                 GetByteRangeAsync(streams.Data, _dataStreamCompressedBuffer)
             );
 
-            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
-            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, ref _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, ref _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
 
             Fill(streams);
         }
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
 
-            var dataReader = new BufferReader(GetDataStream(streams.Data, _dataStreamDecompressedBuffer[.._dataStreamDecompressedBufferLength]));
+            var dataReader = new BufferReader(GetDataStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength]));
 
             if (presentValuesRead > 0)
             {

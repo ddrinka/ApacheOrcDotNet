@@ -51,6 +51,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
         {
+            CheckByteRangeBufferLength(streams.Present, ref _presentStreamCompressedBuffer);
+            CheckByteRangeBufferLength(streams.Length, ref _lengthStreamCompressedBuffer);
+            CheckByteRangeBufferLength(streams.Data, ref _dataStreamCompressedBuffer);
+
             var byteRangeTasks = new List<Task<int>>()
             {
                 GetByteRangeAsync(streams.Present, _presentStreamCompressedBuffer),
@@ -58,15 +62,18 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 GetByteRangeAsync(streams.Data, _dataStreamCompressedBuffer)
             };
             if (streams.EncodingKind == ColumnEncodingKind.DictionaryV2)
+            {
+                CheckByteRangeBufferLength(streams.DictionaryData, ref _dictionaryStreanCompressedBuffer);
                 byteRangeTasks.Add(GetByteRangeAsync(streams.DictionaryData, _dictionaryStreanCompressedBuffer));
+            }
 
             _ = await Task.WhenAll(byteRangeTasks);
 
-            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
-            DecompressByteRange(streams.Length, _lengthStreamCompressedBuffer, _lengthStreamDecompressedBuffer, ref _lengthStreamDecompressedBufferLength);
-            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, ref _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Length, _lengthStreamCompressedBuffer, ref _lengthStreamDecompressedBuffer, ref _lengthStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, ref _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
             if (streams.EncodingKind == ColumnEncodingKind.DictionaryV2)
-                DecompressByteRange(streams.DictionaryData, _dictionaryStreanCompressedBuffer, _dictionaryStreamDecompressedBuffer, ref _dictionaryStreamDecompressedBufferLength);
+                DecompressByteRange(streams.DictionaryData, _dictionaryStreanCompressedBuffer, ref _dictionaryStreamDecompressedBuffer, ref _dictionaryStreamDecompressedBufferLength);
 
             Fill(stripeId, streams);
         }
@@ -88,10 +95,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void ReadDirectV2(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer[.._lengthStreamDecompressedBufferLength], isSigned: false, _lengthStreamValues, out var lengthValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer.AsSpan()[.._lengthStreamDecompressedBufferLength], isSigned: false, _lengthStreamValues, out var lengthValuesRead);
 
-            var dataBuffer = GetDataStream(streams.Data, _dataStreamDecompressedBuffer[.._dataStreamDecompressedBufferLength]);
+            var dataBuffer = GetDataStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength]);
 
             var stringOffset = 0;
             if (presentValuesRead > 0)
@@ -122,13 +129,13 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void ReadDictionaryV2(int stripeId, ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer[.._dataStreamDecompressedBufferLength], isSigned: false, _dataStreamValues, out var dataValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength], isSigned: false, _dataStreamValues, out var dataValuesRead);
 
             if (!_stripeDictionaries.TryGetValue(stripeId, out var stringsList))
             {
                 Span<long> dictionaryV2LengthStreamBuffer = stackalloc long[streams.Length.DictionarySize];
-                ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer[.._lengthStreamDecompressedBufferLength], isSigned: false, dictionaryV2LengthStreamBuffer, out var lengthValuesRead);
+                ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer.AsSpan()[.._lengthStreamDecompressedBufferLength], isSigned: false, dictionaryV2LengthStreamBuffer, out var lengthValuesRead);
 
                 int stringOffset = 0;
                 stringsList = new List<string>();

@@ -8,6 +8,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
     {
         private readonly bool[] _presentStreamValues;
         private readonly long[] _dataStreamValues;
+        private readonly long[] _secondaryStreamValues;
 
         private byte[] _dataStreamCompressedBuffer;
         private byte[] _dataStreamDecompressedBuffer;
@@ -20,8 +21,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private byte[] _secondaryStreamCompressedBuffer;
         private byte[] _secondaryStreamDecompressedBuffer;
         private int _secondaryStreamDecompressedBufferLength;
-
-        private long[] _secondaryStreamValues;
 
         public TimestampColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column) : base(byteRangeProvider, orcFileProperties, column)
         {
@@ -41,24 +40,28 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
         {
+            CheckByteRangeBufferLength(streams.Present, ref _presentStreamCompressedBuffer);
+            CheckByteRangeBufferLength(streams.Data, ref _dataStreamCompressedBuffer);
+            CheckByteRangeBufferLength(streams.Secondary, ref _secondaryStreamCompressedBuffer);
+
             _ = await Task.WhenAll(
                 GetByteRangeAsync(streams.Present, _presentStreamCompressedBuffer),
                 GetByteRangeAsync(streams.Data, _dataStreamCompressedBuffer),
                 GetByteRangeAsync(streams.Secondary, _secondaryStreamCompressedBuffer)
             );
 
-            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
-            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
-            DecompressByteRange(streams.Secondary, _secondaryStreamCompressedBuffer, _secondaryStreamDecompressedBuffer, ref _secondaryStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, ref _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, ref _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Secondary, _secondaryStreamCompressedBuffer, ref _secondaryStreamDecompressedBuffer, ref _secondaryStreamDecompressedBufferLength);
 
             Fill(streams);
         }
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer[.._dataStreamDecompressedBufferLength], isSigned: true, _dataStreamValues, out var dataValuesRead);
-            ReadNumericStream(streams.Secondary, _secondaryStreamDecompressedBuffer[.._secondaryStreamDecompressedBufferLength], isSigned: false, _secondaryStreamValues, out var secondaryValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength], isSigned: true, _dataStreamValues, out var dataValuesRead);
+            ReadNumericStream(streams.Secondary, _secondaryStreamDecompressedBuffer.AsSpan()[.._secondaryStreamDecompressedBufferLength], isSigned: false, _secondaryStreamValues, out var secondaryValuesRead);
 
             if (dataValuesRead != secondaryValuesRead)
                 throw new InvalidOperationException($"Number of data({dataValuesRead}) and secondary({secondaryValuesRead}) values must match.");
@@ -92,7 +95,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private long EncodedNanosToTicks(long encodedNanos)
+        private static long EncodedNanosToTicks(long encodedNanos)
         {
             var scale = (int)(encodedNanos & 0x7);
             var nanos = encodedNanos >> 3;

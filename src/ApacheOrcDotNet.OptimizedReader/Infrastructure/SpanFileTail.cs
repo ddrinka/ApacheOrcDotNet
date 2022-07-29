@@ -1,6 +1,5 @@
 ﻿using ProtoBuf;
 using System;
-using System.Buffers;
 using System.IO;
 
 namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
@@ -11,7 +10,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
         public Protocol.Footer Footer { get; private init; }
         public Protocol.Metadata Metadata { get; private init; }
 
-        public static bool TryRead(ReadOnlySpan<byte> buffer, int decompressionBufferLength, out SpanFileTail fileTail, out int additionalBytesRequired)
+        public static bool TryRead(ReadOnlySpan<byte> buffer, out SpanFileTail fileTail, out int additionalBytesRequired)
         {
             int accumulatedLength = 1;
 
@@ -50,31 +49,21 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
             var compressedFooterBuffer = buffer.Slice(footerStart, (int)postScript.FooterLength);
             var compressedMetadataBuffer = buffer.Slice(metadataStart, (int)postScript.MetadataLength);
-            var decompressedFooterBuffer = ArrayPool<byte>.Shared.Rent(decompressionBufferLength);
-            var decompressedMetadataBuffer = ArrayPool<byte>.Shared.Rent(decompressionBufferLength);
-            var decompressedFooterBufferSpan = decompressedFooterBuffer.AsSpan().Slice(0, decompressionBufferLength);
-            var decompressedMetadataBufferSpan = decompressedMetadataBuffer.AsSpan().Slice(0, decompressionBufferLength);
 
-            try
+            var decompressedFooterBuffer = CompressedData.CreateDecompressionBuffer(compressedFooterBuffer, postScript.Compression, checked((int)postScript.CompressionBlockSize));
+            var decompressedFooterSize = CompressedData.Decompress(compressedFooterBuffer, decompressedFooterBuffer, postScript.Compression);
+            var footer = Serializer.Deserialize<Protocol.Footer>(decompressedFooterBuffer.AsSpan()[..decompressedFooterSize]);
+
+            var decompressedMetadataBuffer = CompressedData.CreateDecompressionBuffer(compressedFooterBuffer, postScript.Compression, checked((int)postScript.CompressionBlockSize));
+            var decompressedMetadataSize = CompressedData.Decompress(compressedMetadataBuffer, decompressedMetadataBuffer, postScript.Compression);
+            var metadata = Serializer.Deserialize<Protocol.Metadata>(decompressedMetadataBuffer.AsSpan()[..decompressedMetadataSize]);
+
+            fileTail = new SpanFileTail
             {
-                var decompressedFooterSize = CompressedData.Decompress(compressedFooterBuffer, decompressedFooterBuffer, postScript.Compression, postScript.CompressionBlockSize);
-                var footer = Serializer.Deserialize<Protocol.Footer>(decompressedFooterBufferSpan.Slice(0, decompressedFooterSize));
-
-                var decompressedMetadataSize = CompressedData.Decompress(compressedMetadataBuffer, decompressedMetadataBuffer, postScript.Compression, postScript.CompressionBlockSize);
-                var metadata = Serializer.Deserialize<Protocol.Metadata>(decompressedMetadataBufferSpan.Slice(0, decompressedMetadataSize));
-
-                fileTail = new SpanFileTail
-                {
-                    PostScript = postScript,
-                    Footer = footer,
-                    Metadata = metadata
-                };
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(decompressedFooterBuffer, clearArray: false);
-                ArrayPool<byte>.Shared.Return(decompressedMetadataBuffer, clearArray: false);
-            }
+                PostScript = postScript,
+                Footer = footer,
+                Metadata = metadata
+            };
 
             additionalBytesRequired = 0;
             return true;

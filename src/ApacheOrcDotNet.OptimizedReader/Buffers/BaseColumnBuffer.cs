@@ -39,7 +39,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         }
 
         public OrcColumn Column => _column;
-        public ReadOnlySpan<TOutput> Values => _values.AsSpan().Slice(0, _numValuesRead);
+        public ReadOnlySpan<TOutput> Values => _values.AsSpan()[.._numValuesRead];
 
         public abstract Task LoadDataAsync(int stripeId, ColumnDataStreams streams);
 
@@ -186,7 +186,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void ReadVarIntStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, Span<long> outputValues, out int numValuesRead)
+        private protected static void ReadVarIntStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, Span<long> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
@@ -213,6 +213,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
+        private protected static void CheckByteRangeBufferLength(StreamDetail stream, ref byte[] targetBuffer)
+        {
+            if (stream == null)
+                return;
+
+            if (stream.Range.Length > targetBuffer.Length)
+                targetBuffer = new byte[stream.Range.Length];
+        }
+
         private protected async Task<int> GetByteRangeAsync(StreamDetail stream, Memory<byte> outputBuffer)
         {
             if (stream == null)
@@ -224,10 +233,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             if (stream.Range == _lastRange)
                 return _lastRangeLength;
 
-            if (stream.Range.Length >= outputBuffer.Length)
-                throw new CompressionBufferException(nameof(outputBuffer), outputBuffer.Length, stream.Range.Length);
-
-            await _byteRangeProvider.FillBufferAsync(outputBuffer.Slice(0, stream.Range.Length), stream.Range.Offset);
+            await _byteRangeProvider.FillBufferAsync(outputBuffer[..stream.Range.Length], stream.Range.Offset);
 
             _lastRangeLength = stream.Range.Length;
             _lastRange = stream.Range;
@@ -235,12 +241,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             return _lastRangeLength;
         }
 
-        private protected void DecompressByteRange(StreamDetail stream, ReadOnlySpan<byte> compressedInput, Span<byte> decompressedOutput, ref int decompressedLength)
+        private protected void DecompressByteRange(StreamDetail stream, ReadOnlySpan<byte> compressedInput, ref byte[] decompressedOutput, ref int decompressedLength)
         {
             decompressedLength = 0;
 
             if (stream != null)
-                decompressedLength = CompressedData.Decompress(compressedInput.Slice(0, stream.Range.Length), decompressedOutput, _orcFileProperties.CompressionKind, (ulong)_orcFileProperties.CompressionBlockSize);
+            {
+                decompressedOutput = CompressedData.CheckDecompressionBuffer(compressedInput[..stream.Range.Length], decompressedOutput, _orcFileProperties.CompressionKind, _orcFileProperties.DecompressedChunkMaxLength);
+                decompressedLength = CompressedData.Decompress(compressedInput[..stream.Range.Length], decompressedOutput, _orcFileProperties.CompressionKind);
+            }
         }
 
         /// <summary>

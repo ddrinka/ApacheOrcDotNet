@@ -31,21 +31,24 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
         {
+            CheckByteRangeBufferLength(streams.Present, ref _presentStreamCompressedBuffer);
+            CheckByteRangeBufferLength(streams.Data, ref _dataStreamCompressedBuffer);
+
             _ = await Task.WhenAll(
                 GetByteRangeAsync(streams.Present, _presentStreamCompressedBuffer),
                 GetByteRangeAsync(streams.Data, _dataStreamCompressedBuffer)
             );
 
-            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
-            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, ref _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, ref _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
 
             Fill(streams);
         }
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer[.._dataStreamDecompressedBufferLength], isSigned: true, _dataStreamValues, out var dataValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength], isSigned: true, _dataStreamValues, out var dataValuesRead);
 
             if (presentValuesRead > 0)
             {

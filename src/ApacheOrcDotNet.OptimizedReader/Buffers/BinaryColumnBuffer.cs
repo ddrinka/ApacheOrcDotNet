@@ -1,4 +1,5 @@
 ﻿using ApacheOrcDotNet.OptimizedReader.Infrastructure;
+using System;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
@@ -37,25 +38,29 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         public override async Task LoadDataAsync(int stripeId, ColumnDataStreams streams)
         {
+            CheckByteRangeBufferLength(streams.Present, ref _presentStreamCompressedBuffer);
+            CheckByteRangeBufferLength(streams.Length, ref _lengthStreamCompressedBuffer);
+            CheckByteRangeBufferLength(streams.Data, ref _dataStreamCompressedBuffer);
+
             _ = await Task.WhenAll(
                 GetByteRangeAsync(streams.Present, _presentStreamCompressedBuffer),
                 GetByteRangeAsync(streams.Length, _lengthStreamCompressedBuffer),
                 GetByteRangeAsync(streams.Data, _dataStreamCompressedBuffer)
             );
 
-            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
-            DecompressByteRange(streams.Length, _lengthStreamCompressedBuffer, _lengthStreamDecompressedBuffer, ref _lengthStreamDecompressedBufferLength);
-            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, ref _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Length, _lengthStreamCompressedBuffer, ref _lengthStreamDecompressedBuffer, ref _lengthStreamDecompressedBufferLength);
+            DecompressByteRange(streams.Data, _dataStreamCompressedBuffer, ref _dataStreamDecompressedBuffer, ref _dataStreamDecompressedBufferLength);
 
             Fill(streams);
         }
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer[.._presentStreamDecompressedBufferLength], _presentStreamBuffer, out var presentValuesRead);
-            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer[.._lengthStreamDecompressedBufferLength], isSigned: false, _lengthStreamBuffer, out var lengthValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamBuffer, out var presentValuesRead);
+            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer.AsSpan()[.._lengthStreamDecompressedBufferLength], isSigned: false, _lengthStreamBuffer, out var lengthValuesRead);
 
-            var dataBuffer = GetDataStream(streams.Data, _dataStreamDecompressedBuffer[.._dataStreamDecompressedBufferLength]);
+            var dataBuffer = GetDataStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength]);
 
             var stringOffset = 0;
             if (presentValuesRead > 0)

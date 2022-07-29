@@ -4,7 +4,6 @@ using ApacheOrcDotNet.Protocol;
 using ApacheOrcDotNet.Statistics;
 using ProtoBuf;
 using System;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -15,8 +14,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public class OrcReaderConfiguration
     {
-        public int MetadataDecompressionBufferLength { get; set; } = 1 * 1024 * 1024;
-        public int StreamDecompressionBufferLength { get; set; } = 15 * 1024 * 1024;
+        public int NumPreallocatedDecompressionChunks { get; set; } = 3;
         public int OptimisticFileTailReadLength { get; set; } = 16 * 1024;
     }
 
@@ -51,7 +49,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 _fileTail.PostScript.Compression,
                 checked((int)_fileTail.PostScript.CompressionBlockSize),
                 checked((int)_fileTail.Footer.RowIndexStride),
-                _configuration.StreamDecompressionBufferLength
+                _configuration.NumPreallocatedDecompressionChunks
             );
         }
 
@@ -171,24 +169,13 @@ namespace ApacheOrcDotNet.OptimizedReader
                     && s.ColumnId == columnId
                 ).Single();
 
-                var compressedBuffer = ArrayPool<byte>.Shared.Rent(rowIndexStream.Length);
-                var compressedBufferSpan = compressedBuffer.AsSpan().Slice(0, rowIndexStream.Length);
-                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(_configuration.MetadataDecompressionBufferLength);
-                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, _configuration.MetadataDecompressionBufferLength);
+                var compressedBuffer = new byte[rowIndexStream.Length];
+                _byteRangeProvider.FillBuffer(compressedBuffer, rowIndexStream.FileOffset);
 
-                try
-                {
-                    _byteRangeProvider.FillBuffer(compressedBufferSpan, rowIndexStream.FileOffset);
+                var decompressedBuffer = CompressedData.CreateDecompressionBuffer(compressedBuffer, _fileTail.PostScript.Compression, checked((int)_fileTail.PostScript.CompressionBlockSize));
+                var decompressedBufferLength = CompressedData.Decompress(compressedBuffer, decompressedBuffer, _fileTail.PostScript.Compression);
 
-                    var decompressedBufferLength = CompressedData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression, _fileTail.PostScript.CompressionBlockSize);
-
-                    return Serializer.Deserialize<RowIndex>(decompressedBufferSpan.Slice(0, decompressedBufferLength));
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(compressedBuffer, clearArray: false);
-                    ArrayPool<byte>.Shared.Return(decompressedBuffer, clearArray: false);
-                }
+                return Serializer.Deserialize<RowIndex>(decompressedBuffer.AsSpan()[..decompressedBufferLength]);
             });
         }
 
@@ -197,25 +184,15 @@ namespace ApacheOrcDotNet.OptimizedReader
             int lengthToReadFromEnd = _configuration.OptimisticFileTailReadLength;
             while (true)
             {
-                var fileTailBufferRaw = ArrayPool<byte>.Shared.Rent(lengthToReadFromEnd);
+                var fileTailBuffer = new byte[lengthToReadFromEnd];
+                _byteRangeProvider.FillBufferFromEnd(fileTailBuffer);
 
-                try
-                {
-                    var fileTailBuffer = fileTailBufferRaw.AsSpan()[..lengthToReadFromEnd];
+                var success = SpanFileTail.TryRead(fileTailBuffer, out var fileTail, out var additionalBytesRequired);
 
-                    _byteRangeProvider.FillBufferFromEnd(fileTailBuffer);
+                if (success)
+                    return fileTail;
 
-                    var success = SpanFileTail.TryRead(fileTailBuffer, _configuration.MetadataDecompressionBufferLength, out var fileTail, out var additionalBytesRequired);
-
-                    if (success)
-                        return fileTail;
-
-                    lengthToReadFromEnd += additionalBytesRequired;
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(fileTailBufferRaw, clearArray: false);
-                }
+                lengthToReadFromEnd += additionalBytesRequired;
             }
         }
 
@@ -227,26 +204,14 @@ namespace ApacheOrcDotNet.OptimizedReader
                 var stripeFooterStart = (long)(stripe.Offset + stripe.IndexLength + stripe.DataLength);
                 var stripeFooterLength = (int)stripe.FooterLength;
 
-                var compressedBuffer = ArrayPool<byte>.Shared.Rent(stripeFooterLength);
-                var compressedBufferSpan = compressedBuffer.AsSpan().Slice(0, stripeFooterLength);
-                var decompressedBuffer = ArrayPool<byte>.Shared.Rent(_configuration.MetadataDecompressionBufferLength);
-                var decompressedBufferSpan = decompressedBuffer.AsSpan().Slice(0, _configuration.MetadataDecompressionBufferLength);
+                var compressedBuffer = new byte[stripeFooterLength];
+                _byteRangeProvider.FillBuffer(compressedBuffer, stripeFooterStart);
 
-                try
-                {
-                    _byteRangeProvider.FillBuffer(compressedBufferSpan, stripeFooterStart);
+                var decompressedBuffer = CompressedData.CreateDecompressionBuffer(compressedBuffer, _fileTail.PostScript.Compression, checked((int)_fileTail.PostScript.CompressionBlockSize));
+                var decompressedBufferLength = CompressedData.Decompress(compressedBuffer, decompressedBuffer, _fileTail.PostScript.Compression);
+                var streams = SpanStripeFooter.ReadStreamDetails(decompressedBuffer.AsSpan()[..decompressedBufferLength], (long)stripe.Offset);
 
-                    var decompressedBufferLength = CompressedData.Decompress(compressedBufferSpan, decompressedBufferSpan, _fileTail.PostScript.Compression, _fileTail.PostScript.CompressionBlockSize);
-
-                    var streams = SpanStripeFooter.ReadStreamDetails(decompressedBufferSpan.Slice(0, decompressedBufferLength), (long)stripe.Offset);
-
-                    _stripeStreams.Add(stripeId, streams.ToList());
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(compressedBuffer, clearArray: false);
-                    ArrayPool<byte>.Shared.Return(decompressedBuffer, clearArray: false);
-                }
+                _stripeStreams.Add(stripeId, streams.ToList());
             }
 
             return _stripeStreams[stripeId];
@@ -273,7 +238,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 result.Present = present with
                 {
                     Positions = GetPresentStreamPositions(present, rowIndexEntry),
-                    Range = CalculatePresentRange(stripeId, present, column, rowIndex, rowEntryIndex)
+                    Range = CalculatePresentRange(stripeId, present, rowIndex, rowEntryIndex)
                 };
             }
 
@@ -322,7 +287,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return result;
         }
 
-        private StreamPositions GetPresentStreamPositions(StreamDetail presentStream, RowIndexEntry rowIndexEntry)
+        private static StreamPositions GetPresentStreamPositions(StreamDetail presentStream, RowIndexEntry rowIndexEntry)
         {
             if (presentStream == null)
                 return new();
@@ -330,7 +295,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new((int)rowIndexEntry.Positions[0], (int)rowIndexEntry.Positions[1], (int)rowIndexEntry.Positions[2], (int)rowIndexEntry.Positions[3]);
         }
 
-        private StreamPositions GetRequiredStreamPositions(StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndexEntry rowIndexEntry)
+        private static StreamPositions GetRequiredStreamPositions(StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndexEntry rowIndexEntry)
         {
             var positionStep = presentStream == null ? 0 : 4;
 
@@ -427,7 +392,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new((int)rowGroupOffset, (int)rowEntryOffset, (int)valuesToSkip, (int)remainingBits);
         }
 
-        private StreamRange CalculatePresentRange(int stripeId, StreamDetail presentStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
+        private static StreamRange CalculatePresentRange(int stripeId, StreamDetail presentStream, RowIndex rowIndex, int rowEntryIndex)
         {
             var rangeLength = 0;
             var currentEntry = rowIndex.Entry[rowEntryIndex];
@@ -452,7 +417,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new(stripeId, presentStream.FileOffset + currentPositions.RowGroupOffset, rangeLength);
         }
 
-        private StreamRange CalculateDataRange(int stripeId, StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
+        private static StreamRange CalculateDataRange(int stripeId, StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
         {
             var rangeLength = 0;
             var currentEntry = rowIndex.Entry[rowEntryIndex];

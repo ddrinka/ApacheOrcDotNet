@@ -1,45 +1,53 @@
 ﻿using ApacheOrcDotNet.Compression;
 using ApacheOrcDotNet.Protocol;
 using System;
-using System.Buffers;
 
 namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public static class CompressedData
     {
-        public static int Decompress(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer, CompressionKind compressionKind, ulong decompressionBufferLength)
+        public static byte[] CheckDecompressionBuffer(ReadOnlySpan<byte> inputBuffer, byte[] targetDecompressionBuffer, CompressionKind compressionKind, int maxDecompressedLengthPerChunk)
+        {
+            int inputPosition = 0;
+            int maxDecompressionLength = 0;
+            while (inputPosition < inputBuffer.Length)
+            {
+                var compressedChunkLength = OrcCompressedBlock.GetChunkLength(compressionKind, inputBuffer[inputPosition..]);
+                inputPosition += compressedChunkLength;
+                maxDecompressionLength += maxDecompressedLengthPerChunk;
+            }
+
+            if (maxDecompressionLength > targetDecompressionBuffer.Length)
+            {
+                Console.WriteLine("Aaaaa");
+                targetDecompressionBuffer = new byte[maxDecompressionLength];
+            }
+
+
+            return targetDecompressionBuffer;
+        }
+
+        public static byte[] CreateDecompressionBuffer(ReadOnlySpan<byte> inputBuffer, CompressionKind compressionKind, int maxDecompressedLengthPerChunk)
+            => CheckDecompressionBuffer(inputBuffer, new byte[maxDecompressedLengthPerChunk], compressionKind, maxDecompressedLengthPerChunk);
+
+        public static int Decompress(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer, CompressionKind compressionKind)
         {
             if (inputBuffer.IsEmpty)
                 return 0;
 
             int inputPosition = 0;
             int outputPosition = 0;
-            var decompressionBuffer = ArrayPool<byte>.Shared.Rent(checked((int)decompressionBufferLength));
-
-            try
+            while (inputPosition < inputBuffer.Length)
             {
-                while (inputPosition < inputBuffer.Length)
-                {
-                    var compressedChunkLength = OrcCompressedBlock.GetChunkLength(compressionKind, inputBuffer[inputPosition..]);
+                var compressedChunkLength = OrcCompressedBlock.GetChunkLength(compressionKind, inputBuffer[inputPosition..]);
 
-                    var chunkToDecompress = (inputPosition + compressedChunkLength) > inputBuffer.Length
-                        ? inputBuffer.Slice(inputPosition)
-                        : inputBuffer.Slice(inputPosition, compressedChunkLength);
+                var chunkToDecompress = (inputPosition + compressedChunkLength) > inputBuffer.Length
+                    ? inputBuffer[inputPosition..]
+                    : inputBuffer.Slice(inputPosition, compressedChunkLength);
 
-                    var numDecompressBytes = OrcCompressedBlock.DecompressBlock(compressionKind, chunkToDecompress, decompressionBuffer.AsSpan());
+                outputPosition += OrcCompressedBlock.DecompressBlock(compressionKind, chunkToDecompress, outputBuffer[outputPosition..]);
 
-                    if (outputPosition + numDecompressBytes >= outputBuffer.Length)
-                        throw new CompressionBufferException(nameof(outputBuffer), outputBuffer.Length, outputPosition + numDecompressBytes);
-
-                    decompressionBuffer.AsSpan().Slice(0, numDecompressBytes).CopyTo(outputBuffer.Slice(outputPosition));
-
-                    outputPosition += numDecompressBytes;
-                    inputPosition += compressedChunkLength;
-                }
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(decompressionBuffer, clearArray: false);
+                inputPosition += compressedChunkLength;
             }
 
             return outputPosition;

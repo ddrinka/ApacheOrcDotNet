@@ -1,20 +1,19 @@
 ﻿using ApacheOrcDotNet.Protocol;
-using System;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
     public class OrcFileProperties
     {
-        public OrcFileProperties(CompressionKind compressionKind, int compressionBlockSize, int maxValuesToRead, int reusableBufferLength)
+        public OrcFileProperties(CompressionKind compressionKind, int decompressedChunkMaxLength, int maxValuesToRead, int numPreallocatedDecompressionChunks)
         {
             CompressionKind = compressionKind;
-            CompressionBlockSize = compressionBlockSize;
+            DecompressedChunkMaxLength = decompressedChunkMaxLength;
             MaxValuesToRead = maxValuesToRead;
-            ReusableBufferLength = reusableBufferLength;
+            ReusableBufferLength = decompressedChunkMaxLength * numPreallocatedDecompressionChunks;
         }
 
         public CompressionKind CompressionKind { get; }
-        public int CompressionBlockSize { get; }
+        public int DecompressedChunkMaxLength { get; }
         public int MaxValuesToRead { get; }
         public int ReusableBufferLength { get; }
     }
