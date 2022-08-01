@@ -33,13 +33,11 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var columnBuffer = reader.CreateBooleanColumnReader(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
 
-            Assert.Equal(1, columnBuffer.Values.Length);
+            // We will always have at least 8 bits being processed.
+            Assert.Equal(8, columnBuffer.Values.Length);
 
-            for (int i = 10_000; i < columnBuffer.Values.Length; i++)
-            {
-                Assert.NotNull(columnBuffer.Values[i]);
-                Assert.Equal(bool.Parse(ExpectedBooleans[i]), columnBuffer.Values[i]);
-            }
+            Assert.NotNull(columnBuffer.Values[0]);
+            Assert.Equal(bool.Parse(ExpectedBooleans[10_000]), columnBuffer.Values[0]);
         }
     }
 }

@@ -35,11 +35,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
 
             Assert.Equal(1, columnBuffer.Values.Length);
 
-            for (int i = 10_000; i < columnBuffer.Values.Length; i++)
-            {
-                Assert.NotNull(columnBuffer.Values[i]);
-                Assert.Equal(ExpectedSymbols[i], columnBuffer.Values[i]);
-            }
+            Assert.NotNull(columnBuffer.Values[0]);
+            Assert.Equal(ExpectedSymbols[10_000], columnBuffer.Values[0]);
         }
 
         [Fact]
@@ -73,11 +70,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
 
             Assert.Equal(1, columnBuffer.Values.Length);
 
-            for (int i = 10_000; i < columnBuffer.Values.Length; i++)
-            {
-                Assert.NotNull(columnBuffer.Values[i]);
-                Assert.Equal(ExpectedSources[i], columnBuffer.Values[i]);
-            }
+            Assert.NotNull(columnBuffer.Values[0]);
+            Assert.Equal(ExpectedSources[10_000], columnBuffer.Values[0]);
         }
     }
 }

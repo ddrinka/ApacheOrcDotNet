@@ -2,7 +2,6 @@
 using ApacheOrcDotNet.OptimizedReader.Encodings;
 using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
-using System.Numerics;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReader.Buffers
@@ -79,82 +78,72 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             if (stream == null)
                 return;
 
-            var numSkipped = 0;
-            var bufferReader = new BufferReader(GetDataStream(stream, decompressedBuffer));
-            var numOfTotalBitsToSkip = stream.Positions.ValuesToSkip * 8 + stream.Positions.RemainingBits;
-            var numOfBytesToSkip = numOfTotalBitsToSkip / 8;
+            var numSkippedBits = 0;
+            var numSkippedBytes = 0;
             var checkRemainingBits = true;
+            var numOfBytesToSkip = stream.Positions.ValuesToSkip;
+            var bufferReader = new BufferReader(GetDataStream(stream, decompressedBuffer));
+
             while (!bufferReader.Complete)
             {
                 var numByteValuesRead = OptimizedByteRLE.ReadValues(ref bufferReader, _boolStreamBuffer);
 
                 for (int idx = 0; idx < numByteValuesRead; idx++)
                 {
-                    if (numSkipped++ < numOfBytesToSkip)
+                    if (numSkippedBytes++ < numOfBytesToSkip)
                         continue;
 
                     var decodedByte = _boolStreamBuffer[idx];
-                    var isFinalByte = bufferReader.Complete && idx >= numByteValuesRead - 1;
-
-                    // Skip remaining bits.
-                    if (checkRemainingBits && numOfBytesToSkip % 8 != 0)
-                    {
-                        decodedByte = (byte)(decodedByte << numOfTotalBitsToSkip % 8);
-                        checkRemainingBits = false;
-                    }
-
-                    if (isFinalByte && decodedByte == 0)
-                    {
-                        // Edge case where there is only one value for the row entry and that value is null
-                        outputValues[numValuesRead++] = false;
-                        return;
-                    }
 
                     outputValues[numValuesRead++] = (decodedByte & 128) != 0;
+                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
+                        numValuesRead--;
                     if (numValuesRead >= outputValues.Length)
-                        return;
-                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 7)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 64) != 0;
+                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
+                        numValuesRead--;
                     if (numValuesRead >= outputValues.Length)
-                        return;
-                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 6)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 32) != 0;
+                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
+                        numValuesRead--;
                     if (numValuesRead >= outputValues.Length)
-                        return;
-                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 5)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 16) != 0;
+                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
+                        numValuesRead--;
                     if (numValuesRead >= outputValues.Length)
-                        return;
-                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 4)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 8) != 0;
+                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
+                        numValuesRead--;
                     if (numValuesRead >= outputValues.Length)
-                        return;
-                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 3)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 4) != 0;
+                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
+                        numValuesRead--;
                     if (numValuesRead >= outputValues.Length)
-                        return;
-                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 2)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 2) != 0;
+                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
+                        numValuesRead--;
                     if (numValuesRead >= outputValues.Length)
-                        return;
-                    if (isFinalByte && BitOperations.TrailingZeroCount(decodedByte) == 1)
                         return;
 
                     outputValues[numValuesRead++] = (decodedByte & 1) != 0;
+                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
+                        return;
                     if (numValuesRead >= outputValues.Length)
                         return;
+
+                    checkRemainingBits = false;
                 }
             }
         }

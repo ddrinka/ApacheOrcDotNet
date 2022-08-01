@@ -35,15 +35,16 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var columnBuffer = reader.CreateBooleanColumnReader(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
 
-            Assert.Equal(1, columnBuffer.Values.Length);
+            // When present streams are available, we will
+            // always have at least 8 values in the
+            // end of the values buffer.
+            Assert.Equal(8, columnBuffer.Values.Length);
 
-            for (int i = 10_000; i < columnBuffer.Values.Length; i++)
-            {
-                if (ExpectedBooleans[i] == null)
-                    Assert.Null(columnBuffer.Values[i]);
-                else
-                    Assert.Equal(bool.Parse(ExpectedBooleans[i]), columnBuffer.Values[i]);
-            }
+            // But we are only interested in the first here
+            if (ExpectedBooleans[10_000] == null)
+                Assert.Null(columnBuffer.Values[0]);
+            else
+                Assert.Equal(bool.Parse(ExpectedBooleans[10_000]), columnBuffer.Values[0]);
         }
     }
 }

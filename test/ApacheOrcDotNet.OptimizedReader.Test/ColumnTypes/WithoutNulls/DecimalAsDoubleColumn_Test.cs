@@ -35,11 +35,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
 
             Assert.Equal(1, columnBuffer.Values.Length);
 
-            for (int i = 10_000; i < columnBuffer.Values.Length; i++)
-            {
-                Assert.Equal(double.NaN, columnBuffer.Values[i]);
-                Assert.Equal(double.Parse(ExpectedTimesAsDouble[i], _invariantCulture), columnBuffer.Values[i]);
-            }
+            Assert.Equal(double.Parse(ExpectedTimesAsDouble[10_000], _invariantCulture), columnBuffer.Values[0]);
         }
     }
 }

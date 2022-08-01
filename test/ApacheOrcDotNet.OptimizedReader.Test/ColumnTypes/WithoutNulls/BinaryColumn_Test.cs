@@ -36,11 +36,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
 
             Assert.Equal(1, columnBuffer.Values.Length);
 
-            for (int i = 10_000; i < columnBuffer.Values.Length; i++)
-            {
-                Assert.NotNull(columnBuffer.Values[i]);
-                Assert.Equal(ExpectedBinaries[i], Encoding.UTF8.GetString(columnBuffer.Values[i]));
-            }
+            Assert.NotNull(columnBuffer.Values[0]);
+            Assert.Equal(ExpectedBinaries[10_000], Encoding.UTF8.GetString(columnBuffer.Values[0]));
         }
     }
 }
