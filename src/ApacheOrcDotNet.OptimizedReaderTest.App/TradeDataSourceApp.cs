@@ -28,7 +28,13 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
             watch.Start();
 
-            var timeRanges = new[] { (43200, 46800), (50400, 54000) };
+            var timeRanges = new[] { 
+                (35000, 35001), // 09:43:20, 09:43:21
+                (35077, 35078), // 09:44:37, 09:44:38
+                (43200, 46800), // 12:00:00, 01:00:00
+                (50400, 54000)  // 02:00:00, 03:00:00
+            };
+
             var symbolData = new TradeDataSource(reader, _configuration.Source, _configuration.Symbol);
 
             foreach (var (sTime, eTime) in timeRanges)
@@ -40,8 +46,18 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                 var times = new decimal?[approxRowCount];
                 var prices = new decimal?[approxRowCount];
                 var sizes = new long?[approxRowCount];
+                var numRows = 0;
 
-                int numRows = timeRangeReader.ReadBatch(times, prices, sizes);
+                while (true)
+                {
+                    var rowsRead = timeRangeReader.ReadBatch(numRows, times, prices, sizes);
+                    if (rowsRead == 0)
+                        break;
+                    Console.Write(".");
+                    numRows += rowsRead;
+                }
+
+                //numRows = timeRangeReader.ReadBatch(times, prices, sizes);
 
                 Console.WriteLine();
                 Console.WriteLine($"Read {numRows} rows of data");

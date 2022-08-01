@@ -143,7 +143,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                     if (numValuesRead >= outputValues.Length)
                         return;
 
-                    checkRemainingBits = false;
+                    if (checkRemainingBits)
+                        checkRemainingBits = false;
                 }
             }
         }
