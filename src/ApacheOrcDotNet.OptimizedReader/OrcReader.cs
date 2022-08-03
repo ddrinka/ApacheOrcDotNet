@@ -237,12 +237,15 @@ namespace ApacheOrcDotNet.OptimizedReader
             var result = new ColumnDataStreams();
 
             var present = columnStreams.SingleOrDefault(s => s.StreamKind == StreamKind.Present);
+
             if (present != null)
             {
+                var presentPositions = GetPresentStreamPositions(present, rowIndexEntry);
+
                 result.Present = present with
                 {
-                    Positions = GetPresentStreamPositions(present, rowIndexEntry),
-                    Range = CalculatePresentRange(stripeId, present, rowIndex, rowEntryIndex)
+                    Positions = presentPositions,
+                    Range = CalculatePresentRange(stripeId, present, rowIndex, rowEntryIndex, presentPositions)
                 };
             }
 
@@ -253,34 +256,41 @@ namespace ApacheOrcDotNet.OptimizedReader
 
                 result.EncodingKind = stream.EncodingKind;
 
+                var requiredPositions = GetRequiredStreamPositions(
+                    present, 
+                    stream, 
+                    column, 
+                    rowIndexEntry
+                );
+
                 switch (stream.StreamKind)
                 {
                     case StreamKind.Data:
                         result.Data = stream with
                         {
-                            Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
-                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex)
+                            Positions = requiredPositions,
+                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex, requiredPositions)
                         };
                         break;
                     case StreamKind.DictionaryData:
                         result.DictionaryData = stream with
                         {
-                            Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
-                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex)
+                            Positions = requiredPositions,
+                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex, requiredPositions)
                         };
                         break;
                     case StreamKind.Length:
                         result.Length = stream with
                         {
-                            Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
-                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex)
+                            Positions = requiredPositions,
+                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex, requiredPositions)
                         };
                         break;
                     case StreamKind.Secondary:
                         result.Secondary = stream with
                         {
-                            Positions = GetRequiredStreamPositions(present, stream, column, rowIndexEntry),
-                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex)
+                            Positions = requiredPositions,
+                            Range = CalculateDataRange(stripeId, present, stream, column, rowIndex, rowEntryIndex, requiredPositions)
                         };
                         break;
                     default:
@@ -396,11 +406,9 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new((int)rowGroupOffset, (int)rowEntryOffset, (int)valuesToSkip, (int)remainingBits);
         }
 
-        private static StreamRange CalculatePresentRange(int stripeId, StreamDetail presentStream, RowIndex rowIndex, int rowEntryIndex)
+        private static StreamRange CalculatePresentRange(int stripeId, StreamDetail presentStream, RowIndex rowIndex, int rowEntryIndex, StreamPositions currentPositions)
         {
             var rangeLength = 0;
-            var currentEntry = rowIndex.Entry[rowEntryIndex];
-            var currentPositions = GetPresentStreamPositions(presentStream, currentEntry);
 
             // Change in the current position marks the start of another entry.
             for (int idx = rowEntryIndex; idx < rowIndex.Entry.Count; idx++)
@@ -421,11 +429,9 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new(stripeId, presentStream.FileOffset + currentPositions.RowGroupOffset, rangeLength);
         }
 
-        private static StreamRange CalculateDataRange(int stripeId, StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex)
+        private static StreamRange CalculateDataRange(int stripeId, StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex, StreamPositions currentPositions)
         {
             var rangeLength = 0;
-            var currentEntry = rowIndex.Entry[rowEntryIndex];
-            var currentPositions = GetRequiredStreamPositions(presentStream, targetedStream, column, currentEntry);
 
             // Change in the current position marks the start of another entry.
             for (int idx = rowEntryIndex; idx < rowIndex.Entry.Count; idx++)
