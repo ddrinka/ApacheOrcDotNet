@@ -8,13 +8,13 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
     public class TradeDataSourceApp
     {
         private readonly string _orcFileUri;
-        private readonly OptimizedORCAppConfiguration _configuration;
+        private readonly Configs _configuration;
         private readonly IByteRangeProviderFactory _byteRangeProviderFactory;
 
-        public TradeDataSourceApp(string orcFileUri, OptimizedORCAppConfiguration confituration, IByteRangeProviderFactory byteRangeProviderFactory)
+        public TradeDataSourceApp(string orcFileUri, Configs configuration, IByteRangeProviderFactory byteRangeProviderFactory)
         {
             _orcFileUri = orcFileUri;
-            _configuration = confituration;
+            _configuration = configuration;
             _byteRangeProviderFactory = byteRangeProviderFactory;
         }
 
@@ -28,7 +28,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
             watch.Start();
 
-            var timeRanges = new[] { 
+            var timeRanges = new[] {
                 (35000, 35001), // 09:43:20, 09:43:21
                 (35077, 35078), // 09:44:37, 09:44:38
                 (43200, 46800), // 12:00:00, 01:00:00
@@ -57,16 +57,13 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     numRows += rowsRead;
                 }
 
-                //numRows = timeRangeReader.ReadBatch(times, prices, sizes);
-
                 Console.WriteLine();
                 Console.WriteLine($"Read {numRows} rows of data");
             }
 
             watch.Stop();
             Console.WriteLine();
-            Console.WriteLine($"Read execution time: {watch.Elapsed}");
-            Console.WriteLine();
+            Console.WriteLine($"Read execution time: {watch.Elapsed:mm':'ss':'fff}");
         }
     }
 }

@@ -51,7 +51,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             Console.WriteLine($"endTime: '{endTime}'");
             Console.WriteLine();
 
-            var configs = new OptimizedORCAppConfiguration
+            var configs = new Configs
             {
                 Source = source,
                 Symbol = symbol,
@@ -65,16 +65,19 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             stopWatch.Start();
 
             // Sample app 1
-            await (new OptimizedORCApp(uri, configs, fileByteRangeProviderFactory)).Run();
+            await (new ReadAllApp(uri, fileByteRangeProviderFactory)).Run();
 
-            //// Sample app 2
+            // Sample app 2
+            //await (new ReadFilteredApp(uri, configs, fileByteRangeProviderFactory)).Run();
+
+            //// Sample app 3
             //// This requires a test file with a sorce,symbol,time,price and size fields.
             //// (Or the test class below can be updated to use different fields)
             //(new TradeDataSourceApp(uri, configs, fileByteRangeProviderFactory)).Run();
 
             stopWatch.Stop();
 
-            Console.WriteLine($"Total execution time: {stopWatch.Elapsed.ToString("mm':'ss':'fff")}");
+            Console.WriteLine($"Total execution time: {stopWatch.Elapsed:mm':'ss':'fff}");
             Console.WriteLine();
         }
     }

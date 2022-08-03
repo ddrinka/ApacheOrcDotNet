@@ -8,24 +8,14 @@ using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
-    public class OptimizedORCAppConfiguration
-    {
-        public string Source { get; set; }
-        public string Symbol { get; set; }
-        public TimeSpan BeginTime { get; set; }
-        public TimeSpan EndTime { get; set; }
-    }
-
-    public class OptimizedORCApp
+    public class ReadAllApp
     {
         private readonly string _orcFileUri;
-        private readonly OptimizedORCAppConfiguration _configuration;
         private readonly IByteRangeProviderFactory _byteRangeProviderFactory;
 
-        public OptimizedORCApp(string orcFileUri, OptimizedORCAppConfiguration confituration, IByteRangeProviderFactory byteRangeProviderFactory)
+        public ReadAllApp(string orcFileUri, IByteRangeProviderFactory byteRangeProviderFactory)
         {
             _orcFileUri = orcFileUri;
-            _configuration = confituration;
             _byteRangeProviderFactory = byteRangeProviderFactory;
         }
 
@@ -38,12 +28,6 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             var reader = new OptimizedReader.OrcReader(configs, rangeProvider);
 
             watch.Start();
-
-            // Args
-            var lookupSource = _configuration.Source;
-            var lookupSymbol = _configuration.Symbol;
-            var beginTime = _configuration.BeginTime;
-            var endTime = _configuration.EndTime;
 
             // Columns
             var sourceColumn = reader.GetColumn("source");
@@ -71,24 +55,12 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             var byteColumnBuffer = reader.CreateByteColumnBuffer(byteColumn);
             var booleanColumnBuffer = reader.CreateBooleanColumnReader(booleanColumn);
 
-            // Filters
-            var sourceFilterValues = FilterValues.CreateFromString(min: lookupSource, max: lookupSource);
-            var symbolFilterValues = FilterValues.CreateFromString(min: lookupSymbol, max: lookupSymbol);
-            var timeFilterValues = FilterValues.CreateFromTime(min: beginTime, max: endTime);
+            // Read
+            var totalCount = 0;
 
-            //
-            var stripeIds = reader.FilterStripes(sourceColumn, sourceFilterValues);
-            stripeIds = reader.FilterStripes(stripeIds, symbolColumn, symbolFilterValues);
-            stripeIds = reader.FilterStripes(stripeIds, timeColumn, timeFilterValues);
-
-            foreach (var stripeId in stripeIds)
+            for (var stripeId = 0; stripeId < reader.GetNumberOfStripes(); stripeId++)
             {
-                //
-                var rowGroupIndexes = reader.FilterRowGroups(stripeId, sourceColumn, sourceFilterValues);
-                rowGroupIndexes = reader.FilterRowGroups(rowGroupIndexes, stripeId, symbolColumn, symbolFilterValues);
-                rowGroupIndexes = reader.FilterRowGroups(rowGroupIndexes, stripeId, timeColumn, timeFilterValues);
-
-                foreach (var rowEntryIndex in rowGroupIndexes)
+                for (var rowEntryIndex = 0; rowEntryIndex < reader.GetNumberOfRowGroupEntries(stripeId, timeColumn.Id); rowEntryIndex++)
                 {
                     await Task.WhenAll(
                         reader.LoadDataAsync(stripeId, rowEntryIndex, sourceColumnBuffer),
@@ -106,6 +78,8 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
                     for (int idx = 0; idx < reader.NumValuesLoaded; idx++)
                     {
+                        totalCount++;
+
                         var source = sourceColumnBuffer.Values[idx];
                         var symbol = symbolColumnBuffer.Values[idx];
                         var time = timeColumnBuffer.Values[idx];
@@ -118,31 +92,29 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         var tinyInt = byteColumnBuffer.Values[idx];
                         var boolean = booleanColumnBuffer.Values[idx];
 
-                        if (source == lookupSource && symbol == lookupSymbol && time >= (decimal)beginTime.TotalSeconds && time <= (decimal)endTime.TotalSeconds)
-                        {
-                            Console.WriteLine($"" +
-                                $"{source}," +
-                                $"{symbol}," +
-                                $"{time.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0')}," +
-                                $"{size}" +
-                                $"     " +
-                                $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture) : string.Empty)}," +
-                                $"{dobl}," +
-                                $"{sing}," +
-                                $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : string.Empty)}," +
-                                $"{(binary != null ? Encoding.ASCII.GetString(binary) : string.Empty)}," +
-                                $"{tinyInt}," +
-                                $"{boolean}" +
-                                $""
-                            );
-                        }
+                        Console.WriteLine($"" +
+                            $"{source}," +
+                            $"{symbol}," +
+                            $"{time.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0')}," +
+                            $"{size}" +
+                            $"     " +
+                            $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture) : string.Empty)}," +
+                            $"{dobl}," +
+                            $"{sing}," +
+                            $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : string.Empty)}," +
+                            $"{(binary != null ? Encoding.ASCII.GetString(binary) : string.Empty)}," +
+                            $"{tinyInt}," +
+                            $"{boolean}" +
+                            $""
+                        );
                     }
                 }
             }
 
             watch.Stop();
             Console.WriteLine();
-            Console.WriteLine($"Read execution time: {watch.Elapsed.ToString("mm':'ss':'fff")}");
+            Console.WriteLine($"Read {totalCount} rows.");
+            Console.WriteLine($"Read execution time: {watch.Elapsed:mm':'ss':'fff}");
         }
     }
 }

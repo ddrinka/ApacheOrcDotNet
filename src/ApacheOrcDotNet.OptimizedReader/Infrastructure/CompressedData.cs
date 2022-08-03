@@ -18,11 +18,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             }
 
             if (maxDecompressionLength > targetDecompressionBuffer.Length)
-            {
-                Console.WriteLine("Aaaaa");
                 targetDecompressionBuffer = new byte[maxDecompressionLength];
-            }
-
 
             return targetDecompressionBuffer;
         }

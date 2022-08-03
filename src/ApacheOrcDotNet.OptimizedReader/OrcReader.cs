@@ -14,7 +14,7 @@ namespace ApacheOrcDotNet.OptimizedReader
 {
     public class OrcReaderConfiguration
     {
-        public int NumPreallocatedDecompressionChunks { get; set; } = 3;
+        public int NumPreAllocatedDecompressionChunks { get; set; } = 3;
         public int OptimisticFileTailReadLength { get; set; } = 16 * 1024;
     }
 
@@ -49,12 +49,16 @@ namespace ApacheOrcDotNet.OptimizedReader
                 _fileTail.PostScript.Compression,
                 checked((int)_fileTail.PostScript.CompressionBlockSize),
                 checked((int)_fileTail.Footer.RowIndexStride),
-                _configuration.NumPreallocatedDecompressionChunks
+                _configuration.NumPreAllocatedDecompressionChunks
             );
         }
 
         public int NumValuesLoaded { get; set; }
         public int MaxValuesPerRowGroup => _orcFileProperties.MaxValuesToRead;
+
+        public int GetNumberOfStripes() => _fileTail.Metadata.StripeStats.Count;
+
+        public int GetNumberOfRowGroupEntries(int stripeId, int columnId) => GetColumnRowIndex(columnId, stripeId).Entry.Count;
 
         public OrcColumn GetColumn(string columnName)
         {
