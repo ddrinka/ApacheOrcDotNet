@@ -115,7 +115,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                             Console.WriteLine($"" +
                                 $"{source}," +
                                 $"{symbol}," +
-                                $"{time.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0')}," +
+                                $"{(time.HasValue ? time.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0') : string.Empty)}," +
                                 $"{size}" +
                                 $"     " +
                                 $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture) : string.Empty)}," +

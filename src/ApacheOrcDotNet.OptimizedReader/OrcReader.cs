@@ -28,6 +28,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         private readonly ConcurrentDictionary<(int columnId, int stripeId), RowIndex> _rowGroupIndexes = new();
         private readonly Dictionary<string, (int Id, string Name, ColumnTypeKind Type)> _protoColumns = new();
         private readonly OrcFileProperties _orcFileProperties;
+        private int _lastLoadedStripeId;
 
         public OrcReader(OrcReaderConfiguration configuration, IByteRangeProvider byteRangeProvider)
         {
@@ -51,9 +52,11 @@ namespace ApacheOrcDotNet.OptimizedReader
                 checked((int)_fileTail.Footer.RowIndexStride),
                 _configuration.NumPreAllocatedDecompressionChunks
             );
+
+            NumValuesLoaded = _orcFileProperties.MaxValuesToRead;
         }
 
-        public int NumValuesLoaded { get; set; }
+        public int NumValuesLoaded { get; private set; }
         public int MaxValuesPerRowGroup => _orcFileProperties.MaxValuesToRead;
 
         public int GetNumberOfStripes() => _fileTail.Metadata.StripeStats.Count;
@@ -141,17 +144,23 @@ namespace ApacheOrcDotNet.OptimizedReader
             }).ToList();
         }
 
-        public async Task LoadDataAsync<TOutput>(int stripeId, int rowEntryIndexId, BaseColumnBuffer<TOutput> columnBuffer, bool discardPreviousData = true)
+        public async Task LoadDataAsync<TOutput>(int stripeId, int rowEntryIndexId, BaseColumnBuffer<TOutput> columnBuffer)
         {
-            if (discardPreviousData)
-                columnBuffer.Reset();
+            columnBuffer.Reset();
+
+            if (stripeId != _lastLoadedStripeId)
+            {
+                NumValuesLoaded = _orcFileProperties.MaxValuesToRead;
+
+                _lastLoadedStripeId = stripeId;
+            }
 
             var rowIndex = GetColumnRowIndex(columnBuffer.Column.Id, stripeId);
             var columnStreams = GetColumnDataStreams(stripeId, columnBuffer.Column, rowIndex, rowEntryIndexId);
 
             await columnBuffer.LoadDataAsync(stripeId, columnStreams);
 
-            if (NumValuesLoaded == 0 || NumValuesLoaded > columnBuffer.Values.Length)
+            if (NumValuesLoaded > columnBuffer.Values.Length)
                 NumValuesLoaded = columnBuffer.Values.Length;
         }
 

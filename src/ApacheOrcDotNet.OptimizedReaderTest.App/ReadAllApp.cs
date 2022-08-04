@@ -57,10 +57,13 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
             // Read
             var totalCount = 0;
+            var outputData = true;
 
             for (var stripeId = 0; stripeId < reader.GetNumberOfStripes(); stripeId++)
             {
-                for (var rowEntryIndex = 0; rowEntryIndex < reader.GetNumberOfRowGroupEntries(stripeId, timeColumn.Id); rowEntryIndex++)
+                var numRowEntryIndexes = reader.GetNumberOfRowGroupEntries(stripeId, timeColumn.Id);
+
+                for (var rowEntryIndex = 0; rowEntryIndex < numRowEntryIndexes; rowEntryIndex++)
                 {
                     await Task.WhenAll(
                         reader.LoadDataAsync(stripeId, rowEntryIndex, sourceColumnBuffer),
@@ -92,27 +95,39 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         var tinyInt = byteColumnBuffer.Values[idx];
                         var boolean = booleanColumnBuffer.Values[idx];
 
-                        Console.WriteLine($"" +
-                            $"{source}," +
-                            $"{symbol}," +
-                            $"{time.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0')}," +
-                            $"{size}" +
-                            $"     " +
-                            $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture) : string.Empty)}," +
-                            $"{dobl}," +
-                            $"{sing}," +
-                            $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : string.Empty)}," +
-                            $"{(binary != null ? Encoding.ASCII.GetString(binary) : string.Empty)}," +
-                            $"{tinyInt}," +
-                            $"{boolean}" +
-                            $""
-                        );
+                        if (outputData)
+                        {
+                            Console.WriteLine($"" +
+                                $"{source}," +
+                                $"{symbol}," +
+                                $"{(time.HasValue ? time.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0') : string.Empty)}," +
+                                $"{size}" +
+                                $"     " +
+                                $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture) : string.Empty)}," +
+                                $"{dobl}," +
+                                $"{sing}," +
+                                $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : string.Empty)}," +
+                                $"{(binary != null ? Encoding.ASCII.GetString(binary) : string.Empty)}," +
+                                $"{tinyInt}," +
+                                $"{boolean}" +
+                                $""
+                            );
+                        }
+                        else
+                        {
+                            if (totalCount % 1000 == 0)
+                                Console.Write(".");
+                        }
                     }
                 }
             }
 
             watch.Stop();
             Console.WriteLine();
+
+            if (!outputData)
+                Console.WriteLine();
+
             Console.WriteLine($"Read {totalCount} rows.");
             Console.WriteLine($"Read execution time: {watch.Elapsed:mm':'ss':'fff}");
         }
