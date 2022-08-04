@@ -55,7 +55,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             CheckByteRangeBufferLength(streams.Length, ref _lengthStreamCompressedBuffer);
             CheckByteRangeBufferLength(streams.Data, ref _dataStreamCompressedBuffer);
 
-            var byteRangeTasks = new List<Task<int>>()
+            var byteRangeTasks = new List<Task>()
             {
                 GetByteRangeAsync(streams.Present, _presentStreamCompressedBuffer),
                 GetByteRangeAsync(streams.Length, _lengthStreamCompressedBuffer),
@@ -67,7 +67,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 byteRangeTasks.Add(GetByteRangeAsync(streams.DictionaryData, _dictionaryStreanCompressedBuffer));
             }
 
-            _ = await Task.WhenAll(byteRangeTasks);
+            await Task.WhenAll(byteRangeTasks);
 
             DecompressByteRange(streams.Present, _presentStreamCompressedBuffer, ref _presentStreamDecompressedBuffer, ref _presentStreamDecompressedBufferLength);
             DecompressByteRange(streams.Length, _lengthStreamCompressedBuffer, ref _lengthStreamDecompressedBuffer, ref _lengthStreamDecompressedBufferLength);

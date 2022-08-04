@@ -257,9 +257,9 @@ namespace ApacheOrcDotNet.OptimizedReader
                 result.EncodingKind = stream.EncodingKind;
 
                 var requiredPositions = GetRequiredStreamPositions(
-                    present, 
-                    stream, 
-                    column, 
+                    present,
+                    stream,
+                    column,
                     rowIndexEntry
                 );
 
@@ -406,50 +406,66 @@ namespace ApacheOrcDotNet.OptimizedReader
             return new((int)rowGroupOffset, (int)rowEntryOffset, (int)valuesToSkip, (int)remainingBits);
         }
 
-        private static StreamRange CalculatePresentRange(int stripeId, StreamDetail presentStream, RowIndex rowIndex, int rowEntryIndex, StreamPositions currentPositions)
+        private static StreamRange CalculatePresentRange(int stripeId, StreamDetail presentStream, RowIndex rowIndex, int rowEntryIndex, StreamPositions currentPosition)
         {
             var rangeLength = 0;
+            var numNextChunksToRead = 0;
+            var comparisonChunkOffset = currentPosition.RowGroupOffset;
 
             // Change in the current position marks the start of another entry.
+            // Calculate the range length, considering bytes that may exist in the next chunk.
             for (int idx = rowEntryIndex; idx < rowIndex.Entry.Count; idx++)
             {
-                var nextOffset = GetPresentStreamPositions(presentStream, rowIndex.Entry[idx]);
+                var nextPosition = GetPresentStreamPositions(presentStream, rowIndex.Entry[idx]);
 
-                if (nextOffset.RowGroupOffset != currentPositions.RowGroupOffset)
+                if (nextPosition.RowGroupOffset != comparisonChunkOffset)
                 {
-                    // Calculate the range length, adding bytes that may have been included into the next compressed chunk.
-                    rangeLength = (nextOffset.RowGroupOffset - currentPositions.RowGroupOffset) + nextOffset.RowEntryOffset;
+                    if (++numNextChunksToRead < 2)
+                    {
+                        comparisonChunkOffset = nextPosition.RowGroupOffset;
+                        continue;
+                    }
+
+                    rangeLength = (nextPosition.RowGroupOffset - currentPosition.RowGroupOffset);
                     break;
                 }
             }
 
             if (rangeLength == 0)
-                rangeLength = presentStream.Length - currentPositions.RowGroupOffset;
+                rangeLength = presentStream.Length - currentPosition.RowGroupOffset;
 
-            return new(stripeId, presentStream.FileOffset + currentPositions.RowGroupOffset, rangeLength);
+            return new(stripeId, presentStream.FileOffset + currentPosition.RowGroupOffset, rangeLength);
         }
 
-        private static StreamRange CalculateDataRange(int stripeId, StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex, StreamPositions currentPositions)
+        private static StreamRange CalculateDataRange(int stripeId, StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex, StreamPositions currentPosition)
         {
             var rangeLength = 0;
+            var numNextChunksRead = 0;
+            var comparisonChunkOffset = currentPosition.RowGroupOffset;
 
             // Change in the current position marks the start of another entry.
+            // Calculate the range length, considering bytes that may exist in the next chunk.
             for (int idx = rowEntryIndex; idx < rowIndex.Entry.Count; idx++)
             {
-                var nextOffset = GetRequiredStreamPositions(presentStream, targetedStream, column, rowIndex.Entry[idx]);
+                var nextPosition = GetRequiredStreamPositions(presentStream, targetedStream, column, rowIndex.Entry[idx]);
 
-                if (nextOffset.RowGroupOffset != currentPositions.RowGroupOffset)
+                if (nextPosition.RowGroupOffset != comparisonChunkOffset)
                 {
-                    // Calculate the range length, adding bytes that may have been included into the next compressed chunk.
-                    rangeLength = (nextOffset.RowGroupOffset - currentPositions.RowGroupOffset) + nextOffset.RowEntryOffset;
+                    if (++numNextChunksRead < 2)
+                    {
+                        comparisonChunkOffset = nextPosition.RowGroupOffset;
+                        continue;
+                    }
+
+                    rangeLength = (nextPosition.RowGroupOffset - currentPosition.RowGroupOffset);
                     break;
                 }
             }
 
             if (rangeLength == 0)
-                rangeLength = targetedStream.Length - currentPositions.RowGroupOffset;
+                rangeLength = targetedStream.Length - currentPosition.RowGroupOffset;
 
-            return new(stripeId, targetedStream.FileOffset + currentPositions.RowGroupOffset, rangeLength);
+            return new(stripeId, targetedStream.FileOffset + currentPosition.RowGroupOffset, rangeLength);
         }
     }
 }

@@ -20,7 +20,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
         private protected int _numValuesRead;
 
         private StreamRange _lastRange;
-        private int _lastRangeLength;
 
         public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column)
         {
@@ -212,23 +211,20 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                 targetBuffer = new byte[stream.Range.Length];
         }
 
-        private protected async Task<int> GetByteRangeAsync(StreamDetail stream, Memory<byte> outputBuffer)
+        private protected async Task GetByteRangeAsync(StreamDetail stream, Memory<byte> outputBuffer)
         {
             if (stream == null)
-                return 0;
+                return;
 
             // If current and last ranges are equal, the previous data will be buffered
             // and we can return only the length, without requesting the bytes again.
 
             if (stream.Range == _lastRange)
-                return _lastRangeLength;
+                return;
 
             await _byteRangeProvider.FillBufferAsync(outputBuffer[..stream.Range.Length], stream.Range.Offset);
 
-            _lastRangeLength = stream.Range.Length;
             _lastRange = stream.Range;
-
-            return _lastRangeLength;
         }
 
         private protected void DecompressByteRange(StreamDetail stream, ReadOnlySpan<byte> compressedInput, ref byte[] decompressedOutput, ref int decompressedLength)

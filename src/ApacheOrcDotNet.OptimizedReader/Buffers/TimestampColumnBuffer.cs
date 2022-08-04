@@ -44,7 +44,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             CheckByteRangeBufferLength(streams.Data, ref _dataStreamCompressedBuffer);
             CheckByteRangeBufferLength(streams.Secondary, ref _secondaryStreamCompressedBuffer);
 
-            _ = await Task.WhenAll(
+            await Task.WhenAll(
                 GetByteRangeAsync(streams.Present, _presentStreamCompressedBuffer),
                 GetByteRangeAsync(streams.Data, _dataStreamCompressedBuffer),
                 GetByteRangeAsync(streams.Secondary, _secondaryStreamCompressedBuffer)
