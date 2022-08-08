@@ -6,6 +6,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
     public class BinaryColumnBuffer : BaseColumnBuffer<byte[]>
     {
+        private readonly byte[] _presentRleBuffer = new byte[Constants.RleBufferMaxLength];
+        private readonly long[] _lengthRleBuffer = new long[Constants.RleBufferMaxLength];
+
         private readonly bool[] _presentStreamBuffer;
         private readonly long[] _lengthStreamBuffer;
 
@@ -57,8 +60,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamBuffer, out var presentValuesRead);
-            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer.AsSpan()[.._lengthStreamDecompressedBufferLength], isSigned: false, _lengthStreamBuffer, out var lengthValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentRleBuffer, _presentStreamBuffer, out var presentValuesRead);
+            ReadNumericStream(streams.Length, _lengthStreamDecompressedBuffer.AsSpan()[.._lengthStreamDecompressedBufferLength], _lengthRleBuffer, isSigned: false, _lengthStreamBuffer, out var lengthValuesRead);
 
             var dataBuffer = GetDataStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength]);
 

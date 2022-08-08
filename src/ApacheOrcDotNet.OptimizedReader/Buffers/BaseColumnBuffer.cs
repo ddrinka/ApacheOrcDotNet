@@ -8,10 +8,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
     public abstract class BaseColumnBuffer<TOutput>
     {
-        private readonly long[] _numericStreamBuffer;
-        private readonly byte[] _byteStreamBuffer;
-        private readonly byte[] _boolStreamBuffer;
-
         private protected readonly IByteRangeProvider _byteRangeProvider;
         private protected readonly OrcFileProperties _orcFileProperties;
         private protected readonly OrcColumn _column;
@@ -27,13 +23,6 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             _orcFileProperties = orcFileProperties;
             _column = column;
             _values = new TOutput[_orcFileProperties.MaxValuesToRead];
-
-            // RLEs decode values
-            // from at most two bytes.
-            var runMaxValues = (int)Math.Pow(2, 16);
-            _numericStreamBuffer = new long[runMaxValues];
-            _byteStreamBuffer = new byte[runMaxValues];
-            _boolStreamBuffer = new byte[runMaxValues];
         }
 
         public OrcColumn Column => _column;
@@ -43,7 +32,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         public void Reset() => _numValuesRead = 0;
 
-        private protected void ReadByteStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, Span<byte> outputValues, out int numValuesRead)
+        private protected void ReadByteStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, Span<byte> rleBuffer, Span<byte> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
@@ -55,14 +44,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             while (!bufferReader.Complete)
             {
-                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref bufferReader, _byteStreamBuffer);
+                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref bufferReader, rleBuffer);
 
                 for (int idx = 0; idx < numByteValuesRead; idx++)
                 {
                     if (numSkipped++ < stream.Positions.ValuesToSkip)
                         continue;
 
-                    outputValues[numValuesRead++] = _byteStreamBuffer[idx];
+                    outputValues[numValuesRead++] = rleBuffer[idx];
 
                     if (numValuesRead >= outputValues.Length)
                         return;
@@ -70,7 +59,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void ReadBooleanStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, Span<bool> outputValues, out int numValuesRead)
+        private protected void ReadBooleanStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, Span<byte> rleBuffer, Span<bool> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
@@ -85,14 +74,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             while (!bufferReader.Complete)
             {
-                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref bufferReader, _boolStreamBuffer);
+                var numByteValuesRead = OptimizedByteRLE.ReadValues(ref bufferReader, rleBuffer);
 
                 for (int idx = 0; idx < numByteValuesRead; idx++)
                 {
                     if (numSkippedBytes++ < numOfBytesToSkip)
                         continue;
 
-                    var decodedByte = _boolStreamBuffer[idx];
+                    var decodedByte = rleBuffer[idx];
 
                     outputValues[numValuesRead++] = (decodedByte & 128) != 0;
                     if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
@@ -148,7 +137,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             }
         }
 
-        private protected void ReadNumericStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, bool isSigned, Span<long> outputValues, out int numValuesRead)
+        private protected void ReadNumericStream(StreamDetail stream, ReadOnlySpan<byte> decompressedBuffer, Span<long> rleBuffer, bool isSigned, Span<long> outputValues, out int numValuesRead)
         {
             numValuesRead = 0;
 
@@ -160,14 +149,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             while (!bufferReader.Complete)
             {
-                var numNewValuesRead = OptimizedIntegerRLE.ReadValues(ref bufferReader, isSigned, _numericStreamBuffer);
+                var numNewValuesRead = OptimizedIntegerRLE.ReadValues(ref bufferReader, isSigned, rleBuffer);
 
                 for (int idx = 0; idx < numNewValuesRead; idx++)
                 {
                     if (numSkipped++ < stream.Positions.ValuesToSkip)
                         continue;
 
-                    outputValues[numValuesRead++] = _numericStreamBuffer[idx];
+                    outputValues[numValuesRead++] = rleBuffer[idx];
 
                     if (numValuesRead >= outputValues.Length)
                         return;

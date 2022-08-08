@@ -6,6 +6,10 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
     public class TimestampColumnBuffer : BaseColumnBuffer<DateTime?>
     {
+        private readonly byte[] _presentRleBuffer = new byte[Constants.RleBufferMaxLength];
+        private readonly long[] _dataRleBuffer = new long[Constants.RleBufferMaxLength];
+        private readonly long[] _secondaryRleBuffer = new long[Constants.RleBufferMaxLength];
+
         private readonly bool[] _presentStreamValues;
         private readonly long[] _dataStreamValues;
         private readonly long[] _secondaryStreamValues;
@@ -59,9 +63,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength], isSigned: true, _dataStreamValues, out var dataValuesRead);
-            ReadNumericStream(streams.Secondary, _secondaryStreamDecompressedBuffer.AsSpan()[.._secondaryStreamDecompressedBufferLength], isSigned: false, _secondaryStreamValues, out var secondaryValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentRleBuffer, _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength], _dataRleBuffer, isSigned: true, _dataStreamValues, out var dataValuesRead);
+            ReadNumericStream(streams.Secondary, _secondaryStreamDecompressedBuffer.AsSpan()[.._secondaryStreamDecompressedBufferLength], _secondaryRleBuffer, isSigned: false, _secondaryStreamValues, out var secondaryValuesRead);
 
             if (dataValuesRead != secondaryValuesRead)
                 throw new InvalidOperationException($"Number of data({dataValuesRead}) and secondary({secondaryValuesRead}) values must match.");

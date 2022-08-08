@@ -18,8 +18,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
                 if (!reader.TryRead(out var repeatedByte))
                     throw new InvalidOperationException("Read past end of stream");
 
-                for (int i = 0; i < numReadValues; i++)
-                    outputValues[i] = repeatedByte;
+                outputValues[..numReadValues].Fill(repeatedByte);
             }
             else // Literals
             {

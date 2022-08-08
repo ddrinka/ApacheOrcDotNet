@@ -6,6 +6,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
     public class DecimalAsDoubleColumnBuffer : BaseColumnBuffer<double>
     {
+        private readonly byte[] _presentRleBuffer = new byte[Constants.RleBufferMaxLength];
+        private readonly long[] _secondaryRleBuffer = new long[Constants.RleBufferMaxLength];
+
         private readonly bool[] _presentStreamValues;
         private readonly long[] _dataStreamValues;
         private readonly long[] _secondaryStreamValues;
@@ -59,9 +62,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentRleBuffer, _presentStreamValues, out var presentValuesRead);
             ReadVarIntStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength], _dataStreamValues, out var dataValuesRead);
-            ReadNumericStream(streams.Secondary, _secondaryStreamDecompressedBuffer.AsSpan()[.._secondaryStreamDecompressedBufferLength], isSigned: true, _secondaryStreamValues, out var secondaryValuesRead);
+            ReadNumericStream(streams.Secondary, _secondaryStreamDecompressedBuffer.AsSpan()[.._secondaryStreamDecompressedBufferLength], _secondaryRleBuffer, isSigned: true, _secondaryStreamValues, out var secondaryValuesRead);
 
             if (dataValuesRead != secondaryValuesRead)
                 throw new InvalidOperationException($"Number of data({dataValuesRead}) and secondary({secondaryValuesRead}) values must match.");

@@ -6,6 +6,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
     public class FloatColumnBuffer : BaseColumnBuffer<float?>
     {
+        private readonly byte[] _presentRleBuffer = new byte[Constants.RleBufferMaxLength];
+
         private readonly bool[] _presentStreamValues;
         private readonly byte[] _valueBuffer;
 
@@ -47,7 +49,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentRleBuffer, _presentStreamValues, out var presentValuesRead);
 
             var dataReader = new BufferReader(GetDataStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength]));
 

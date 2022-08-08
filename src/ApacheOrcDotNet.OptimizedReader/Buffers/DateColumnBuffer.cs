@@ -6,6 +6,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
     public class DateColumnBuffer : BaseColumnBuffer<DateTime?>
     {
+        private readonly byte[] _presentRleBuffer = new byte[Constants.RleBufferMaxLength];
+        private readonly long[] _dataRleBuffer = new long[Constants.RleBufferMaxLength];
+
         private readonly bool[] _presentStreamValues;
         private readonly long[] _dataStreamValues;
 
@@ -47,8 +50,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
         private void Fill(ColumnDataStreams streams)
         {
-            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentStreamValues, out var presentValuesRead);
-            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength], isSigned: true, _dataStreamValues, out var dataValuesRead);
+            ReadBooleanStream(streams.Present, _presentStreamDecompressedBuffer.AsSpan()[.._presentStreamDecompressedBufferLength], _presentRleBuffer, _presentStreamValues, out var presentValuesRead);
+            ReadNumericStream(streams.Data, _dataStreamDecompressedBuffer.AsSpan()[.._dataStreamDecompressedBufferLength], _dataRleBuffer, isSigned: true, _dataStreamValues, out var dataValuesRead);
 
             if (presentValuesRead > 0)
             {

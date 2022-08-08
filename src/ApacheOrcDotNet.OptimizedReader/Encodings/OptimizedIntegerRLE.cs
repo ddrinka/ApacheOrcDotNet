@@ -52,8 +52,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Encodings
 
             var repeatingValue = ReadLongBE(ref reader, width, isSigned);
 
-            for (int i = 0; i < numReadValues; i++)
-                outputValues[i] = repeatingValue;
+            outputValues[..numReadValues].Fill(repeatingValue);
 
             return width;
         }
