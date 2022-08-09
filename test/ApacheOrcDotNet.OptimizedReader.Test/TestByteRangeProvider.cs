@@ -29,7 +29,7 @@ namespace ApacheOrcDotNet.OptimizedReader
                 file.Dispose();
         }
 
-        public void FillBuffer(Span<byte> buffer, long position)
+        public void GetRange(Span<byte> buffer, long position)
         {
             var reader = GetOpenStreamForRange(false, position, buffer.Length);
 
@@ -52,12 +52,12 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        public Task FillBufferAsync(Memory<byte> buffer, long position)
+        public Task GetRangeAsync(Memory<byte> buffer, long position)
         {
             throw new NotImplementedException();
         }
 
-        public void FillBufferFromEnd(Span<byte> buffer)
+        public void GetRangeFromEnd(Span<byte> buffer)
         {
             var reader = GetOpenStreamForRange(true, buffer.Length, buffer.Length);
 
@@ -80,7 +80,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        public Task FillBufferFromEndAsync(Memory<byte> buffer)
+        public Task GetRangeFromEndAsync(Memory<byte> buffer)
         {
             throw new NotImplementedException();
         }

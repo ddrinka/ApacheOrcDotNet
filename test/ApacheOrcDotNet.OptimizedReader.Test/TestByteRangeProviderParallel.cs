@@ -22,7 +22,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             _stream.Dispose();
         }
 
-        public void FillBuffer(Span<byte> buffer, long position)
+        public void GetRange(Span<byte> buffer, long position)
         {
             lock (_streamLock)
             {
@@ -33,7 +33,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        public Task FillBufferAsync(Memory<byte> buffer, long position)
+        public Task GetRangeAsync(Memory<byte> buffer, long position)
         {
             lock (_streamLock)
             {
@@ -42,7 +42,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        public void FillBufferFromEnd(Span<byte> buffer)
+        public void GetRangeFromEnd(Span<byte> buffer)
         {
             lock (_streamLock)
             {
@@ -53,7 +53,7 @@ namespace ApacheOrcDotNet.OptimizedReader
             }
         }
 
-        public Task FillBufferFromEndAsync(Memory<byte> buffer)
+        public Task GetRangeFromEndAsync(Memory<byte> buffer)
         {
             lock (_streamLock)
             {

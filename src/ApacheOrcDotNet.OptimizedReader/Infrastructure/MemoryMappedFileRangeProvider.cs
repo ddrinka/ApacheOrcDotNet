@@ -21,7 +21,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             _memoryMappedFile.Dispose();
         }
 
-        public void FillBuffer(Span<byte> buffer, long position)
+        public void GetRange(Span<byte> buffer, long position)
         {
             using (var stream = _memoryMappedFile.CreateViewStream(position, buffer.Length, MemoryMappedFileAccess.Read))
             {
@@ -31,7 +31,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             }
         }
 
-        public async Task FillBufferAsync(Memory<byte> buffer, long position)
+        public async Task GetRangeAsync(Memory<byte> buffer, long position)
         {
             using (var stream = _memoryMappedFile.CreateViewStream(position, buffer.Length, MemoryMappedFileAccess.Read))
             {
@@ -41,7 +41,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             }
         }
 
-        public void FillBufferFromEnd(Span<byte> buffer)
+        public void GetRangeFromEnd(Span<byte> buffer)
         {
             using (var stream = _memoryMappedFile.CreateViewStream(_length - buffer.Length, buffer.Length, MemoryMappedFileAccess.Read))
             {
@@ -51,7 +51,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             }
         }
 
-        public async Task FillBufferFromEndAsync(Memory<byte> buffer)
+        public async Task GetRangeFromEndAsync(Memory<byte> buffer)
         {
             using (var stream = _memoryMappedFile.CreateViewStream(_length - buffer.Length, buffer.Length, MemoryMappedFileAccess.Read))
             {

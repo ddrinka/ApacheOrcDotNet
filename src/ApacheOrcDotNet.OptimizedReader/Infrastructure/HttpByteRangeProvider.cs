@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
         public void Dispose() => _httpClient.Dispose();
 
-        public void FillBuffer(Span<byte> buffer, long position)
+        public void GetRange(Span<byte> buffer, long position)
         {
             var request = CreateRangeRequest(position, position + buffer.Length);
             var response = _httpClient.Send(request);
@@ -25,12 +26,12 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             if (!response.Content.Headers.ContentRange.Length.HasValue)
                 throw new InvalidRangeResponseException();
 
-            var bytesRead = response.Content.ReadAsStream().Read(buffer);
+            var bytesRead = DoRead(response.Content.ReadAsStream(), buffer);
             if (bytesRead < buffer.Length)
                 throw new BufferNotFilledException();
         }
 
-        public async Task FillBufferAsync(Memory<byte> buffer, long position)
+        public async Task GetRangeAsync(Memory<byte> buffer, long position)
         {
             var request = CreateRangeRequest(position, position + buffer.Length);
             var response = await _httpClient.SendAsync(request);
@@ -40,12 +41,12 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 
             var httpStream = await response.Content.ReadAsStreamAsync();
 
-            var bytesRead = await httpStream.ReadAsync(buffer);
+            var bytesRead = await DoReadAsync(httpStream, buffer);
             if (bytesRead < buffer.Length)
                 throw new BufferNotFilledException();
         }
 
-        public void FillBufferFromEnd(Span<byte> buffer)
+        public void GetRangeFromEnd(Span<byte> buffer)
         {
             var request = CreateRangeRequest(null, buffer.Length);
             var response = _httpClient.Send(request);
@@ -53,12 +54,12 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             if (!response.Content.Headers.ContentRange.Length.HasValue)
                 throw new InvalidRangeResponseException();
 
-            var bytesRead = response.Content.ReadAsStream().Read(buffer);
+            var bytesRead = DoRead(response.Content.ReadAsStream(), buffer);
             if (bytesRead < buffer.Length)
                 throw new BufferNotFilledException();
         }
 
-        public async Task FillBufferFromEndAsync(Memory<byte> buffer)
+        public async Task GetRangeFromEndAsync(Memory<byte> buffer)
         {
             var request = CreateRangeRequest(null, buffer.Length);
             var response = await _httpClient.SendAsync(request);
@@ -66,7 +67,9 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             if (!response.Content.Headers.ContentRange.Length.HasValue)
                 throw new InvalidRangeResponseException();
 
-            var bytesRead = await (await response.Content.ReadAsStreamAsync()).ReadAsync(buffer);
+            var httpStream = await response.Content.ReadAsStreamAsync();
+
+            var bytesRead = await DoReadAsync(httpStream, buffer);
             if (bytesRead < buffer.Length)
                 throw new BufferNotFilledException();
         }
@@ -77,6 +80,42 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             var rangeHeader = new RangeHeaderValue(from, to);
             request.Headers.Range = rangeHeader;
             return request;
+        }
+
+        private int DoRead(Stream stream, Span<byte> buffer)
+        {
+            int bytesRead = 0;
+            int bytesRemaining = buffer.Length;
+
+            while (bytesRemaining > 0)
+            {
+                int count = stream.Read(buffer[bytesRead..]);
+                if (count == 0)
+                    break;
+
+                bytesRead += count;
+                bytesRemaining -= count;
+            }
+
+            return bytesRead;
+        }
+
+        private async Task<int> DoReadAsync(Stream stream, Memory<byte> buffer)
+        {
+            int bytesRead = 0;
+            int bytesRemaining = buffer.Length;
+
+            while (bytesRemaining > 0)
+            {
+                int count = await stream.ReadAsync(buffer[bytesRead..]);
+                if (count == 0)
+                    break;
+
+                bytesRead += count;
+                bytesRemaining -= count;
+            }
+
+            return bytesRead;
         }
     }
 }

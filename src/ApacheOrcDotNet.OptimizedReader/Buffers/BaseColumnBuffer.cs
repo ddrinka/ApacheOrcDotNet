@@ -200,7 +200,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             if (stream.Range == _lastRange)
                 return;
 
-            await _byteRangeProvider.FillBufferAsync(outputBuffer[..stream.Range.Length], stream.Range.Offset);
+            await _byteRangeProvider.GetRangeAsync(outputBuffer[..stream.Range.Length], stream.Range.Offset);
 
             _lastRange = stream.Range;
         }
