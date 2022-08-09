@@ -2,25 +2,9 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Text;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
-    public class Item
-    {
-        public string Source { get; set; }
-        public string Symbol { get; set; }
-        public decimal? Time { get; set; }
-        public long? Size { get; set; }
-        public DateTime? Date { get; set; }
-        public double? Double { get; set; }
-        public float? Float { get; set; }
-        public DateTime? TimeStamp { get; set; }
-        public byte[] Binary { get; set; }
-        public byte? Byte { get; set; }
-        public bool? Boolean { get; set; }
-    }
-
     public class ReadAllOldApp
     {
         private readonly Uri _orcFileUri;
@@ -40,10 +24,13 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
         {
             //
             var totalCount = 0;
-            var outputData = false;
+            var outputData = true;
             var topwatch = new Stopwatch();
             var fileStream = File.OpenRead(_orcFileUri.LocalPath);
             var orcReader = new OrcReader(typeof(Item), fileStream);
+
+            Console.WriteLine("Read all values with OLD reader.");
+            Console.WriteLine();
 
             topwatch.Start();
 
@@ -63,7 +50,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         $"{item.Double}," +
                         $"{item.Float}," +
                         $"{(item.TimeStamp.HasValue ? item.TimeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : string.Empty)}," +
-                        $"{(item.Binary != null ? Encoding.ASCII.GetString(item.Binary) : string.Empty)}," +
+                        $"{(item.Binary != null ? System.Text.Encoding.ASCII.GetString(item.Binary) : string.Empty)}," +
                         $"{item.Byte}," +
                         $"{item.Boolean}" +
                         $""
@@ -71,7 +58,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                 }
                 else
                 {
-                    if (totalCount % 1000 == 0)
+                    if (totalCount % 10_000 == 0)
                         Console.Write(".");
                 }
             }

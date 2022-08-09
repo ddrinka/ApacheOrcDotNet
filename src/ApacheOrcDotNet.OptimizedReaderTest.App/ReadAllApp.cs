@@ -3,7 +3,6 @@ using ApacheOrcDotNet.OptimizedReader.Infrastructure;
 using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
@@ -26,6 +25,9 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             var configs = new OrcReaderConfiguration();
             var rangeProvider = _byteRangeProviderFactory.Create(_orcFileUri);
             var reader = new OptimizedReader.OrcReader(configs, rangeProvider);
+
+            Console.WriteLine("Read all values with NEW reader.");
+            Console.WriteLine();
 
             watch.Start();
 
@@ -107,7 +109,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                                 $"{dobl}," +
                                 $"{sing}," +
                                 $"{(timeStamp.HasValue ? timeStamp.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : string.Empty)}," +
-                                $"{(binary != null ? Encoding.ASCII.GetString(binary) : string.Empty)}," +
+                                $"{(binary != null ? System.Text.Encoding.ASCII.GetString(binary) : string.Empty)}," +
                                 $"{tinyInt}," +
                                 $"{boolean}" +
                                 $""
@@ -115,7 +117,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         }
                         else
                         {
-                            if (totalCount % 1000 == 0)
+                            if (totalCount % 10_000 == 0)
                                 Console.Write(".");
                         }
                     }

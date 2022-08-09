@@ -68,17 +68,20 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             await (new ReadAllApp(uri, fileByteRangeProviderFactory)).Run();
 
             // Sample app 2
-            //await Task.Delay(0);
-            //(new ReadAllOldApp(uri)).Run();
+            //await Task.Run(() => (new ReadAllOldApp(uri)).Run());
 
             // Sample app 3
+            //var uri1 = uri;
+            //var uri2 = uri.Replace(System.IO.Path.GetFileNameWithoutExtension(uri), $"{System.IO.Path.GetFileNameWithoutExtension(uri)}2");
+            //await (new ReadCompareApp(uri1, uri2, fileByteRangeProviderFactory)).Run();
+
+            // Sample app 4
             //await (new ReadFilteredApp(uri, configs, fileByteRangeProviderFactory)).Run();
 
-            //// Sample app 4
+            //// Sample app 5
             //// This requires a test file with a sorce,symbol,time,price and size fields.
             //// (Or the test class below can be updated to use different fields)
-            //await Task.Delay(0);
-            //(new TradeDataSourceApp(uri, configs, fileByteRangeProviderFactory)).Run();
+            //await Task.Run(() => (new TradeDataSourceApp(uri, configs, fileByteRangeProviderFactory)).Run());
 
             stopWatch.Stop();
 
