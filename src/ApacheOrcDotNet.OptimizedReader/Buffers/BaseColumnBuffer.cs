@@ -66,11 +66,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             if (stream == null)
                 return;
 
-            var numSkippedBits = 0;
+            var isFirstByte = true;
             var numSkippedBytes = 0;
-            var checkRemainingBits = true;
             var numOfBytesToSkip = stream.Positions.ValuesToSkip;
             var bufferReader = new BufferReader(GetDataStream(stream, decompressedBuffer));
+
+            if (outputValues.Length < 8)
+                throw new ArgumentException($"Boolean buffers length must be greater or equal to 8.");
+
+            Span<bool> rleValues = stackalloc bool[8];
 
             while (!bufferReader.Complete)
             {
@@ -83,56 +87,41 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
                     var decodedByte = rleBuffer[idx];
 
-                    outputValues[numValuesRead++] = (decodedByte & 128) != 0;
-                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
-                        numValuesRead--;
-                    if (numValuesRead >= outputValues.Length)
-                        return;
+                    rleValues[0] = (decodedByte & 128) != 0;
+                    rleValues[1] = (decodedByte & 64) != 0;
+                    rleValues[2] = (decodedByte & 32) != 0;
+                    rleValues[3] = (decodedByte & 16) != 0;
+                    rleValues[4] = (decodedByte & 8) != 0;
+                    rleValues[5] = (decodedByte & 4) != 0;
+                    rleValues[6] = (decodedByte & 2) != 0;
+                    rleValues[7] = (decodedByte & 1) != 0;
 
-                    outputValues[numValuesRead++] = (decodedByte & 64) != 0;
-                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
-                        numValuesRead--;
-                    if (numValuesRead >= outputValues.Length)
-                        return;
+                    if (isFirstByte)
+                    {
+                        isFirstByte = false;
 
-                    outputValues[numValuesRead++] = (decodedByte & 32) != 0;
-                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
-                        numValuesRead--;
-                    if (numValuesRead >= outputValues.Length)
-                        return;
+                        var firstValues = rleValues[stream.Positions.RemainingBits..];
 
-                    outputValues[numValuesRead++] = (decodedByte & 16) != 0;
-                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
-                        numValuesRead--;
-                    if (numValuesRead >= outputValues.Length)
-                        return;
+                        numValuesRead += firstValues.Length;
 
-                    outputValues[numValuesRead++] = (decodedByte & 8) != 0;
-                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
-                        numValuesRead--;
-                    if (numValuesRead >= outputValues.Length)
-                        return;
+                        firstValues.CopyTo(outputValues);
+                    }
+                    else
+                    {
+                        var targetBuffer = outputValues[numValuesRead..];
 
-                    outputValues[numValuesRead++] = (decodedByte & 4) != 0;
-                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
-                        numValuesRead--;
-                    if (numValuesRead >= outputValues.Length)
-                        return;
+                        if (numValuesRead + rleValues.Length >= outputValues.Length)
+                        {
+                            var source = rleValues[..(outputValues.Length - numValuesRead)];
+                            numValuesRead += source.Length;
+                            source.CopyTo(targetBuffer);
+                            return;
+                        }
 
-                    outputValues[numValuesRead++] = (decodedByte & 2) != 0;
-                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
-                        numValuesRead--;
-                    if (numValuesRead >= outputValues.Length)
-                        return;
+                        numValuesRead += rleValues.Length;
 
-                    outputValues[numValuesRead++] = (decodedByte & 1) != 0;
-                    if (checkRemainingBits && ++numSkippedBits <= stream.Positions.RemainingBits)
-                        return;
-                    if (numValuesRead >= outputValues.Length)
-                        return;
-
-                    if (checkRemainingBits)
-                        checkRemainingBits = false;
+                        rleValues.CopyTo(targetBuffer);
+                    }
                 }
             }
         }
