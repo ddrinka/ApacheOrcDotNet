@@ -118,7 +118,7 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
         public int ApproxRowCount => _matches.Count * _reader.MaxValuesPerRowGroup;
 
-        public int ReadBatch(int writeStartIndex, Span<decimal?> times, Span<decimal?> prices, Span<long?> sizes)
+        public int ReadBatch(Span<decimal?> times, Span<decimal?> prices, Span<long?> sizes)
         {
             var writeIndex = 0;
             var startTimeTotalSeconds = (decimal)_lookup.StartTime.TotalSeconds;
@@ -146,20 +146,17 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     {
                         _valuesFound = true;
 
-                        times[writeStartIndex + writeIndex] = _buffers.Time.Values[idx];
-                        sizes[writeStartIndex + writeIndex] = _buffers.Size.Values[idx];
-                        prices[writeStartIndex + writeIndex] = _buffers.Price.Values[idx];
+                        times[writeIndex] = _buffers.Time.Values[idx];
+                        sizes[writeIndex] = _buffers.Size.Values[idx];
+                        prices[writeIndex] = _buffers.Price.Values[idx];
 
                         writeIndex++;
                     }
                 }
 
-                // We only keep looking for values if
-                // nothing has been found before.
-                if (writeIndex == 0 && !_valuesFound)
-                    continue;
-
-                break;
+                // Only keep looking for values if nothing has been found yet.
+                if (_valuesFound)
+                    break;
             }
 
             return writeIndex;

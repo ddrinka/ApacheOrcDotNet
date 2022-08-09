@@ -28,18 +28,19 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
             watch.Start();
 
-            var timeRanges = new[] {
-                (35000, 35001), // 09:43:20, 09:43:21
-                (35077, 35078), // 09:44:37, 09:44:38
-                (43200, 46800), // 12:00:00, 01:00:00
-                (50400, 54000)  // 02:00:00, 03:00:00
+            var timeRanges = new (TimeSpan startTime, TimeSpan endTime)[] {
+                (new TimeSpan(09, 43, 20), new TimeSpan(09, 43, 21)), // 35000, 35001
+                (new TimeSpan(09, 44, 37), new TimeSpan(09, 44, 38)), // 35077, 35078
+                (new TimeSpan(12, 00, 00), new TimeSpan(13, 00, 00)), // 43200, 46800
+                (new TimeSpan(14, 00, 00), new TimeSpan(15, 00, 00)), // 50400, 54000
+                (new TimeSpan(09, 43, 20), new TimeSpan(11, 43, 20))  // 35000, 42200
             };
 
             var symbolData = new TradeDataSource(reader, _configuration.Source, _configuration.Symbol);
 
             foreach (var (sTime, eTime) in timeRanges)
             {
-                var timeRangeReader = symbolData.CreateTimeRangeReader(TimeSpan.FromSeconds(sTime), TimeSpan.FromSeconds(eTime));
+                var timeRangeReader = symbolData.CreateTimeRangeReader(sTime, eTime);
 
                 var approxRowCount = timeRangeReader.ApproxRowCount;
 
@@ -50,10 +51,17 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
                 while (true)
                 {
-                    var rowsRead = timeRangeReader.ReadBatch(numRows, times, prices, sizes);
+                    var rowsRead = timeRangeReader.ReadBatch(
+                        times.AsSpan()[numRows..],
+                        prices.AsSpan()[numRows..],
+                        sizes.AsSpan()[numRows..]
+                    );
+
                     if (rowsRead == 0)
                         break;
+
                     Console.Write(".");
+
                     numRows += rowsRead;
                 }
 

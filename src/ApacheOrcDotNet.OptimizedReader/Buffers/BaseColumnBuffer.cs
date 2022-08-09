@@ -211,7 +211,11 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             if (stream != null)
             {
-                decompressedOutput = CompressedData.CheckDecompressionBuffer(compressedInput[..stream.Range.Length], decompressedOutput, _orcFileProperties.CompressionKind, _orcFileProperties.DecompressedChunkMaxLength);
+                var decompressionMaxLength = CompressedData.GetRequiredBufferSize(compressedInput[..stream.Range.Length], _orcFileProperties.CompressionKind, _orcFileProperties.DecompressedChunkMaxLength);
+
+                if (decompressionMaxLength > decompressedOutput.Length)
+                    decompressedOutput = new byte[decompressionMaxLength];
+
                 decompressedLength = CompressedData.Decompress(compressedInput[..stream.Range.Length], decompressedOutput, _orcFileProperties.CompressionKind);
             }
         }

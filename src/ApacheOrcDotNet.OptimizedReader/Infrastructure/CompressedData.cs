@@ -6,7 +6,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
 {
     public static class CompressedData
     {
-        public static byte[] CheckDecompressionBuffer(ReadOnlySpan<byte> inputBuffer, byte[] targetDecompressionBuffer, CompressionKind compressionKind, int maxDecompressedLengthPerChunk)
+        public static int GetRequiredBufferSize(ReadOnlySpan<byte> inputBuffer, CompressionKind compressionKind, int maxDecompressedLengthPerChunk)
         {
             int inputPosition = 0;
             int maxDecompressionLength = 0;
@@ -17,14 +17,15 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
                 maxDecompressionLength += maxDecompressedLengthPerChunk;
             }
 
-            if (maxDecompressionLength > targetDecompressionBuffer.Length)
-                targetDecompressionBuffer = new byte[maxDecompressionLength];
-
-            return targetDecompressionBuffer;
+            return maxDecompressionLength;
         }
 
         public static byte[] CreateDecompressionBuffer(ReadOnlySpan<byte> inputBuffer, CompressionKind compressionKind, int maxDecompressedLengthPerChunk)
-            => CheckDecompressionBuffer(inputBuffer, new byte[maxDecompressedLengthPerChunk], compressionKind, maxDecompressedLengthPerChunk);
+        { 
+            var bufferSize = GetRequiredBufferSize(inputBuffer, compressionKind, maxDecompressedLengthPerChunk);
+
+            return new byte[bufferSize];
+        }
 
         public static int Decompress(ReadOnlySpan<byte> inputBuffer, Span<byte> outputBuffer, CompressionKind compressionKind)
         {
