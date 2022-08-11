@@ -87,14 +87,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
                     var decodedByte = rleBuffer[idx];
 
-                    rleValues[0] = (decodedByte & 128) != 0;
-                    rleValues[1] = (decodedByte & 64) != 0;
-                    rleValues[2] = (decodedByte & 32) != 0;
-                    rleValues[3] = (decodedByte & 16) != 0;
-                    rleValues[4] = (decodedByte & 8) != 0;
-                    rleValues[5] = (decodedByte & 4) != 0;
-                    rleValues[6] = (decodedByte & 2) != 0;
-                    rleValues[7] = (decodedByte & 1) != 0;
+                    rleValues[0] = (decodedByte & 0b10000000) != 0;
+                    rleValues[1] = (decodedByte & 0b01000000) != 0;
+                    rleValues[2] = (decodedByte & 0b00100000) != 0;
+                    rleValues[3] = (decodedByte & 0b00010000) != 0;
+                    rleValues[4] = (decodedByte & 0b00001000) != 0;
+                    rleValues[5] = (decodedByte & 0b00000100) != 0;
+                    rleValues[6] = (decodedByte & 0b00000010) != 0;
+                    rleValues[7] = (decodedByte & 0b00000001) != 0;
 
                     if (isFirstByte)
                     {
@@ -108,19 +108,21 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
                     }
                     else
                     {
-                        var targetBuffer = outputValues[numValuesRead..];
+                        var remainingValues = outputValues[numValuesRead..];
 
-                        if (numValuesRead + rleValues.Length >= outputValues.Length)
+                        // Maximum number of values will be reached.
+                        if (rleValues.Length >= remainingValues.Length)
                         {
-                            var source = rleValues[..(outputValues.Length - numValuesRead)];
+                            // Fill up the remaining positions and return.
+                            var source = rleValues[..remainingValues.Length];
                             numValuesRead += source.Length;
-                            source.CopyTo(targetBuffer);
+                            source.CopyTo(remainingValues);
                             return;
                         }
 
                         numValuesRead += rleValues.Length;
 
-                        rleValues.CopyTo(targetBuffer);
+                        rleValues.CopyTo(remainingValues);
                     }
                 }
             }
