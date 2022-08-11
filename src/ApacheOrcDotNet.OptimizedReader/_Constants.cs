@@ -9,5 +9,6 @@ namespace ApacheOrcDotNet.OptimizedReader
         public static DateTime UnixEpochUnspecified = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
 
         public const int RleBufferMaxLength = ushort.MaxValue + 1;
+        public const int AdditionalByteRangeLength = 512;
     }
 }

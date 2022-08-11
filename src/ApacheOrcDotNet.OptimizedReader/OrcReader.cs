@@ -418,8 +418,6 @@ namespace ApacheOrcDotNet.OptimizedReader
         private static StreamRange CalculatePresentRange(int stripeId, StreamDetail presentStream, RowIndex rowIndex, int rowEntryIndex, StreamPositions currentPosition)
         {
             var rangeLength = 0;
-            var numNextChunksToRead = 0;
-            var comparisonChunkOffset = currentPosition.RowGroupOffset;
 
             // Change in the current position marks the start of another entry.
             // Calculate the range length, considering bytes that may exist in the next chunk.
@@ -427,15 +425,9 @@ namespace ApacheOrcDotNet.OptimizedReader
             {
                 var nextPosition = GetPresentStreamPositions(presentStream, rowIndex.Entry[idx]);
 
-                if (nextPosition.RowGroupOffset != comparisonChunkOffset)
+                if (nextPosition.RowGroupOffset != currentPosition.RowGroupOffset)
                 {
-                    if (++numNextChunksToRead < 2)
-                    {
-                        comparisonChunkOffset = nextPosition.RowGroupOffset;
-                        continue;
-                    }
-
-                    rangeLength = (nextPosition.RowGroupOffset - currentPosition.RowGroupOffset);
+                    rangeLength = (nextPosition.RowGroupOffset - currentPosition.RowGroupOffset) + nextPosition.RowEntryOffset + Constants.AdditionalByteRangeLength;
                     break;
                 }
             }
@@ -449,8 +441,6 @@ namespace ApacheOrcDotNet.OptimizedReader
         private static StreamRange CalculateDataRange(int stripeId, StreamDetail presentStream, StreamDetail targetedStream, OrcColumn column, RowIndex rowIndex, int rowEntryIndex, StreamPositions currentPosition)
         {
             var rangeLength = 0;
-            var numNextChunksRead = 0;
-            var comparisonChunkOffset = currentPosition.RowGroupOffset;
 
             // Change in the current position marks the start of another entry.
             // Calculate the range length, considering bytes that may exist in the next chunk.
@@ -458,15 +448,9 @@ namespace ApacheOrcDotNet.OptimizedReader
             {
                 var nextPosition = GetRequiredStreamPositions(presentStream, targetedStream, column, rowIndex.Entry[idx]);
 
-                if (nextPosition.RowGroupOffset != comparisonChunkOffset)
+                if (nextPosition.RowGroupOffset != currentPosition.RowGroupOffset)
                 {
-                    if (++numNextChunksRead < 2)
-                    {
-                        comparisonChunkOffset = nextPosition.RowGroupOffset;
-                        continue;
-                    }
-
-                    rangeLength = (nextPosition.RowGroupOffset - currentPosition.RowGroupOffset);
+                    rangeLength = (nextPosition.RowGroupOffset - currentPosition.RowGroupOffset) + nextPosition.RowEntryOffset + Constants.AdditionalByteRangeLength;
                     break;
                 }
             }

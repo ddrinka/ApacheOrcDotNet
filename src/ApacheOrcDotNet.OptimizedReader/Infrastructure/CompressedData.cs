@@ -38,7 +38,11 @@ namespace ApacheOrcDotNet.OptimizedReader.Infrastructure
             {
                 var compressedChunkLength = OrcCompressedBlock.GetChunkLength(compressionKind, inputBuffer[inputPosition..]);
 
-                outputPosition += OrcCompressedBlock.DecompressBlock(compressionKind, inputBuffer.Slice(inputPosition, compressedChunkLength), outputBuffer[outputPosition..]);
+                var chunkToDecompress = (inputPosition + compressedChunkLength) > inputBuffer.Length
+                    ? inputBuffer[inputPosition..]
+                    : inputBuffer.Slice(inputPosition, compressedChunkLength);
+
+                outputPosition += OrcCompressedBlock.DecompressBlock(compressionKind, chunkToDecompress, outputBuffer[outputPosition..]);
 
                 inputPosition += compressedChunkLength;
             }
