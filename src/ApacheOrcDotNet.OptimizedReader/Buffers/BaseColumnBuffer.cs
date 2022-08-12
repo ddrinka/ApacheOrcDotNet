@@ -8,14 +8,14 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
     public abstract class BaseColumnBuffer<TOutput>
     {
+        private readonly BufferCache _byteRangeBufferCache = new();
+        private readonly BufferCache _decompressionBufferCache = new();
+
         private protected readonly IByteRangeProvider _byteRangeProvider;
         private protected readonly OrcFileProperties _orcFileProperties;
         private protected readonly OrcColumn _column;
         private protected readonly TOutput[] _values;
-
         private protected int _numValuesRead;
-
-        private StreamRange _lastRange;
 
         public BaseColumnBuffer(IByteRangeProvider byteRangeProvider, OrcFileProperties orcFileProperties, OrcColumn column)
         {
@@ -199,27 +199,30 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             // If current and last ranges are equal, the previous data will be buffered
             // and we can return only the length, without requesting the bytes again.
 
-            if (stream.Range == _lastRange)
+            if (_byteRangeBufferCache.IsMatch(stream))
                 return;
 
             await _byteRangeProvider.GetRangeAsync(outputBuffer[..stream.Range.Length], stream.Range.Offset);
 
-            _lastRange = stream.Range;
+            _byteRangeBufferCache.Set(stream);
         }
 
         private protected void DecompressByteRange(StreamDetail stream, ReadOnlySpan<byte> compressedInput, ref byte[] decompressedOutput, ref int decompressedLength)
         {
-            decompressedLength = 0;
+            if (stream == null)
+                return;
 
-            if (stream != null)
-            {
-                var decompressionMaxLength = CompressedData.GetRequiredBufferSize(compressedInput[..stream.Range.Length], _orcFileProperties.CompressionKind, _orcFileProperties.DecompressedChunkMaxLength);
+            if (_decompressionBufferCache.IsMatch(stream))
+                return;
 
-                if (decompressionMaxLength > decompressedOutput.Length)
-                    decompressedOutput = new byte[decompressionMaxLength];
+            var decompressionMaxLength = CompressedData.GetRequiredBufferSize(compressedInput[..stream.Range.Length], _orcFileProperties.CompressionKind, _orcFileProperties.DecompressedChunkMaxLength);
 
-                decompressedLength = CompressedData.Decompress(compressedInput[..stream.Range.Length], decompressedOutput, _orcFileProperties.CompressionKind);
-            }
+            if (decompressionMaxLength > decompressedOutput.Length)
+                decompressedOutput = new byte[decompressionMaxLength];
+
+            decompressedLength = CompressedData.Decompress(compressedInput[..stream.Range.Length], decompressedOutput, _orcFileProperties.CompressionKind);
+
+            _decompressionBufferCache.Set(stream);
         }
 
         /// <summary>
