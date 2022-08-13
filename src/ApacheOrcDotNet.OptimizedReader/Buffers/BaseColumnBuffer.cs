@@ -8,8 +8,8 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 {
     public abstract class BaseColumnBuffer<TOutput>
     {
-        private readonly BufferCache _byteRangeBufferCache = new();
-        private readonly BufferCache _decompressionBufferCache = new();
+        private readonly StreamRange[] _lastByteRanges = new StreamRange[Constants.NumPossibleStreams];
+        private readonly StreamRange[] _lastDecompressedRanges = new StreamRange[Constants.NumPossibleStreams];
 
         private protected readonly IByteRangeProvider _byteRangeProvider;
         private protected readonly OrcFileProperties _orcFileProperties;
@@ -199,12 +199,12 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             // If current and last ranges are equal, the previous data will be buffered
             // and we can return only the length, without requesting the bytes again.
 
-            if (_byteRangeBufferCache.IsMatch(stream))
+            if (_lastByteRanges[(int)stream.StreamKind] == stream.Range)
                 return;
 
             await _byteRangeProvider.GetRangeAsync(outputBuffer[..stream.Range.Length], stream.Range.Offset);
 
-            _byteRangeBufferCache.Set(stream);
+            _lastByteRanges[(int)stream.StreamKind] = stream.Range;
         }
 
         private protected void DecompressByteRange(StreamDetail stream, ReadOnlySpan<byte> compressedInput, ref byte[] decompressedOutput, ref int decompressedLength)
@@ -212,7 +212,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
             if (stream == null)
                 return;
 
-            if (_decompressionBufferCache.IsMatch(stream))
+            if (_lastDecompressedRanges[(int)stream.StreamKind] == stream.Range)
                 return;
 
             var decompressionMaxLength = CompressedData.GetRequiredBufferSize(compressedInput[..stream.Range.Length], _orcFileProperties.CompressionKind, _orcFileProperties.DecompressedChunkMaxLength);
@@ -222,7 +222,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Buffers
 
             decompressedLength = CompressedData.Decompress(compressedInput[..stream.Range.Length], decompressedOutput, _orcFileProperties.CompressionKind);
 
-            _decompressionBufferCache.Set(stream);
+            _lastDecompressedRanges[(int)stream.StreamKind] = stream.Range;
         }
 
         /// <summary>
