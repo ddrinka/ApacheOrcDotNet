@@ -1,5 +1,4 @@
-﻿using ApacheOrcDotNet.Protocol;
-using System;
+﻿using System;
 
 namespace ApacheOrcDotNet.OptimizedReader
 {
@@ -9,7 +8,7 @@ namespace ApacheOrcDotNet.OptimizedReader
         public static DateTime UnixEpochUtc = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         public static DateTime UnixEpochUnspecified = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
 
-        public static int NumPossibleStreams = Enum.GetValues<StreamKind>().Length;
+        public static int NumPossibleStreams = byte.MaxValue;
 
         public const int RleBufferMaxLength = ushort.MaxValue + 1;
         public const int NumCompressedBlocksToPreLoad = 2;
