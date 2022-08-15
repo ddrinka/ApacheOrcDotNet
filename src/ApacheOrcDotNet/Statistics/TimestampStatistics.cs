@@ -13,6 +13,8 @@ namespace ApacheOrcDotNet.Statistics
 
 		[ProtoMember(1, DataFormat = DataFormat.ZigZag)] public long? Minimum { get; set; }
 		[ProtoMember(2, DataFormat = DataFormat.ZigZag)] public long? Maximum { get; set; }
+		[ProtoMember(3, DataFormat = DataFormat.ZigZag)] public long? MinimumUtc { get; set; }
+		[ProtoMember(4, DataFormat = DataFormat.ZigZag)] public long? MaximumUtc { get; set; }
 
 		DateTime? IDateTimeStatistics.Minimum
 		{

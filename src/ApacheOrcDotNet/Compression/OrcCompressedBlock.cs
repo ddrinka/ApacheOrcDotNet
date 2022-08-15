@@ -52,7 +52,7 @@ namespace ApacheOrcDotNet.Compression
             //https://github.com/dotnet/runtime/issues/62113
             fixed (byte* pBuffer = &input[3])   //Skip the header
             {
-                using var stream = new UnmanagedMemoryStream(pBuffer, input.Length);
+                using var stream = new UnmanagedMemoryStream(pBuffer, input.Length - 3);
                 using var deflateStream = new DeflateStream(stream, CompressionMode.Decompress);
                 return deflateStream.Read(output);  //TODO ensure we don't need to loop here
             }

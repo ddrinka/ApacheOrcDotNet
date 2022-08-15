@@ -9,8 +9,10 @@
     <ProjectReference Include="..\ApacheOrcDotNet.Test\ApacheOrcDotNet.Test.csproj" />
   </ItemGroup>
 
-	<ItemGroup>
-		<EmbeddedResource Include="Data\*.orc" />
-	</ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\*.orc" />
+    <EmbeddedResource Include="Data\*.csv" />
+    <EmbeddedResource Include="Data\*.txt" />
+  </ItemGroup>
 
 </Project>
