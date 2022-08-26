@@ -4,10 +4,10 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
     public class Item
     {
-        public string Source { get; set; }
-        public string Symbol { get; set; }
-        public decimal? Time { get; set; }
-        public long? Size { get; set; }
+        public string StringDictionaryV2 { get; set; }
+        public string StringDirectV2 { get; set; }
+        public decimal? Decimal { get; set; }
+        public long? Integer { get; set; }
         public DateTime? Date { get; set; }
         public double? Double { get; set; }
         public float? Float { get; set; }

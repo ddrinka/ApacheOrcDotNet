@@ -12,20 +12,20 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var config = new OrcReaderConfiguration();
             var reader = new OrcReader(config, _byteRangeProvider);
 
-            var sourceColumn = reader.GetColumn("source");
-            var symbolColumn = reader.GetColumn("symbol");
+            var dicColumn = reader.GetColumn("stringDictionaryV2");
+            var dirColumn = reader.GetColumn("stringDirectV2");
 
-            var sourcefilterValues = FilterValues.CreateFromString(min: "CTSPillarNetworkA", max: "CTSPillarNetworkB");
-            var symbolfilterValues = FilterValues.CreateFromString(min: "970", max: "973");
+            var dicfilterValues = FilterValues.CreateFromString(min: "abc", max: "xyz");
+            var dirfilterValues = FilterValues.CreateFromString(min: "970", max: "973");
 
-            var filteredStripeIds = reader.FilterStripes(sourceColumn, sourcefilterValues);
-            filteredStripeIds = reader.FilterStripes(filteredStripeIds, symbolColumn, symbolfilterValues);
+            var filteredStripeIds = reader.FilterStripes(dicColumn, dicfilterValues);
+            filteredStripeIds = reader.FilterStripes(filteredStripeIds, dirColumn, dirfilterValues);
 
             Assert.Single(filteredStripeIds);
             Assert.Contains(filteredStripeIds, stripeId => stripeId == 0);
 
-            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, sourceColumn, sourcefilterValues);
-            rowGroupIndexIds = reader.FilterRowGroups(rowGroupIndexIds, stripeId: 0, symbolColumn, symbolfilterValues);
+            var rowGroupIndexIds = reader.FilterRowGroups(stripeId: 0, dicColumn, dicfilterValues);
+            rowGroupIndexIds = reader.FilterRowGroups(rowGroupIndexIds, stripeId: 0, dirColumn, dirfilterValues);
 
             Assert.Single(rowGroupIndexIds);
             Assert.Contains(rowGroupIndexIds, rowEntryIndex => rowEntryIndex == 0);
@@ -44,12 +44,12 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var endTime2 = (new TimeSpan(10, 43, 21));
 
             // Columns
-            var sourceColumn = reader.GetColumn("source");
-            var symbolColumn = reader.GetColumn("symbol");
-            var timeColumn = reader.GetColumn("time");
+            var sourceColumn = reader.GetColumn("stringDictionaryV2");
+            var symbolColumn = reader.GetColumn("stringDirectV2");
+            var timeColumn = reader.GetColumn("decimal");
 
-            var sourcefilterValues = FilterValues.CreateFromString(min: "CTSPillarNetworkB", max: "CTSPillarNetworkB");
-            var symbolfilterValues = FilterValues.CreateFromString(min: "SPY", max: "SPY");
+            var sourcefilterValues = FilterValues.CreateFromString(min: "xyz", max: "xyz");
+            var symbolfilterValues = FilterValues.CreateFromString(min: "test", max: "test");
             var timefilterValues1 = FilterValues.CreateFromTime(min: beginTime1, max: endTime1);
             var timefilterValues2 = FilterValues.CreateFromTime(min: beginTime2, max: endTime2);
 

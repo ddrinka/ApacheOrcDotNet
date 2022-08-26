@@ -32,10 +32,10 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             watch.Start();
 
             // Columns
-            var sourceColumn = reader.GetColumn("source");
-            var symbolColumn = reader.GetColumn("symbol");
-            var timeColumn = reader.GetColumn("time");
-            var sizeColumn = reader.GetColumn("size");
+            var stringDictionaryV2Column = reader.GetColumn("stringDictionaryV2");
+            var stringDirectV2Column = reader.GetColumn("stringDirectV2");
+            var decimalColumn = reader.GetColumn("decimal");
+            var integerColumn = reader.GetColumn("integer");
             var dateColumn = reader.GetColumn("date");
             var doubleColumn = reader.GetColumn("double");
             var floatColumn = reader.GetColumn("float");
@@ -45,10 +45,10 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
             var booleanColumn = reader.GetColumn("boolean");
 
             // Buffers
-            var sourceColumnBuffer = reader.CreateStringColumnBuffer(sourceColumn);
-            var symbolColumnBuffer = reader.CreateStringColumnBuffer(symbolColumn);
-            var timeColumnBuffer = reader.CreateDecimalColumnBuffer(timeColumn);
-            var sizeColumnBuffer = reader.CreateIntegerColumnBuffer(sizeColumn);
+            var stringDictionaryV2ColumnBuffer = reader.CreateStringColumnBuffer(stringDictionaryV2Column);
+            var stringDirectV2ColumnBuffer = reader.CreateStringColumnBuffer(stringDirectV2Column);
+            var decimalColumnBuffer = reader.CreateDecimalColumnBuffer(decimalColumn);
+            var integerColumnBuffer = reader.CreateIntegerColumnBuffer(integerColumn);
             var dateColumnBuffer = reader.CreateDateColumnBuffer(dateColumn);
             var doubleColumnBuffer = reader.CreateDoubleColumnBuffer(doubleColumn);
             var floatColumnBuffer = reader.CreateFloatColumnBuffer(floatColumn);
@@ -63,15 +63,15 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
 
             for (var stripeId = 0; stripeId < reader.GetNumberOfStripes(); stripeId++)
             {
-                var numRowEntryIndexes = reader.GetNumberOfRowGroupEntries(stripeId, timeColumn.Id);
+                var numRowEntryIndexes = reader.GetNumberOfRowGroupEntries(stripeId, decimalColumn.Id);
 
                 for (var rowEntryIndex = 0; rowEntryIndex < numRowEntryIndexes; rowEntryIndex++)
                 {
                     await Task.WhenAll(
-                        reader.LoadDataAsync(stripeId, rowEntryIndex, sourceColumnBuffer),
-                        reader.LoadDataAsync(stripeId, rowEntryIndex, symbolColumnBuffer),
-                        reader.LoadDataAsync(stripeId, rowEntryIndex, timeColumnBuffer),
-                        reader.LoadDataAsync(stripeId, rowEntryIndex, sizeColumnBuffer),
+                        reader.LoadDataAsync(stripeId, rowEntryIndex, stringDictionaryV2ColumnBuffer),
+                        reader.LoadDataAsync(stripeId, rowEntryIndex, stringDirectV2ColumnBuffer),
+                        reader.LoadDataAsync(stripeId, rowEntryIndex, decimalColumnBuffer),
+                        reader.LoadDataAsync(stripeId, rowEntryIndex, integerColumnBuffer),
                         reader.LoadDataAsync(stripeId, rowEntryIndex, dateColumnBuffer),
                         reader.LoadDataAsync(stripeId, rowEntryIndex, doubleColumnBuffer),
                         reader.LoadDataAsync(stripeId, rowEntryIndex, floatColumnBuffer),
@@ -85,10 +85,10 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                     {
                         totalCount++;
 
-                        var source = sourceColumnBuffer.Values[idx];
-                        var symbol = symbolColumnBuffer.Values[idx];
-                        var time = timeColumnBuffer.Values[idx];
-                        var size = sizeColumnBuffer.Values[idx];
+                        var stringDictionaryV2 = stringDictionaryV2ColumnBuffer.Values[idx];
+                        var stringDirectV2 = stringDirectV2ColumnBuffer.Values[idx];
+                        var @decimal = decimalColumnBuffer.Values[idx];
+                        var integer = integerColumnBuffer.Values[idx];
                         var date = dateColumnBuffer.Values[idx];
                         var dobl = doubleColumnBuffer.Values[idx];
                         var sing = floatColumnBuffer.Values[idx];
@@ -100,10 +100,10 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                         if (outputData)
                         {
                             Console.WriteLine($"" +
-                                $"{source}," +
-                                $"{symbol}," +
-                                $"{(time.HasValue ? time.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0') : string.Empty)}," +
-                                $"{size}" +
+                                $"{stringDictionaryV2}," +
+                                $"{stringDirectV2}," +
+                                $"{(@decimal.HasValue ? @decimal.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0') : string.Empty)}," +
+                                $"{integer}" +
                                 $"     " +
                                 $"{(date.HasValue ? date.Value.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture) : string.Empty)}," +
                                 $"{dobl}," +

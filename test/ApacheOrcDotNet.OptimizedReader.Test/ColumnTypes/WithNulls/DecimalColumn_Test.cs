@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var config = new OrcReaderConfiguration();
             var reader = new OrcReader(config, _byteRangeProvider);
 
-            var column = reader.GetColumn("time");
+            var column = reader.GetColumn("decimal");
             var columnBuffer = reader.CreateDecimalColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
 
@@ -31,7 +31,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithNulls
             var config = new OrcReaderConfiguration();
             var reader = new OrcReader(config, _byteRangeProvider);
 
-            var column = reader.GetColumn("time");
+            var column = reader.GetColumn("decimal");
             var columnBuffer = reader.CreateDecimalColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
 
