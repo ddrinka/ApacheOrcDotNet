@@ -14,7 +14,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		[Fact]
 		public void RoundTrip_BooleanColumn()
 		{
-            RoundTripSingleBool(70000, 1000);
+			RoundTripSingleBool(70000, 1000);
 			RoundTripSingleBool(70000, 10);
 		}
 
@@ -22,8 +22,8 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		{
 			var pocos = new List<SingleBoolPoco>();
 			var random = new Random(123);
-            for (int i = 0; i < numValues; i++)
-                pocos.Add(new SingleBoolPoco { Bool = random.Next() % 2 == 0 });
+			for (int i = 0; i < numValues; i++)
+				pocos.Add(new SingleBoolPoco { Bool = random.Next() % 2 == 0 });
 
 			var stream = new MemoryStream();
 			Footer footer;
