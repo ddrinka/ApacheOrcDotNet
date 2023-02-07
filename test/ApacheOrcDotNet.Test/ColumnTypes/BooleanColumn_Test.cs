@@ -14,19 +14,20 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		[Fact]
 		public void RoundTrip_BooleanColumn()
 		{
-			RoundTripSingleBool(70000);
+            RoundTripSingleBool(70000, 1000);
+			RoundTripSingleBool(70000, 10);
 		}
 
-		void RoundTripSingleBool(int numValues)
+		void RoundTripSingleBool(int numValues, int rowIndexStride)
 		{
 			var pocos = new List<SingleBoolPoco>();
 			var random = new Random(123);
-			for (int i = 0; i < numValues; i++)
-				pocos.Add(new SingleBoolPoco { Bool = random.Next() % 2 == 0 });
+            for (int i = 0; i < numValues; i++)
+                pocos.Add(new SingleBoolPoco { Bool = random.Next() % 2 == 0 });
 
 			var stream = new MemoryStream();
 			Footer footer;
-			StripeStreamHelper.Write(stream, pocos, out footer);
+			StripeStreamHelper.Write(stream, pocos, out footer, rowIndexStride: rowIndexStride);
 			var stripeStreams = StripeStreamHelper.GetStripeStreams(stream, footer);
 			var boolReader = new BooleanReader(stripeStreams, 1);
 			var results = boolReader.Read().ToArray();
