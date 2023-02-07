@@ -10,53 +10,56 @@ namespace ApacheOrcDotNet.ColumnTypes
 {
     public class BooleanWriter : IColumnWriter<bool?>
     {
-		readonly bool _isNullable;
-		readonly OrcCompressedBuffer _presentBuffer;
-		readonly OrcCompressedBuffer _dataBuffer;
+        readonly bool _isNullable;
+        readonly OrcCompressedBuffer _presentBuffer;
+        readonly OrcCompressedBuffer _dataBuffer;
+        private readonly ContinuousBitWriter _bitWriter;
 
-		public BooleanWriter(bool isNullable, OrcCompressedBufferFactory bufferFactory, uint columnId)
-		{
-			_isNullable = isNullable;
-			ColumnId = columnId;
+        public BooleanWriter(bool isNullable, OrcCompressedBufferFactory bufferFactory, uint columnId)
+        {
+            _isNullable = isNullable;
+            ColumnId = columnId;
 
-			if (_isNullable)
-			{
-				_presentBuffer = bufferFactory.CreateBuffer(StreamKind.Present);
-				_presentBuffer.MustBeIncluded = false;
-			}
-			_dataBuffer = bufferFactory.CreateBuffer(StreamKind.Data);
-		}
+            if (_isNullable)
+            {
+                _presentBuffer = bufferFactory.CreateBuffer(StreamKind.Present);
+                _presentBuffer.MustBeIncluded = false;
+            }
+            _dataBuffer = bufferFactory.CreateBuffer(StreamKind.Data);
+            _bitWriter = new ContinuousBitWriter(_dataBuffer);
+        }
 
-		public List<IStatistics> Statistics { get; } = new List<IStatistics>();
-		public long CompressedLength => Buffers.Sum(s => s.Length);
-		public uint ColumnId { get; }
-		public OrcCompressedBuffer[] Buffers => _isNullable ? new[] { _presentBuffer, _dataBuffer } : new[] { _dataBuffer };
-		public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.Direct;
+        public List<IStatistics> Statistics { get; } = new List<IStatistics>();
+        public long CompressedLength => Buffers.Sum(s => s.Length);
+        public uint ColumnId { get; }
+        public OrcCompressedBuffer[] Buffers => _isNullable ? new[] { _presentBuffer, _dataBuffer } : new[] { _dataBuffer };
+        public ColumnEncodingKind ColumnEncoding => ColumnEncodingKind.Direct;
 
-		public void FlushBuffers()
-		{
-			foreach (var buffer in Buffers)
-				buffer.Flush();
-		}
+        public void FlushBuffers()
+        {
+            _bitWriter.Flush();
+            foreach (var buffer in Buffers)
+                buffer.Flush();
+        }
 
-		public void Reset()
-		{
-			foreach (var buffer in Buffers)
-				buffer.Reset();
-			if(_isNullable)
-				_presentBuffer.MustBeIncluded = false;
-			Statistics.Clear();
-		}
+        public void Reset()
+        {
+            foreach (var buffer in Buffers)
+                buffer.Reset();
+            if(_isNullable)
+                _presentBuffer.MustBeIncluded = false;
+            Statistics.Clear();
+        }
 
-		public void AddBlock(IList<bool?> values)
-		{
-			var stats = new BooleanWriterStatistics();
-			Statistics.Add(stats);
+        public void AddBlock(IList<bool?> values)
+        {
+            var stats = new BooleanWriterStatistics();
+            Statistics.Add(stats);
             if (_isNullable)
                 _presentBuffer.AnnotatePosition(stats, rleValuesToConsume: 0, bitsToConsume: 0);
             _dataBuffer.AnnotatePosition(stats, rleValuesToConsume: 0, bitsToConsume: 0);
 
-			var valList = new List<bool>(values.Count);
+            var valList = new List<bool>(values.Count);
 
 			if(_isNullable)
 			{
@@ -84,8 +87,7 @@ namespace ApacheOrcDotNet.ColumnTypes
 				}
 			}
 
-			var valEncoder = new BitWriter(_dataBuffer);
-			valEncoder.Write(valList);
-		}
-	}
+            _bitWriter.Write(valList);
+        }
+    }
 }
