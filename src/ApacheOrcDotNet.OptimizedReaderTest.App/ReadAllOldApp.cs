@@ -41,10 +41,10 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                 if (outputData)
                 {
                     Console.WriteLine($"" +
-                        $"{item.Source}," +
-                        $"{item.Symbol}," +
-                        $"{(item.Time.HasValue ? item.Time.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0') : string.Empty)}," +
-                        $"{item.Size}" +
+                        $"{item.StringDictionaryV2}," +
+                        $"{item.StringDirectV2}," +
+                        $"{(item.Decimal.HasValue ? item.Decimal.Value.ToString(CultureInfo.InvariantCulture).PadRight(15, '0') : string.Empty)}," +
+                        $"{item.Integer}" +
                         $"     " +
                         $"{(item.Date.HasValue ? item.Date.Value.ToString("MM/dd/yyyy", CultureInfo.InvariantCulture) : string.Empty)}," +
                         $"{item.Double}," +

@@ -10,7 +10,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var config = new OrcReaderConfiguration();
             var reader = new OrcReader(config, _byteRangeProvider);
 
-            var column = reader.GetColumn("symbol");
+            var column = reader.GetColumn("stringDirectV2");
             var columnBuffer = reader.CreateStringColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
 
@@ -29,7 +29,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var config = new OrcReaderConfiguration();
             var reader = new OrcReader(config, _byteRangeProvider);
 
-            var column = reader.GetColumn("symbol");
+            var column = reader.GetColumn("stringDirectV2");
             var columnBuffer = reader.CreateStringColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
 
@@ -45,7 +45,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var config = new OrcReaderConfiguration();
             var reader = new OrcReader(config, _byteRangeProvider);
 
-            var column = reader.GetColumn("source");
+            var column = reader.GetColumn("stringDictionaryV2");
             var columnBuffer = reader.CreateStringColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 0, columnBuffer).Wait();
 
@@ -64,7 +64,7 @@ namespace ApacheOrcDotNet.OptimizedReader.Test.ColumnTypes.WithoutNulls
             var config = new OrcReaderConfiguration();
             var reader = new OrcReader(config, _byteRangeProvider);
 
-            var column = reader.GetColumn("source");
+            var column = reader.GetColumn("stringDictionaryV2");
             var columnBuffer = reader.CreateStringColumnBuffer(column);
             reader.LoadDataAsync(stripeId: 0, rowEntryIndexId: 1, columnBuffer).Wait();
 

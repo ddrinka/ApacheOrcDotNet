@@ -5,13 +5,13 @@ using System.Diagnostics;
 
 namespace ApacheOrcDotNet.OptimizedReaderTest.App
 {
-    public class TradeDataSourceApp
+    public class SampleDataSourceApp
     {
         private readonly string _orcFileUri;
         private readonly Configs _configuration;
         private readonly IByteRangeProviderFactory _byteRangeProviderFactory;
 
-        public TradeDataSourceApp(string orcFileUri, Configs configuration, IByteRangeProviderFactory byteRangeProviderFactory)
+        public SampleDataSourceApp(string orcFileUri, Configs configuration, IByteRangeProviderFactory byteRangeProviderFactory)
         {
             _orcFileUri = orcFileUri;
             _configuration = configuration;
@@ -36,25 +36,23 @@ namespace ApacheOrcDotNet.OptimizedReaderTest.App
                 (new TimeSpan(09, 43, 20), new TimeSpan(11, 43, 20))  // 35000, 42200
             };
 
-            var symbolData = new TradeDataSource(reader, _configuration.Source, _configuration.Symbol);
+            var dataSource = new SampleDataSource(reader, _configuration.Vendor, _configuration.Product);
 
             foreach (var (sTime, eTime) in timeRanges)
             {
-                var timeRangeReader = symbolData.CreateTimeRangeReader(sTime, eTime);
+                var timeRangeReader = dataSource.CreateTimeRangeReader(sTime, eTime);
 
                 var approxRowCount = timeRangeReader.ApproxRowCount;
 
                 var times = new decimal?[approxRowCount];
-                var prices = new decimal?[approxRowCount];
-                var sizes = new long?[approxRowCount];
+                var sales = new long?[approxRowCount];
                 var numRows = 0;
 
                 while (true)
                 {
                     var rowsRead = timeRangeReader.ReadBatch(
                         times.AsSpan()[numRows..],
-                        prices.AsSpan()[numRows..],
-                        sizes.AsSpan()[numRows..]
+                        sales.AsSpan()[numRows..]
                     );
 
                     if (rowsRead == 0)
