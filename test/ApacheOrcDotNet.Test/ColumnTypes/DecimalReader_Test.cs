@@ -1,10 +1,8 @@
 ﻿using ApacheOrcDotNet.ColumnTypes;
 using ApacheOrcDotNet.Stripes;
 using ApacheOrcDotNet.Test.TestHelpers;
-using System;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace ApacheOrcDotNet.Test.ColumnTypes
@@ -13,7 +11,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
     {
 		StripeStreamReaderCollection GetStripeStreamCollection()
 		{
-			var dataFile = new DataFileHelper("decimal.orc");
+			var dataFile = new DataFileHelper(typeof(DecimalReader_Test), "decimal.orc");
 			var stream = dataFile.GetStream();
 			var fileTail = new FileTail(stream);
             var stripes = fileTail.Stripes;
@@ -36,7 +34,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 				{
 					var decimalPortion= 5 + i;
 					var wholePortion = -1000 + i;
-					expected = decimal.Parse($"{wholePortion}.{decimalPortion}");
+					expected = decimal.Parse($"{wholePortion}.{decimalPortion}", CultureInfo.InvariantCulture);
 				}
 				else if(i<4000)
 				{
@@ -46,7 +44,7 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 				{
 					var decimalPortion = (i - 4000) + 1;
 					var wholePortion = (i - 4000);
-					expected = decimal.Parse($"{wholePortion}.{decimalPortion}");
+					expected = decimal.Parse($"{wholePortion}.{decimalPortion}", CultureInfo.InvariantCulture);
 				}
 				Assert.Equal(expected, results[i]);
 			}

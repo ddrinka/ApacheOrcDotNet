@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ApacheOrcDotNet.OptimizedReader\ApacheOrcDotNet.OptimizedReader.csproj" />
+    <ProjectReference Include="..\..\src\ApacheOrcDotNet\ApacheOrcDotNet.csproj" />
+    <ProjectReference Include="..\ApacheOrcDotNet.Test\ApacheOrcDotNet.Test.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\*.orc" />
+    <EmbeddedResource Include="Data\*.csv" />
+    <EmbeddedResource Include="Data\*.txt" />
+  </ItemGroup>
+
+</Project>

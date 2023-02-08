@@ -12,11 +12,11 @@ namespace ApacheOrcDotNet.Test.TestHelpers
     public class DataFileHelper : IDisposable
     {
 		readonly Stream _dataStream;
-		public DataFileHelper(string dataFileName)
+		public DataFileHelper(Type typeInDataAssembly, string dataFileName)
 		{
 			var embeddedFileName = $"Data.{dataFileName}";
 
-			var fileProvider = new EmbeddedFileProvider(typeof(DataFileHelper).GetTypeInfo().Assembly);
+			var fileProvider = new EmbeddedFileProvider(typeInDataAssembly.Assembly);
 			var fileInfo = fileProvider.GetFileInfo(embeddedFileName);
 			if (!fileInfo.Exists)
 				throw new ArgumentException("Requested data file doesn't exist");

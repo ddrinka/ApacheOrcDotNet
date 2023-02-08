@@ -16,7 +16,7 @@ namespace ApacheOrcDotNet.Test.Protocol
 
 		public ProtocolHelper(string dataFileName)
 		{
-			_dataFileHelper = new DataFileHelper(dataFileName);
+			_dataFileHelper = new DataFileHelper(typeof(ProtocolHelper), dataFileName);
 		}
 
 		public ProtocolHelper(Stream inputStream)
