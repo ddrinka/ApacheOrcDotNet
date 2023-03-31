@@ -14,11 +14,15 @@ namespace ApacheOrcDotNet.Test.ColumnTypes
 		[Fact]
 		public void RoundTrip_BooleanColumn()
 		{
-			RoundTripSingleBool(70000, 1000);
-			RoundTripSingleBool(70000, 10);
+			// Default case
+            RoundTripSingleBool(70000);
+
+			// Problematic cases 
+            RoundTripSingleBool(70000, 1000);
+            RoundTripSingleBool(70000, 10);
 		}
 
-		void RoundTripSingleBool(int numValues, int rowIndexStride)
+		void RoundTripSingleBool(int numValues, int rowIndexStride = 10000)
 		{
 			var pocos = new List<SingleBoolPoco>();
 			var random = new Random(123);
